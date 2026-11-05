@@ -1,0 +1,63 @@
+{
+  "$comment": "软著 Word 版式。sizePt=磅；脚本内 ×2 为 docx half-point。颜色六位十六进制（可带#）。改本文件即可自由控制页眉/页脚/字体。",
+  "version": "V2.0",
+  "header": {
+    "align": "center",
+    "font": "宋体",
+    "sizePt": 12,
+    "color": "000000",
+    "bold": false,
+    "italics": false,
+    "highlight": false,
+    "template": "{projectName}  {version}"
+  },
+  "footer": {
+    "align": "center",
+    "font": "宋体",
+    "sizePt": 12,
+    "color": "000000",
+    "bold": false,
+    "italics": false,
+    "highlight": false,
+    "template": "{page}"
+  },
+  "code": {
+    "body": {
+      "font": "Times New Roman",
+      "sizePt": 12,
+      "color": "000000",
+      "bold": false,
+      "italics": false,
+      "highlight": false
+    },
+    "lineTwip": 276
+  },
+  "manual": {
+    "body": {
+      "font": "宋体",
+      "sizePt": 12,
+      "color": "000000",
+      "bold": false,
+      "italics": false,
+      "highlight": false
+    },
+    "heading": {
+      "font": "宋体",
+      "color": "000000",
+      "italics": false,
+      "highlight": false,
+      "mdLevelOffset": 1,
+      "h1": { "sizePt": 15, "bold": true },
+      "h2": { "sizePt": 14, "bold": true },
+      "h3": { "sizePt": 13, "bold": true },
+      "h4": { "sizePt": 12, "bold": true }
+    },
+    "cover": {
+      "font": "宋体",
+      "titleSizePt": 22,
+      "subtitleSizePt": 18,
+      "metaSizePt": 12,
+      "bold": true
+    }
+  }
+}

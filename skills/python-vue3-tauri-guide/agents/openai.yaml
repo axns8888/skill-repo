@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python Vue3 Tauri 开发指南"
+  short_description: "贯通 Python 服务、Vue 3 界面与 Tauri 桌面壳的开发流程和提示词"
+  default_prompt: "使用 $python-vue3-tauri-guide，基于当前仓库和我的目标整理开发计划，并推进到已授权阶段。"

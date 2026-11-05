@@ -1,0 +1,36 @@
+{
+  "$schema_comment": "截图用。手册版式在 〈项目名称〉-ruanzhu-doc-config.md，与产出一对一",
+  "projectNameWeb": "示例管理系统",
+  "projectNameH5": "示例移动端",
+  "web": {
+    "baseUrl": "http://127.0.0.1:52888",
+    "loginPath": "/login",
+    "routerMode": "history",
+    "shotDir": "Screenshot-web",
+    "username": "admin",
+    "password": "admin123",
+    "userPlaceholder": "请输入用户名",
+    "passPlaceholder": "请输入密码",
+    "loginButtonText": "登录",
+    "viewport": { "width": 1440, "height": 900 },
+    "shots": [
+      { "file": "图01-登录.png", "path": "/login", "beforeLogin": true },
+      { "file": "图02-用户管理.png", "path": "/system/user" },
+      { "file": "图03-角色管理.png", "path": "/system/role" }
+    ],
+    "extra": []
+  },
+  "h5": {
+    "baseUrl": "http://127.0.0.1:52666",
+    "loginPath": "/#/pages/login/index",
+    "shotDir": "Screenshot-h5",
+    "username": "emp001",
+    "password": "Pass@123",
+    "loginButtonSelector": "uni-button.login__btn, .login__btn, uni-button.wd-button.is-primary",
+    "viewport": { "width": 390, "height": 844, "deviceScaleFactor": 2 },
+    "shots": [
+      { "file": "图01-登录.png", "path": "/#/pages/login/index", "beforeLogin": true },
+      { "file": "图02-首页.png", "path": "/#/pages/home/index" }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "projectName": "示例管理系统",
+  "version": "V1.0",
+  "paths": [
+    { "path": "apps/server", "weight": 40 },
+    { "path": "apps/web/src", "weight": 30 },
+    { "path": "packages/shared", "weight": 30 }
+  ],
+  "extensions": [".vue", ".ts", ".tsx", ".py", ".scss"],
+  "excludeDirs": ["__pycache__", ".git", "node_modules", "dist", "coverage"],
+  "excludeFiles": ["__init__.py"],
+  "pages": 60,
+  "linesPerPage": 50,
+  "mode": "head-tail",
+  "stripBlank": false,
+  "stripComments": true,
+  "shuffle": false,
+  "seed": "20261026",
+  "out": "_doc/软著申请/示例管理系统-源码文档-v1.docx",
+  "$note": "版权局：前30+后30页、每页≥50有效行；不足3000行则全文。嵌入 *-ruanzhu-code-config.md"
+}
