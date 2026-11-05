@@ -6,7 +6,6 @@
 
 | Skill | 适用场景 | 产出 |
 | --- | --- | --- |
-| [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/SKILL.md) | Python / Vue 3 / Tauri 项目开发与交接 | 开发流程、阶段提示词及项目记录模板 |
 | [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/README.md) | Python + Vue 3 + Tauri 项目规划、开发、联调与交付 | 开发流程、阶段提示词、项目与任务模板 |
 | [ruanzhu-gen](skills/ruanzhu-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [ruanzhu-gen-doc](skills/ruanzhu-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
