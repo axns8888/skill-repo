@@ -1,0 +1,30 @@
+{
+  "targetAlias": "TEST-HOST",
+  "objective": "Describe the authorized task",
+  "observedState": [],
+  "requestedState": "Describe success criteria",
+  "paths": [
+    {
+      "engine": "api",
+      "supported": null,
+      "evidence": null
+    },
+    {
+      "engine": "btcli",
+      "supported": null,
+      "evidence": null
+    },
+    {
+      "engine": "bt",
+      "supported": null,
+      "evidence": null
+    }
+  ],
+  "requestOrCommandPreview": "Redacted method/endpoint/parameters or exact command",
+  "effect": "read-only | write | destructive",
+  "affectedResources": [],
+  "backupAndRollback": [],
+  "verification": [],
+  "mutationOutcome": "not-started",
+  "confirmation": "Not granted by this template; obtain explicit confirmation for the concrete high-risk operation in the live conversation"
+}

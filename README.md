@@ -1,11 +1,12 @@
 # skill-repo
 
-本仓库提供项目开发流程与中国软件著作权材料准备的 Agent Skills。开发指南覆盖 Python、Vue 3 与 Tauri 项目；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
+本仓库提供宝塔面板运维、项目开发流程与中国软件著作权材料准备的 Agent Skills。开发指南覆盖 Python、Vue 3 与 Tauri 项目；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
 
 ## 技能列表
 
 | Skill | 适用场景 | 产出 |
 | --- | --- | --- |
+| [ops-bt-agent](skills/ops-bt-agent/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
 | [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/README.md) | Python + Vue 3 + Tauri 项目规划、开发、联调与交付 | 开发流程、阶段提示词、项目与任务模板 |
 | [ruanzhu-gen](skills/ruanzhu-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [ruanzhu-gen-doc](skills/ruanzhu-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
@@ -38,7 +39,7 @@ Python + Vue 3 + Tauri 指南的本地路径调用、跨项目复用与分享方
 
 ## 环境与依赖
 
-以下依赖用于软著材料生成与截图；开发指南本身是 Markdown 指令，其项目运行依赖按目标项目确定。
+宝塔技能的内置只读诊断脚本需要 Node.js 22+，SSH 操作按目标环境准备，详见其使用说明。以下依赖用于软著材料生成与截图；开发指南本身是 Markdown 指令，其项目运行依赖按目标项目确定。
 
 - 运行脚本需要 Node.js；本仓库验证环境为 Node.js 24.x。
 - 源程序量统计与配置初始化仅使用 Node.js 内置模块。
@@ -101,11 +102,11 @@ CLI 的 `generator` 执行源码 Word 导出；登记信息正文、操作手册
 ## 本地验证
 
 ```bash
-node --test tests/ruanzhu.test.cjs
+node --test tests/ruanzhu.test.cjs tests/ops-bt-agent.test.cjs
 npx skills add . --list
 ```
 
-第一条运行配置初始化、项目选择、行数边界与浏览器回退测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
+第一条运行软著行为测试，以及本地模拟面板的签名、诊断、安全边界和失败处理测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
 
 ## 许可证
 

@@ -42,3 +42,6 @@ coverage/
 !.env.*.example
 !.env.sample
 !.env.template
+
+# Private BaoTa runtime records and local connection data
+.ops-bt-agent/

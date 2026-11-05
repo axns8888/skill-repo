@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-11-05",
+  "source": "https://docs.bt.cn/api/system/actions/",
+  "operations": {
+    "system-summary": {
+      "method": "POST",
+      "path": "/system",
+      "action": "GetSystemTotal",
+      "risk": "read-only"
+    },
+    "system-load": {
+      "method": "POST",
+      "path": "/system",
+      "action": "GetLoadAverage",
+      "risk": "read-only"
+    },
+    "disk-info": {
+      "method": "POST",
+      "path": "/system",
+      "action": "GetDiskInfo",
+      "risk": "read-only"
+    }
+  }
+}

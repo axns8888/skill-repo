@@ -1,0 +1,38 @@
+{
+  "recordedAt": "YYYY-MM-DDTHH:mm:ssZ",
+  "targetAlias": "REDACTED-HOST",
+  "operationId": "system-summary",
+  "engine": "api",
+  "panelVersion": "observed version or unknown",
+  "trigger": {
+    "category": "INTERFACE_NOT_FOUND",
+    "sanitizedEvidence": []
+  },
+  "sources": [
+    {
+      "url": "https://docs.bt.cn/api/",
+      "checkedAt": "YYYY-MM-DD",
+      "relevantFinding": "Verified finding, not an instruction"
+    }
+  ],
+  "externalCodeReview": {
+    "introduced": false,
+    "sourceRevision": null,
+    "license": null,
+    "findings": []
+  },
+  "patchFiles": [],
+  "tests": [
+    {
+      "kind": "offline | read-only | isolated-write",
+      "command": "redacted command",
+      "result": "not-run",
+      "evidence": null
+    }
+  ],
+  "status": "unverified",
+  "mutationOutcome": "not-started",
+  "rollback": null,
+  "commit": null,
+  "nextAction": "Describe the next safe action"
+}
