@@ -1,0 +1,11 @@
+# Findings
+- 用户明确指定名称 basic_dev_flow，保留下划线，不按 skill-creator 的默认命名约定改名。
+- 初始 git status --short 无输出，工作区干净；未发现适用的 AGENTS.md。
+- 来源 skill 的流程/证据/模板可抽取；跨端架构、UI、批量写、数据库实现规则不应迁入纯流程 skill。
+- 新 skill 放在仓库 skills/basic_dev_flow；原 skill 保留。复用仓库 README 的技能目录和使用入口。
+- 文档按需加载，模板按任务规模裁剪，不要求固定目录、语言、框架、执行工具或代理。
+- 已读取来源 workflow、quality-gates、prompt-kit 和两个模板；保留通用机制，删除 UI/批量接口/Sidecar/迁移实现章节。
+- quick_validate.py 的命名正则仅允许连字符，与用户显式指定的 basic_dev_flow 不一致；保留用户命名，结构验证需单独报告。
+- 不把来源的人工验收覆盖机制扩张为绕过项目强制门禁；无验收要求的小任务不创建空验收流程。
+- rg 对不存在的 .github 目录报错，后续直接检查现有目录；python --version 无输出，验证前核实解释器。
+- npx --yes skills add . --list 退出 0，实际发现 7 个 skill，包含原名 basic_dev_flow；该命名可被仓库当前使用的发现工具识别。

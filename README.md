@@ -1,12 +1,13 @@
 # skill-repo
 
-本仓库提供宝塔面板运维、项目开发流程与中国软件著作权材料准备的 Agent Skills。开发指南覆盖 Python、Vue 3 与 Tauri 项目；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
+本仓库提供宝塔面板运维、项目开发流程与中国软件著作权材料准备的 Agent Skills。开发流程包含不绑定语言与框架的通用工作流，以及 Python、Vue 3 与 Tauri 专项指南；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
 
 ## 技能列表
 
 | Skill | 适用场景 | 产出 |
 | --- | --- | --- |
 | [ops-bt-agent](skills/ops-bt-agent/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
+| [basic_dev_flow](skills/basic_dev_flow/SKILL.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、阶段提示词、项目与任务模板 |
 | [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/README.md) | Python + Vue 3 + Tauri 项目规划、开发、联调与交付 | 开发流程、阶段提示词、项目与任务模板 |
 | [ruanzhu-gen](skills/ruanzhu-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [ruanzhu-gen-doc](skills/ruanzhu-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
@@ -60,6 +61,15 @@ PowerShell 可将 `mkdir -p` 替换为 `New-Item -ItemType Directory -Force "_do
 操作手册模板的复制与执行方式见 [模板说明](skills/ruanzhu-gen-doc/templates/README.md)。
 
 ## 使用
+
+任意技术栈项目可使用通用开发工作流：
+
+```text
+使用 $basic_dev_flow，阅读当前项目规范和相关源码，明确成功标准，制定必要计划，并完成已授权的开发、自检与交接。
+需求：〈填写本次需求和预期效果〉
+```
+
+阶段指令见 [通用开发提示词集](skills/basic_dev_flow/references/prompt-kit.md)。流程按任务规模裁剪，沿用目标项目的语言、框架、工具与目录。
 
 Python + Vue 3 + Tauri 项目可直接使用：
 
