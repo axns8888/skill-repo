@@ -2,6 +2,16 @@
 
 仅保留当前项目需要的章节。已有等价规范时增量补充，不维护第二份同义基线。填写可核实事实；未知项给出核实动作。技术栈填写项目实际选择，本模板不预设语言、框架或应用形态。
 
+## 流程目录与入口
+
+新项目先建立完整最低目录骨架，见 [目录与初始化](../references/project-layout.md)。业务源码和工具目录按实际技术栈确定。
+
+- 项目资料：`_doc/README.md`；子目录 `demos/`、`scripts/`、`使用说明文档/`、`第三方插件文档/`。
+- 开发流程：`_plan/README.md` 与 `_plan/flow.md`；子目录 `future/`、`guides/`、`ledger/`、`process/`、`prompts/`。
+- 当前基线与可复制指令：`_plan/prompts/project.md`、`_plan/prompts/stages.md`；通用阶段规则与模板：`_plan/guides/`。
+- 任务计划与证据：`_plan/process/`；台账与验收归档索引：`_plan/ledger/`；延期事项：`_plan/future/`。
+- 已有等价载体及映射：〈已核实的唯一入口；新项目使用上述位置〉。最低骨架保留，具体任务记录按规模创建。
+
 ## 目标与边界
 
 - 产品目标、用户或调用方、核心场景：〈内容〉

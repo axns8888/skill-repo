@@ -2,6 +2,16 @@
 
 本文件是供目标项目填写的模板。将已知变量替换为实际值；不适用项注明理由，待定项写具体核实动作。已有基线时增量补齐，不额外维护第二份同义规则。
 
+## 流程目录与入口
+
+新项目先建立完整最低目录骨架，见 [目录与初始化](../references/project-layout.md)。业务源码和工具目录按实际技术栈确定。
+
+- 项目资料：`_doc/README.md`；子目录 `demos/`、`scripts/`、`使用说明文档/`、`第三方插件文档/`。
+- 开发流程：`_plan/README.md` 与 `_plan/flow.md`；子目录 `future/`、`guides/`、`ledger/`、`process/`、`prompts/`。
+- 当前基线与可复制指令：`_plan/prompts/project.md`、`_plan/prompts/stages.md`；通用阶段规则与模板：`_plan/guides/`。
+- 任务计划与证据：`_plan/process/`；台账与验收归档索引：`_plan/ledger/`；延期事项：`_plan/future/`。
+- 已有等价载体及映射：〈已核实的唯一入口；新项目使用上述位置〉。最低骨架保留，具体任务记录按规模创建。
+
 ## 1. 目标与边界
 
 - 产品定位、目标用户与核心场景：〈内容〉

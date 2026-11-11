@@ -7,8 +7,8 @@
 | Skill | 适用场景 | 产出 |
 | --- | --- | --- |
 | [ops-bt-agent](skills/ops-bt-agent/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
-| [basic_dev_flow](skills/basic_dev_flow/SKILL.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、阶段提示词、项目与任务模板 |
-| [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/README.md) | Python + Vue 3 + Tauri 项目规划、开发、联调与交付 | 开发流程、阶段提示词、项目与任务模板 |
+| [basic_dev_flow](skills/basic_dev_flow/README.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
+| [python-vue3-tauri-guide](skills/python-vue3-tauri-guide/README.md) | Python + Vue 3 + Tauri 项目规划、开发、联调与交付 | 开发流程、目录初始化脚本、阶段提示词、项目与任务模板 |
 | [ruanzhu-gen](skills/ruanzhu-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [ruanzhu-gen-doc](skills/ruanzhu-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
 | [ruanzhu-gen-code](skills/ruanzhu-gen-code/SKILL.md) | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
@@ -69,7 +69,7 @@ PowerShell 可将 `mkdir -p` 替换为 `New-Item -ItemType Directory -Force "_do
 需求：〈填写本次需求和预期效果〉
 ```
 
-阶段指令见 [通用开发提示词集](skills/basic_dev_flow/references/prompt-kit.md)。流程按任务规模裁剪，沿用目标项目的语言、框架、工具与目录。
+阶段指令见 [通用开发提示词集](skills/basic_dev_flow/references/prompt-kit.md)。新项目统一建立 `_doc`、`_plan` 最低流程骨架，可用技能自带初始化脚本快速创建；任务记录按规模裁剪，语言、框架、工具和业务源码目录沿用目标项目。快速上手见 [通用流程使用说明](skills/basic_dev_flow/README.md)。
 
 Python + Vue 3 + Tauri 项目可直接使用：
 
@@ -112,11 +112,11 @@ CLI 的 `generator` 执行源码 Word 导出；登记信息正文、操作手册
 ## 本地验证
 
 ```bash
-node --test tests/ruanzhu.test.cjs tests/ops-bt-agent.test.cjs
+node --test tests/ruanzhu.test.cjs tests/ops-bt-agent.test.cjs tests/workflow-init.test.cjs
 npx skills add . --list
 ```
 
-第一条运行软著行为测试，以及本地模拟面板的签名、诊断、安全边界和失败处理测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
+第一条运行软著行为测试、本地模拟面板测试，以及开发流程目录初始化、重复执行保留已有文件和可移植性测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
 
 ## 许可证
 
