@@ -6,7 +6,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const repo = path.resolve(__dirname, '..');
-const skills = ['basic_dev_flow', 'python-vue3-tauri-guide'];
+const skills = ['axns-devflow'];
 const directories = [
   '_doc', '_doc/demos', '_doc/scripts', '_doc/使用说明文档', '_doc/第三方插件文档',
   '_plan', '_plan/future', '_plan/guides', '_plan/ledger', '_plan/process', '_plan/prompts',
@@ -131,11 +131,3 @@ for (const name of skills) {
     assert.equal(run(skill, '--help').status, 0);
   });
 }
-
-test('shared workflow skeleton and initializer stay identical across independently installable skills', () => {
-  const left = path.join(repo, 'skills', skills[0]);
-  const right = path.join(repo, 'skills', skills[1]);
-  assert.deepEqual(fs.readFileSync(path.join(left, 'scripts/init-workflow.cjs')),
-    fs.readFileSync(path.join(right, 'scripts/init-workflow.cjs')));
-  assert.deepEqual(snapshot(path.join(left, 'assets/workflow')), snapshot(path.join(right, 'assets/workflow')));
-});
