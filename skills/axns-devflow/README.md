@@ -45,3 +45,5 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 默认单任务，P1 写 `_plan/.active_plan`，任务放 `_plan/process/<task-id>/`。要隔离多个任务窗口，同时安装 axns-devflow-ext-worktree，并在目标项目 AGENTS.md 声明 `extensions: [worktree]`、实际 `integration_branch` 及可选超时，再按扩展 README 配置忽略项。扩展登记/检查工具会校验范围和修改权，跨窗口共用主检出目录的状态；不会自动提交或合入。
 
 任务结案后窗口不再复用。技术栈规则仍由项目维护，不因 worktree 扩展而改变。
+
+可选自驱调度见 axns-devflow-ext-autopilot 的 README：项目显式声明 `extensions` 包含 `autopilot` 并指定配置路径后，读取已登记任务给出只读建议；开窗、定时唤醒和执行去重需平台适配器。它可与 worktree 叠加，也支持有效槽位为 1 的单任务模式，不增加技术栈约定或合入授权。

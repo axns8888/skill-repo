@@ -16,7 +16,7 @@ description: >-
 2. 读取适用的 `AGENTS.md`、项目基线（默认 `_plan/prompts/project.md`）、本次任务涉及的项目规范、相关源码和任务记录，核实工具配置及实际命令。技术栈、架构、界面、接口与发布约定由项目基线和专题规范维护，不写成通用流程要求。已有项目沿用其技术选型、模块边界和约定；新项目只补足当前目标所需的决策。
 3. 接续任务先恢复原目标、已有授权、唯一计划、实际变更和有效证据。用户已要求执行的范围持续推进；普通实现选择、阶段切换不重复请求同一授权。独立交接边界按用户要求保留，不自行派生代理。
 4. 新项目启动或生成开发流程时，先读 [最低目录结构与初始化](references/project-layout.md)。流程至少包含 `_doc`、`_plan` 及规定子目录、README 和 `flow.md`；已授权落盘时用 `scripts/init-workflow.cjs` 或等价手工方式完整创建，已有项目先核实并增量补齐。
-5. 窗口式任务使用 [P0 开窗](prompts/window/P0-open.md)，之后共用 P1–P4；P5 仅扩展启用时使用。默认单任务，正式登记时写 `_plan/.active_plan`。只有项目 AGENTS.md 的 `extensions` 包含 `worktree` 才加载 axns-devflow-ext-worktree 并使用其共享登记；安装或提及扩展不代表启用。显式采用 P0 时遵守其开窗确认，普通流程仍沿用已有授权。
+5. 窗口式任务使用 [P0 开窗](prompts/window/P0-open.md)，之后共用 P1–P4；P5 仅扩展启用时使用。默认单任务，正式登记时写 `_plan/.active_plan`。只有项目 AGENTS.md 的 `extensions` 包含 `worktree` 才加载 axns-devflow-ext-worktree 并使用其共享登记；安装或提及扩展不代表启用。显式采用 P0 时遵守其开窗确认，普通流程仍沿用已有授权。 若同一 AGENTS.md 的 `extensions` 还包含 `autopilot`，加载 axns-devflow-ext-autopilot 生成只读调度建议；阶段执行、开窗与模型选择仍受已有授权和平台能力约束，不因启用而自行派生代理。
 6. 按任务规模裁剪：小改动可在一份记录或交付回复中说明目标、变更、验证与待办；跨模块、存在关键不确定性或需要多轮交接时，再建立正式计划、证据及复核记录。已有等价载体直接复用。
 
 ## 按需阅读
