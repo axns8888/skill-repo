@@ -67,6 +67,11 @@ for (const name of skills) {
     for (const file of filesUnder(root)) {
       assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\{\{(?:project_name|skill_name)\}\}/);
     }
+    const windows = ['P0-open.md', 'P1-register.md', 'P2-execute.md', 'P3-review.md', 'P4-accept.md', 'P5-escalate.md'];
+    assert.deepEqual(fs.readdirSync(path.join(root, '_plan/prompts/window')).sort(), windows);
+    for (const runtime of ['.worktrees', '_plan/active', '_plan/archive', '_plan/registry.jsonl', '_plan/.active_plan']) {
+      assert.ok(!fs.existsSync(path.join(root, runtime)), runtime);
+    }
     assertLocalLinks(root);
   });
 

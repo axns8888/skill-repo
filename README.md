@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | [axns-ops-bt](skills/axns-ops-bt/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
 | [axns-devflow](skills/axns-devflow/README.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
+| [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、scope/修改权校验及 P0–P5 窗口协议 |
 | [axns-copyright-gen](skills/axns-copyright-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
 | [axns-copyright-gen-code](skills/axns-copyright-gen-code/SKILL.md) | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
@@ -19,7 +20,7 @@
 npx skills add axns8888/skill-repo
 ```
 
-在安装界面选择技能和目标 Agent。使用整套软著聚合流程时，请同时选择全部 4 个 axns-copyright 技能。单独使用操作手册、源码或登记信息时，只安装对应技能即可。
+在安装界面选择技能和目标 Agent。需要 worktree 隔离时同时选择 axns-devflow 与 axns-devflow-ext-worktree，并按扩展说明在项目中启用；默认单任务。使用整套软著聚合流程时，请同时选择全部 4 个 axns-copyright 技能。单独使用操作手册、源码或登记信息时，只安装对应技能即可。
 
 只安装指定技能：
 
@@ -56,7 +57,7 @@ npx skills add axns8888/skill-repo --list
 
 ## 环境与依赖
 
-宝塔技能的内置只读诊断脚本需要 Node.js 22+，SSH 操作按目标环境准备，详见其使用说明。以下依赖用于软著材料生成与截图；开发指南本身是 Markdown 指令，其项目运行依赖按目标项目确定。
+宝塔技能的内置只读诊断脚本需要 Node.js 22+，SSH 操作按目标环境准备，详见其使用说明。以下依赖用于软著材料生成与截图；开发流程指令为 Markdown，初始化及 worktree 协调脚本仅使用 Node.js 内置模块，worktree 扩展另需 Git；项目运行依赖按目标项目确定。
 
 - 运行脚本需要 Node.js；本仓库验证环境为 Node.js 24.x。
 - 源程序量统计与配置初始化仅使用 Node.js 内置模块。
@@ -123,11 +124,11 @@ CLI 的 `generator` 执行源码 Word 导出；登记信息正文、操作手册
 ## 本地验证
 
 ```bash
-node --test tests/axns-copyright.test.cjs tests/axns-ops-bt.test.cjs tests/workflow-init.test.cjs
+node --test tests/axns-copyright.test.cjs tests/axns-ops-bt.test.cjs tests/workflow-init.test.cjs tests/worktree.test.cjs
 npx skills add . --list
 ```
 
-第一条运行软著行为测试、本地模拟面板测试，以及开发流程目录初始化、重复执行保留已有文件和可移植性测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
+第一条运行软著行为测试、本地模拟面板测试，以及开发流程目录初始化、重复执行保留已有文件和可移植性测试，以及隔离 Git 仓库中的 worktree 登记、范围/持权冲突、依赖、验收清理测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
 
 ## 许可证
 

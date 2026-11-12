@@ -53,6 +53,9 @@ function initialize(opts) {
     [path.join(skill, 'references', 'project-layout.md'), '_plan/guides/project-layout.md'],
     [path.join(skill, 'references', 'quality-gates.md'), '_plan/guides/quality-gates.md'],
   );
+  for (const source of filesUnder(path.join(skill, 'prompts', 'window'))) {
+    sources.push([source, `_plan/prompts/window/${path.basename(source)}`]);
+  }
   const destinations = new Map(sources.map(([source, target]) => [source, path.join(root, target)]));
   const plan = sources.map(([source, relative]) => {
     const target = path.join(root, relative);

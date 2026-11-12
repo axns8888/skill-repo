@@ -37,3 +37,11 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 具体技术栈、架构、UI、API 和发布策略写入目标项目的 `_plan/prompts/project.md` 与 `_plan/guides/`，按任务读取。生成项目流程时从源码、依赖、配置和现行规范填写实际事实；未知项标明待核实。技能更新不会自动改写已生成的项目文档。
 
 本仓库另提供 [Python + Vue 3 + Tauri 可选项目模板](../../templates/python-vue3-tauri/README.md)，供已采用该技术栈的项目选用。模板独立于技能分发；只安装技能的用户可从仓库获取模板，也可直接让 Agent 依据项目事实生成规范。已有基线按段合并，避免创建第二份。
+
+## 一个窗口一个任务与可选 worktree
+
+窗口指令从 [P0 开窗](prompts/window/P0-open.md) 开始；P1 登记 → P2 执行 → P3 复核 → P4 验收与合入。初始化会生成 `_plan/prompts/window/P0–P5`，更新旧项目时仍只补缺失文件，已有指南需要按需增量整合。P0 回报后等待开窗确认，P5 仅扩展启用时使用。
+
+默认单任务，P1 写 `_plan/.active_plan`，任务放 `_plan/process/<task-id>/`。要隔离多个任务窗口，同时安装 axns-devflow-ext-worktree，并在目标项目 AGENTS.md 声明 `extensions: [worktree]`、实际 `integration_branch` 及可选超时，再按扩展 README 配置忽略项。扩展登记/检查工具会校验范围和修改权，跨窗口共用主检出目录的状态；不会自动提交或合入。
+
+任务结案后窗口不再复用。技术栈规则仍由项目维护，不因 worktree 扩展而改变。

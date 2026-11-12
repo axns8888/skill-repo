@@ -56,3 +56,11 @@
 | 项目 | 已有事实或证据 | 缺口 | 下一步与责任范围 |
 | --- | --- | --- | --- |
 | 〈事项〉 | 〈依据〉 | 〈内容〉 | 〈动作〉 |
+
+## 任务窗口与可选扩展
+
+- 默认单任务；正式登记用 `_plan/.active_plan`，任务位于 `_plan/process/<task-id>/`。
+- 可复制的窗口协议从 [P0 开窗](../prompts/window/P0-open.md) 开始，P1–P4 共用，P5 仅 worktree 扩展启用时使用。
+- 是否启用 worktree 只由项目 AGENTS.md 的 `extensions` 决定，本基线不维护第二份开关。未声明时不创建 worktree 或共享登记。
+- 启用时需同时可读取 axns-devflow-ext-worktree，AGENTS.md 明确本地 `integration_branch` 及可选 `lock_timeout_minutes`（默认 120）；按扩展说明配置忽略项并处理旧单指针。
+- 主检出目录及其共享 active/registry 位置、任务范围与共享文件、验收和合入授权：〈从项目事实核实；不开扩展则不适用〉。
