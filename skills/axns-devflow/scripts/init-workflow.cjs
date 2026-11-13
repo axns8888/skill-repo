@@ -47,6 +47,10 @@ function initialize(opts) {
   const sources = filesUnder(templates).map(source => [source, path.relative(templates, source)]);
   sources.push(
     [path.join(skill, 'assets', 'project-baseline.md'), '_plan/prompts/project.md'],
+    [path.join(skill, 'assets', 'architecture-baseline.md'), '_plan/prompts/architecture.md'],
+    [path.join(skill, 'assets', 'coding-baseline.md'), '_plan/prompts/coding.md'],
+    [path.join(skill, 'assets', 'ui-baseline.md'), '_plan/prompts/ui.md'],
+    [path.join(skill, 'references', 'engineering-standards.md'), '_plan/guides/engineering-standards.md'],
     [path.join(skill, 'assets', 'task-records.md'), '_plan/guides/task-records.md'],
     [path.join(skill, 'references', 'prompt-kit.md'), '_plan/prompts/stages.md'],
     [path.join(skill, 'references', 'workflow.md'), '_plan/guides/workflow.md'],

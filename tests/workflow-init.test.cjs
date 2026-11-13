@@ -59,7 +59,9 @@ for (const name of skills) {
     }
     for (const file of ['_plan/flow.md', '_plan/prompts/project.md', '_plan/prompts/stages.md',
       '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
-      '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md']) {
+      '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md',
+      '_plan/prompts/architecture.md', '_plan/prompts/coding.md', '_plan/prompts/ui.md',
+      '_plan/guides/engineering-standards.md']) {
       assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
     }
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/project.md'), 'utf8').includes(projectName));
@@ -99,6 +101,27 @@ for (const name of skills) {
     assert.equal(run(skill, '--project-root', root).status, 0);
     assert.deepEqual(snapshot(root), before);
     assert.deepEqual(fs.readFileSync(path.join(root, 'AGENTS.md')), original);
+  });
+
+  test(`${name}: upgrading an older workflow adds engineering resources without replacing current rules`, t => {
+    const root = path.join(fixture(t), 'older-project');
+    assert.equal(run(skill, '--project-root', root).status, 0);
+    const additions = ['_plan/prompts/architecture.md', '_plan/prompts/coding.md',
+      '_plan/guides/engineering-standards.md'];
+    for (const file of additions) fs.unlinkSync(path.join(root, file));
+    fs.writeFileSync(path.join(root, '_plan/prompts/project.md'), '现行基线见 project_v02.md\r\n');
+    fs.writeFileSync(path.join(root, '_plan/prompts/project_v02.md'), '项目已有命名、注释和模块规范\r\n');
+    fs.writeFileSync(path.join(root, '_plan/prompts/ui.md'), '已有 UI 规范及用户决定\r\n');
+    fs.writeFileSync(path.join(root, 'AGENTS.md'), '本项目读取 project_v02.md\r\n');
+    const before = snapshot(root);
+    const result = run(skill, '--project-root', root);
+    assert.equal(result.status, 0, result.stderr);
+    for (const [file, content] of before) {
+      assert.deepEqual(fs.readFileSync(path.join(root, file)), content, file);
+    }
+    for (const file of additions) assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
+    assert.equal(snapshot(root).size, before.size + additions.length);
+    assertLocalLinks(root);
   });
 
   test(`${name}: dry-run never creates a new root or changes an existing project`, t => {

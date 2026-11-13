@@ -1,6 +1,6 @@
 # {{project_name}} 开发流程入口
 
-先读 [流程总览](flow.md)，再核对 [项目基线](prompts/project.md)。新任务从 [进行中的任务](process/README.md) 建立或接续记录；初始化只生成流程骨架，不代表业务实现或验证完成。
+先读 [流程总览](flow.md)，再核对 [项目基线](prompts/project.md)、[架构](prompts/architecture.md)、[编码](prompts/coding.md) 和适用的 [UI 规范](prompts/ui.md)。新任务从 [进行中的任务](process/README.md) 建立或接续记录；初始化只生成流程骨架，不代表业务实现或验证完成。
 
 | 入口 | 唯一职责 |
 | --- | --- |

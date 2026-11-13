@@ -16,6 +16,10 @@
    ├─ ledger/                   # 任务台账、结案摘要与验收归档索引
    ├─ process/                  # 进行中任务的计划、证据、复核与待验收项
    ├─ prompts/                  # 当前项目开发约定与可复制阶段提示词
+   │  ├─ project.md             # 项目目标、规范索引、模块与命令
+   │  ├─ architecture.md        # 实际源码树、领域与依赖
+   │  ├─ coding.md              # 命名、注释、类型与错误处理
+   │  └─ ui.md                  # UI 基线；无界面注明不适用
    ├─ flow.md                   # 阶段总览、阶段出口和下一步
    └─ README.md                 # 开发流程总入口
 ```
@@ -36,7 +40,7 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 - 目录/文件类型冲突会在写入前报错；目标结构内的符号链接不作为写入位置。
 - 只初始化开发流程，不安装依赖、不生成业务工程、不运行构建、不修改目标项目的 AGENTS.md。
 
-没有 Node.js 或本次要求手工生成时，按技能目录下 assets/workflow/ 的骨架直接创建同等结构，并使用技能自带基线、阶段提示词、工作流、质量门禁及任务记录模板填充对应入口。
+没有 Node.js 或本次要求手工生成时，按技能目录下 assets/workflow/ 的骨架直接创建同等结构，并使用技能自带基线、阶段提示词、工作流、质量门禁、工程规范、架构/编码/UI 基线及任务记录模板填充对应入口。
 
 ## 自动落位与开始开发
 
@@ -44,6 +48,8 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 | --- | --- |
 | _doc/README.md、各子目录 README.md | 资料导航、用途和维护边界 |
 | _plan/README.md、flow.md、各子目录 README.md | 流程导航、阶段顺序、索引及目录分工 |
+| _plan/prompts/architecture.md、coding.md、ui.md | 技能自带架构、命名/注释及 UI 基线；实现前具体化到本项目，无界面注明不适用 |
+| _plan/guides/engineering-standards.md | 工程规范建立、实施和复核规则 |
 | _plan/prompts/project.md | 当前技能的项目基线模板；只替换项目名称，其余待据实填写 |
 | _plan/prompts/window/P0-open.md 至 P5-escalate.md | 共用窗口提示词；P5 仅 worktree 扩展启用时使用 |
 | _plan/prompts/acceptance.json | 独立人工验收开关，默认关闭；不复制到 autopilot 配置 |
@@ -52,7 +58,7 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 | _plan/guides/workflow.md、quality-gates.md、project-layout.md | 当前技能的工作流、证据门禁与目录约定 |
 | _plan/guides/task-records.md | 任务记录模板；按需抽取到 process/ |
 
-初始化后先核实并填写项目基线，再选择阶段提示词开始本次任务。模板中的未知项保留待核实，不编造命令、版本、实现和通过状态。prompts/ 中维护现行约定及可复制指令，process/ 中维护执行事实，ledger/ 中索引已完成结果；延期项转入 future/，面向使用者的资料进入 _doc/。
+初始化后按 [工程规范建立与执行](engineering-standards.md) 核实并填写项目基线、实际源码树、模块边界、命名与注释及适用 UI 规范，再选择阶段提示词开始本次任务。脚本只复制文档，不替执行者完成项目工程决策；已有文件被保留时也须核对其现行入口和本期缺口。模板中的未知项保留待核实，不编造命令、版本、实现和通过状态。prompts/ 中维护现行约定及可复制指令，process/ 中维护执行事实，ledger/ 中索引已完成结果；延期项转入 future/，面向使用者的资料进入 _doc/。
 
 ## 生成流程与接续规则
 
