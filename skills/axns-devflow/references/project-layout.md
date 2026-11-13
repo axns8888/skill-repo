@@ -46,6 +46,8 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 | _plan/README.md、flow.md、各子目录 README.md | 流程导航、阶段顺序、索引及目录分工 |
 | _plan/prompts/project.md | 当前技能的项目基线模板；只替换项目名称，其余待据实填写 |
 | _plan/prompts/window/P0-open.md 至 P5-escalate.md | 共用窗口提示词；P5 仅 worktree 扩展启用时使用 |
+| _plan/prompts/acceptance.json | 独立人工验收开关，默认关闭；不复制到 autopilot 配置 |
+| _plan/guides/acceptance.md | 人工验收策略、独立状态和扩展回执说明 |
 | _plan/prompts/stages.md | 当前技能的完整阶段提示词，保留对应技能调用名 |
 | _plan/guides/workflow.md、quality-gates.md、project-layout.md | 当前技能的工作流、证据门禁与目录约定 |
 | _plan/guides/task-records.md | 任务记录模板；按需抽取到 process/ |
@@ -56,7 +58,7 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 
 1. 为新项目生成流程时，明确包含完整最低结构、目录用途、初始化方式、流程入口和阶段提示词。授权写入流程文档时，实际创建这些目录和入口；仅要求回复方案或指定单个输出文件时，在该交付中包含结构及创建方法，不另写范围外文件。
 2. 已授权初始化时可直接执行脚本，再按已知事实填写基线和首个真实任务；仅盘点不执行写入。未知业务选型不妨碍先建立已授权的文档骨架。
-3. 已有项目先检查当前规范、目录及未提交工作，复用唯一事实源；用户要求补齐结构时增量补缺，等价载体在 README.md 中建立明确映射，不重建第二套计划。脚本跳过文件后仍须检查引用和内容兼容，必要时有界增量整合。
+3. 已有项目先检查当前规范、目录及未提交工作，复用唯一事实源；普通修复不以补齐结构为前置。用户要求补齐结构时增量补缺，等价载体在 README.md 中建立明确映射，不重建第二套计划。脚本跳过文件后仍须检查引用和内容兼容，必要时有界增量整合。
 4. 骨架是最低约定，任务过程文件按规模裁剪。不要把“不造空任务记录”理解为可以省略骨架，也不要为了填满骨架预造空架构、迁移、验收、演进或业务模块文件。
 5. 阶段指南、当前基线、任务记录和归档分别维护；结案回写稳定约定与索引，过程记录按项目政策保留，不默认删除。
 
@@ -65,3 +67,7 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 初始化始终复制 `prompts/window/P0–P5`，默认仍为单任务，不创建任何运行中的任务、指针、注册表或 worktree。正式单任务登记使用 `_plan/.active_plan`，计划与证据放 `_plan/process/<task-id>/`。
 
 启用独立的 axns-devflow-ext-worktree 后，按该扩展在主检出目录增加 `.worktrees/`、`_plan/active/`、`_plan/archive/` 和 `_plan/registry.jsonl`。这些是本地共享运行状态，按扩展要求忽略；不能把每个 worktree 中的目录副本当成共享状态。任务记录仍属于原来的 process 职责，合入后保留。不开扩展不创建这些目录。
+
+人工验收策略独立保存在 `_plan/prompts/acceptance.json`，初始化默认关闭；开启且非阻塞时继续自动交付，只在显式阻塞模式等待当前任务的确认。详见 [人工验收配置](acceptance.md)。
+
+DSH / Orca 原生清单与自动化、PyCharm 及跨平台交接的约定见 [工具协作](tool-integration.md)，初始化会复制到 `_plan/guides/tool-integration.md`。已有项目仍仅补缺失文件，现有项目基线需按实际采用情况增量补充。

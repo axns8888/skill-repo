@@ -1,0 +1,15 @@
+{
+  "name": "axns-skill-repo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Personal skills source, local synchronization and reproducible validation",
+  "engines": { "node": "24.21.0" },
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "skills:lock": "node scripts/skills-local.cjs lock",
+    "skills:sync": "node scripts/skills-local.cjs sync",
+    "skills:check": "node scripts/skills-local.cjs check",
+    "validate": "node scripts/skills-local.cjs verify && npm test",
+    "release:check": "node scripts/skills-local.cjs verify --release && npm test"
+  }
+}

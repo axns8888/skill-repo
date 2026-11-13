@@ -14,4 +14,4 @@
 
 目录是新项目最低结构，可以增加内容。每个任务只维护一个现行计划和当前结论；基线、任务记录与归档通过链接关联，避免复制成多个事实源。已有规范先核实并建立映射，再增量补齐；初始化脚本跳过已有文件，冲突后的内容整合仍需按项目事实完成。
 
-需要一个窗口一个任务时，从 [P0 开窗](../../../prompts/window/P0-open.md) 开始。默认单任务；AGENTS.md 显式启用 worktree 后，按 axns-devflow-ext-worktree 共用主检出目录的登记文件。
+需要正式登记或跨会话接续任务时，从 [P0 开窗](../../../prompts/window/P0-open.md) 开始。默认单任务；AGENTS.md 显式启用 worktree 后，按 axns-devflow-ext-worktree 共用主检出目录的登记文件。

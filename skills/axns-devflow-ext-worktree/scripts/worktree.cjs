@@ -2,7 +2,10 @@
 'use strict';
 // Local, cooperative coordination for windows sharing one Git repository.
 const fs = require('node:fs');
+const humanAcceptance = require('./lib/acceptance.cjs');
 const path = require('node:path');
+const os = require('node:os');
+const { randomUUID } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
 class Rejected extends Error {}
@@ -42,25 +45,24 @@ function validId(id) {
 }
 function options(argv) {
   const opts = { command: argv.shift() };
-  const names = new Set(['--project', '--id', '--manifest', '--reason', '--accepted-head']);
+  const names = new Set(['--project', '--id', '--manifest', '--reason', '--accepted-head', '--human-accepted-by', '--message']);
   while (argv.length) {
     const key = argv.shift();
     if (!names.has(key) || !argv[0] || argv[0].startsWith('--') || opts[key.slice(2)] !== undefined) reject(`无效参数：${key}`);
     opts[key.slice(2)] = argv.shift();
   }
-  if (!['status', 'register', 'claim', 'check', 'escalate', 'finish'].includes(opts.command)) reject('命令：status | register | claim | check | escalate | finish');
+  if (!['status', 'doctor', 'register', 'claim', 'check', 'escalate', 'commit', 'finish'].includes(opts.command)) reject('命令：status | doctor | register | claim | check | escalate | commit | finish');
   if (!opts.project) reject('必须显式指定 --project <项目或任务 worktree>');
-  if (opts.command !== 'status') validId(opts.id);
+  if (!['status', 'doctor'].includes(opts.command)) validId(opts.id);
   if (opts.command === 'register' && !opts.manifest) reject('register 需要 --manifest <JSON>');
   if (opts.command === 'escalate' && !opts.reason?.trim()) reject('escalate 需要 --reason <事实及证据位置>');
   return opts;
 }
 function context(opts) {
   const cwd = fs.realpathSync(opts.project);
-  const listing = git(cwd, ['worktree', 'list', '--porcelain', '-z']);
-  const first = listing.split('\0').find(line => line.startsWith('worktree '));
-  if (!first || listing.split('\0').includes('bare')) reject('需要有主检出目录的非 bare 仓库');
-  const root = fs.realpathSync(first.slice(9));
+  const listing = worktrees(cwd);
+  if (!listing.length || listing[0].bare) reject('需要有主检出目录的非 bare 仓库');
+  const root = fs.realpathSync(listing[0].path);
   const common = fs.realpathSync(git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir']));
   const agentsPath = safe(root, path.join(root, 'AGENTS.md'));
   const agents = fs.existsSync(agentsPath) ? fs.readFileSync(agentsPath, 'utf8') : '';
@@ -70,8 +72,8 @@ function context(opts) {
     : !!block?.[1].match(/^[ \t]+-\s*worktree\s*$/m);
   const branch = agents.match(/^integration_branch:\s*([\w./-]+)\s*$/m)?.[1];
   const timeout = Number(agents.match(/^lock_timeout_minutes:\s*(\d+)\s*$/m)?.[1] || 120);
-  const ctx = { cwd, root, common, enabled, branch, timeout, lock: path.join(common, 'axns-devflow.lock') };
-  if (opts.command !== 'status') {
+  const ctx = { cwd, root, common, enabled, branch, timeout, command: opts.command, task_id: opts.id || null, lock: path.join(common, 'axns-devflow.lock') };
+  if (!['status', 'doctor'].includes(opts.command)) {
     if (!enabled) reject('AGENTS.md 未声明 extensions 包含 worktree，保持单任务模式');
     if (!branch || git(root, ['check-ref-format', '--branch', branch], true).status !== 0 ||
         git(root, ['show-ref', '--verify', `refs/heads/${branch}`], true).status !== 0) reject('AGENTS.md 需要有效的本地 integration_branch');
@@ -82,6 +84,64 @@ function context(opts) {
     }
   }
   return ctx;
+}
+// NUL-delimited fields preserve spaces/newlines in paths and Git lock reasons.
+function worktrees(cwd) {
+  return git(cwd, ['worktree', 'list', '--porcelain', '-z']).split('\0\0').filter(Boolean).map(block => {
+    const fields = block.split('\0').filter(Boolean);
+    const value = key => fields.find(f => f.startsWith(`${key} `))?.slice(key.length + 1);
+    const has = key => fields.some(f => f === key || f.startsWith(`${key} `));
+    return { path: path.resolve(value('worktree')), head: value('HEAD') || null,
+      branch: value('branch') || null, bare: has('bare'), detached: has('detached'),
+      locked: has('locked'), lock_reason: value('locked') || null,
+      prunable: has('prunable'), prunable_reason: value('prunable') || null };
+  });
+}
+function samePath(a, b) { return path.relative(a, b) === ''; }
+function worktreeState(ctx, data, listing) {
+  const entry = listing.find(x => samePath(x.path, data.worktree));
+  const exists = fs.existsSync(data.worktree);
+  const issues = [];
+  if (!entry) issues.push('registration_missing');
+  if (!exists) issues.push('directory_missing');
+  if (entry?.prunable) issues.push('prunable');
+  if (entry?.detached) issues.push('detached_head');
+  if (entry && entry.branch !== `refs/heads/${data.branch}`) issues.push('branch_mismatch');
+  return { exists, git: entry || null, issues };
+}
+function requireWorktree(ctx, data, removing = false) {
+  const state = worktreeState(ctx, data, worktrees(ctx.root));
+  if (state.issues.length) reject(`隔离检查失败：${state.issues.join(', ')}；先运行 doctor 核对登记与工作区`);
+  if (removing && state.git.locked) reject(`Git worktree 已锁定：${state.git.lock_reason || '无原因'}；保留现场，由协调者核实后处理`);
+}
+function doctor(ctx) {
+  const listing = worktrees(ctx.root);
+  const lock = { path: ctx.lock, present: fs.existsSync(ctx.lock), owner: null };
+  if (lock.present) {
+    try { lock.owner = read(path.join(ctx.lock, 'owner.json')); }
+    catch (e) { lock.owner_error = e.message; }
+  }
+  const dir = safe(ctx.root, path.join(ctx.root, '_plan/active'));
+  const tasks = (fs.existsSync(dir) ? fs.readdirSync(dir) : []).filter(x => x.endsWith('.pointer')).sort().map(name => {
+    const id = name.slice(0, -8);
+    try {
+      const data = task(ctx, id);
+      const state = worktreeState(ctx, data, listing);
+      const result = { task_id: id, status: data.status, holds_claims: data.holds_claims, worktree: data.worktree, ...state };
+      try {
+        if (JSON.stringify(read(metadata(ctx, data))) !== JSON.stringify(data)) result.issues.push('metadata_mismatch');
+      } catch (e) { result.issues.push('metadata_unreadable'); result.metadata_error = e.message; }
+      return result;
+    } catch (e) { return { task_id: id, issues: ['pointer_invalid'], error: e.message }; }
+  });
+  const managed = path.join(ctx.root, '.worktrees');
+  const unregistered = listing.filter(x => {
+    const rel = path.relative(managed, x.path);
+    return rel && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel) &&
+      !tasks.some(t => t.worktree && samePath(t.worktree, x.path));
+  });
+  return { enabled: ctx.enabled, primary_root: ctx.root, consistent_snapshot: false,
+    coordination_lock: lock, tasks, worktrees: listing, unregistered_worktrees: unregistered };
 }
 function pointer(ctx, id, archived = false) {
   return safe(ctx.root, path.join(ctx.root, '_plan', archived ? 'archive' : 'active', `${validId(id)}.pointer`));
@@ -169,14 +229,22 @@ function save(ctx, data, type, extra) {
 }
 function locked(ctx, action) {
   try { fs.mkdirSync(ctx.lock); }
-  catch (e) { if (e.code === 'EEXIST') reject(`协调锁被占用：${ctx.lock}；稍后重试；若遗留锁先核实进程与事件`); throw e; }
-  try {
-    const result = action();
+  catch (e) { if (e.code === 'EEXIST') reject(`协调锁被占用：${ctx.lock}；运行 doctor 查看锁信息，先核实进程与事件`); throw e; }
+  const owner = { token: randomUUID(), pid: process.pid, hostname: os.hostname(),
+    command: ctx.command, task_id: ctx.task_id, started_at: new Date().toISOString() };
+  function release() {
+    if (read(path.join(ctx.lock, 'owner.json')).token !== owner.token) throw new Error('协调锁所有者变化，保留现场');
+    fs.unlinkSync(path.join(ctx.lock, 'owner.json'));
     fs.rmdirSync(ctx.lock);
+  }
+  try {
+    fs.writeFileSync(path.join(ctx.lock, 'owner.json'), `${JSON.stringify(owner)}\n`, { flag: 'wx' });
+    const result = action();
+    release();
     return result;
   } catch (e) {
-    if (e instanceof Rejected) fs.rmdirSync(ctx.lock);
-    else e.message += `；保留协调锁 ${ctx.lock}，检查部分完成的动作后人工恢复`;
+    if (e instanceof Rejected) release();
+    else e.message += `；保留协调锁 ${ctx.lock}，检查部分完成的动作后按协议恢复`;
     throw e;
   }
 }
@@ -186,6 +254,7 @@ function register(ctx, opts) {
   if (fs.existsSync(pointer(ctx, id)) || fs.existsSync(pointer(ctx, id, true))) reject('task-id 已使用，请为新窗口分配新编号');
   const worktree = safe(ctx.root, path.join(ctx.root, '.worktrees', id));
   if (fs.existsSync(worktree) || git(ctx.root, ['show-ref', '--verify', `refs/heads/task/${id}`], true).status === 0) reject('任务目录或分支已存在，禁止接管');
+  if (worktrees(ctx.root).some(x => samePath(x.path, worktree))) reject('Git 仍登记同名 worktree，先运行 doctor；禁止自动 prune 或接管');
   for (const rel of ['.worktrees/', '_plan/active/', '_plan/archive/', '_plan/registry.jsonl']) {
     if (git(ctx.root, ['check-ignore', '-q', '--', `${rel}${rel.endsWith('/') ? 'probe' : ''}`], true).status !== 0) reject(`先在项目 .gitignore 中声明：${rel}`);
     if (git(ctx.root, ['ls-files', '--', rel])) reject(`共享运行文件不得被 Git 跟踪：${rel}`);
@@ -215,8 +284,9 @@ function register(ctx, opts) {
 }
 function claim(ctx, opts) {
   const data = task(ctx, opts.id);
+  requireWorktree(ctx, data);
   if (data.integration_branch !== ctx.branch) reject('集成分支配置变化，需协调迁移');
-  if (data.status === 'escalated' && !opts.reason?.trim()) reject('升级后恢复需要 --reason 记录用户裁决依据');
+  if (data.status === 'escalated' && !opts.reason?.trim()) reject('升级后恢复需要 --reason 记录根因处理或用户裁决依据');
   const proposal = { ...data, ...(opts.manifest ? manifest(path.resolve(opts.manifest), opts.id) : {}) };
   if (opts.manifest && !opts.reason?.trim()) reject('范围变更需要 --reason 记录已有授权与决定');
   const shared = conflicts(ctx, proposal);
@@ -232,8 +302,10 @@ function check(ctx, opts) {
   const data = task(ctx, opts.id);
   if (data.status !== 'claimed' || !data.holds_claims) reject(`任务 ${data.status}，不得执行或提交`);
   if (data.integration_branch !== ctx.branch) reject('集成分支配置变化');
+  requireWorktree(ctx, data);
   const actual = fs.realpathSync(git(ctx.cwd, ['rev-parse', '--show-toplevel']));
   if (actual !== fs.realpathSync(data.worktree) || git(ctx.cwd, ['symbolic-ref', '--short', 'HEAD']) !== data.branch) reject('隔离检查失败：必须在本任务 worktree 与分支执行');
+  ctx = { ...ctx, cwd: data.worktree };
   if (JSON.stringify(read(metadata(ctx, data))) !== JSON.stringify(data)) reject('parallel.json 与共享指针不同，禁止自行改元数据');
   if (conflicts(ctx, data).length) reject('共享修改权冲突');
   for (const dep of data.depends_on) if (!records(ctx, true).some(x => x.task_id === dep && x.status === 'completed')) reject(`依赖未完成：${dep}`);
@@ -266,46 +338,127 @@ function escalate(ctx, opts) {
   save(ctx, data, 'task.escalated', { reason: opts.reason });
   return data;
 }
-function finish(ctx, opts) {
+// Normal Git failures are recoverable; do not strand the cooperative lock.
+function attempt(cwd, args) {
+  const r = git(cwd, args, true);
+  if (r.status !== 0) reject(`git ${args[0]}: ${r.stderr.trim() || r.stdout.trim()}; 修复后重试`);
+  return r.stdout.trimEnd();
+}
+function commit(ctx, opts) {
+  check(ctx, opts);
   const data = task(ctx, opts.id);
-  if (ctx.cwd !== ctx.root) reject('finish 必须从主检出目录调用，避免清理当前工作目录');
+  const message = opts.message?.trim() || '完成任务变更与验证记录';
+  if (/[\r\n]/.test(message)) reject('--message 必须是单行摘要');
+  attempt(data.worktree, ['add', '--all', '--', '.']);
+  check(ctx, opts);
+  const pendingMerge = git(data.worktree, ['rev-parse', '--verify', 'MERGE_HEAD'], true).status === 0;
+  if (pendingMerge || git(data.worktree, ['diff', '--cached', '--name-only', '-z']))
+    attempt(data.worktree, ['commit', '-m', `${data.task_id}: ${message}`]);
+  const result = check(ctx, opts);
+  event(ctx, 'task.committed', data, { head: result.head });
+  return result;
+}
+function cleanTask(ctx, data) {
+  requireWorktree(ctx, data, true);
   const processDir = fs.realpathSync(process.cwd());
   const removing = fs.realpathSync(data.worktree);
   if (processDir === removing || processDir.startsWith(`${removing}${path.sep}`)) reject('运行进程位于待删除 worktree，先切换到主检出目录');
+  if (git(data.worktree, ['status', '--porcelain', '--untracked-files=all', '--ignored', '--ignore-submodules=none'])) reject('worktree 含未提交、未跟踪或忽略文件；保留现场，先处理后重试');
+  const admin = git(data.worktree, ['rev-parse', '--absolute-git-dir']);
+  const initializedSubmodule = git(data.worktree, ['ls-files', '--stage', '-z']).split('\0').some(entry =>
+    entry.startsWith('160000 ') && fs.existsSync(path.join(data.worktree, entry.slice(entry.indexOf('\t') + 1), '.git')));
+  if (initializedSubmodule || fs.existsSync(path.join(admin, 'modules'))) reject('worktree 含已初始化的 submodule 仓库；保留现场，先按项目约定处理子模块及其提交');
+}
+function finish(ctx, opts) {
+  if (ctx.cwd !== ctx.root) reject('finish 必须从主检出目录调用，避免清理当前工作目录');
+  const archived = pointer(ctx, opts.id, true);
+  const active = pointer(ctx, opts.id);
+  const prior = fs.existsSync(archived) ? read(archived) : null;
+  if (!fs.existsSync(active)) {
+    if (prior?.status === 'completed' && prior.accepted_head === opts['accepted-head']) return { ...prior, duplicate: true };
+    reject('没有活动任务或匹配的完成归档');
+  }
+  const data = task(ctx, opts.id);
   if (data.status !== 'claimed' || !data.holds_claims) reject('仅持权且未暂停的任务可结案');
-  if (data.integration_branch !== ctx.branch) reject('集成分支配置变化');
-  const head = git(data.worktree, ['rev-parse', 'HEAD']);
-  if (!/^[a-f0-9]{40,64}$/.test(opts['accepted-head'] || '') || opts['accepted-head'] !== head) reject('--accepted-head 必须是经真实验收的完整任务 HEAD');
-  const branchHead = git(ctx.root, ['rev-parse', `refs/heads/${data.branch}`]);
-  if (branchHead !== head || git(data.worktree, ['symbolic-ref', '--short', 'HEAD']) !== data.branch) reject('任务分支或 HEAD 不一致');
-  if (git(data.worktree, ['status', '--porcelain', '--untracked-files=all', '--ignored'])) reject('worktree 含未提交、未跟踪或忽略文件；保留现场，先处理后重试');
-  if (JSON.stringify(read(metadata(ctx, data))) !== JSON.stringify(data)) reject('元数据与共享指针不一致');
+  if (data.integration_branch !== ctx.branch || data.branch === ctx.branch) reject('集成分支配置变化或与任务分支相同');
+  const head = opts['accepted-head'];
+  if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head || '')) reject('--accepted-head 必须是经技术验收的完整任务 HEAD');
+  const resuming = prior && ['finishing', 'completed'].includes(prior.status) && prior.accepted_head === head &&
+    prior.worktree === data.worktree && prior.branch === data.branch && prior.created_at === data.created_at;
+  if (prior && !resuming) reject('归档指针已存在且身份不匹配，先检查恢复状态');
+  const ref = `refs/heads/${data.branch}`;
+  if (git(ctx.root, ['symbolic-ref', '-q', ref], true).status === 0) reject('任务分支不能是符号引用');
+  const branchResult = git(ctx.root, ['rev-parse', '--verify', ref], true);
+  const branchHead = branchResult.status === 0 ? branchResult.stdout.trim() : null;
+  if (branchHead !== head && !(resuming && branchHead === null)) reject('--accepted-head 必须是经技术验收的完整任务 HEAD，分支不得前移');
+  const listing = worktrees(ctx.root);
+  if (listing.some(w => w.branch === ref && !samePath(w.path, data.worktree))) reject('任务分支被其他 worktree 使用');
+  if (fs.existsSync(data.worktree) || listing.some(w => samePath(w.path, data.worktree))) {
+    cleanTask(ctx, data);
+    if (git(data.worktree, ['rev-parse', 'HEAD']) !== head) reject('--accepted-head 与任务 HEAD 不符');
+    check({ ...ctx, cwd: data.worktree }, opts);
+  } else if (!resuming) reject('隔离检查失败：任务 worktree 丢失');
   for (const dep of data.depends_on) if (!records(ctx, true).some(x => x.task_id === dep && x.status === 'completed')) reject(`依赖未结案：${dep}`);
-  if (git(ctx.root, ['merge-base', '--is-ancestor', head, `refs/heads/${data.integration_branch}`], true).status !== 0) reject('任务 HEAD 尚未合入集成分支');
+  const policyFile = safe(ctx.root, path.join(ctx.root, humanAcceptance.CONFIG));
+  const policyText = fs.existsSync(policyFile) ? fs.readFileSync(policyFile, 'utf8') : null;
+  let policy;
+  try { policy = humanAcceptance.parse(policyText); } catch (e) { reject(`人工验收配置无效：${e.message}`); }
+  const receipt = opts['human-accepted-by']?.trim() ? { result: 'passed', accepted_by: opts['human-accepted-by'], accepted_head: head } : (resuming ? prior.human_acceptance : null);
+  const humanStatus = humanAcceptance.status(policy, receipt, head);
+  if (policy.blocking && humanStatus !== 'passed') reject('等待人工验收：需要 --human-accepted-by <可追溯确认记录>，对应 --accepted-head');
   const acceptance = `_plan/process/${data.task_id}/acceptance.md`;
   if (!git(ctx.root, ['show', `${head}:${acceptance}`], true).stdout?.trim()) reject('已验收提交中缺少非空 acceptance.md');
-  if (fs.existsSync(pointer(ctx, data.task_id, true))) reject('归档指针已存在，先检查恢复状态');
-  git(ctx.root, ['worktree', 'remove', '--', data.worktree]);
-  data.status = 'completed'; data.holds_claims = false;
-  data.accepted_head = head; data.completed_at = new Date().toISOString();
-  data.acceptance = acceptance;
-  write(pointer(ctx, data.task_id, true), data);
-  event(ctx, 'task.completed', data, { accepted_head: head, released: data.shared_claims });
-  fs.unlinkSync(pointer(ctx, data.task_id));
-  return data;
-}
-try {
-  if (process.argv.includes('--help')) {
-    console.log('node worktree.cjs <status|register|claim|check|escalate|finish> --project <目录> [--id YYYYMMDD-task] [--manifest JSON] [--reason 事实/裁决依据] [--accepted-head HASH]');
-  } else {
-    const opts = options(process.argv.slice(2)); const ctx = context(opts);
-    let result;
-    if (opts.command === 'status') {
-      result = locked(ctx, () => ({ enabled: ctx.enabled, primary_root: ctx.root, integration_branch: ctx.branch,
-        lock_timeout_minutes: ctx.timeout, tasks: records(ctx).map(x => ({ ...x,
-          wait_exceeded: !!x.waiting_since && Date.now() - Date.parse(x.waiting_since) > ctx.timeout * 60000 })), archived: records(ctx, true) }));
-    } else result = locked(ctx, () => ({ register, claim, check, escalate, finish })[opts.command](ctx, opts));
-    console.log(JSON.stringify(result, null, 2));
-    if (result.status === 'blocked') process.exitCode = 2;
+  if ((fs.existsSync(policyFile) ? fs.readFileSync(policyFile, 'utf8') : null) !== policyText) reject('人工验收配置改变，请重新判定');
+  const integrated = () => git(ctx.root, ['merge-base', '--is-ancestor', head, `refs/heads/${ctx.branch}`], true).status === 0;
+  if (!integrated()) {
+    if (resuming) reject('已记录的集成结果发生变化，保留归档与现场');
+    if (git(ctx.root, ['symbolic-ref', '--short', 'HEAD'], true).stdout.trim() !== ctx.branch) reject('主检出目录未位于集成分支，先核实工作区');
+    if (git(ctx.root, ['status', '--porcelain', '--untracked-files=all', '--ignore-submodules=none'])) reject('集成工作区不干净，保留现有工作后重试');
+    if (git(ctx.root, ['merge-base', '--is-ancestor', `refs/heads/${ctx.branch}`, head], true).status !== 0) reject('集成分支已前移，回任务分支组合、解决冲突并重新验证');
+    attempt(ctx.root, ['merge', '--ff-only', head]);
+    if (!integrated()) reject('快进合入未完成，保留现场');
   }
-} catch (e) { console.error(e.message); process.exitCode = 1; }
+  // Durable intent precedes deletion. Keep active claims until every cleanup step succeeds.
+  const done = { ...data, status: 'finishing', accepted_head: head, acceptance,
+    human_acceptance: { ...policy, status: humanStatus, ...(humanStatus === 'passed' ? receipt : {}) },
+    cleanup: { worktree_removed: false, branch_deleted: false }, integrated_at: prior?.integrated_at || new Date().toISOString() };
+  write(archived, done);
+  if (fs.existsSync(data.worktree)) {
+    cleanTask(ctx, data);
+    attempt(ctx.root, ['worktree', 'remove', '--', data.worktree]);
+  }
+  done.cleanup.worktree_removed = true; write(archived, done);
+  if (!integrated()) reject('集成分支改变，保留任务分支与归档');
+  if (worktrees(ctx.root).some(w => w.branch === ref)) reject('任务分支被其他 worktree 使用，保留分支');
+  if (git(ctx.root, ['show-ref', '--verify', ref], true).status === 0)
+    attempt(ctx.root, ['update-ref', '--no-deref', '-d', ref, head]);
+  done.cleanup.branch_deleted = true;
+  done.status = 'completed'; done.holds_claims = false; done.completed_at = prior?.completed_at || new Date().toISOString();
+  write(archived, done);
+  const registry = safe(ctx.root, path.join(ctx.root, '_plan/registry.jsonl'));
+  const completedEvent = fs.existsSync(registry) && fs.readFileSync(registry, 'utf8').split('\n').filter(Boolean).some(line => {
+    try { const e = JSON.parse(line); return e.event === 'task.completed' && e.task_id === data.task_id && e.accepted_head === head; } catch { return false; }
+  });
+  if (!completedEvent) event(ctx, 'task.completed', done, { accepted_head: head, human_acceptance: done.human_acceptance, released: data.shared_claims });
+  fs.unlinkSync(active);
+  return done;
+}
+module.exports = { context, finish };
+if (require.main === module) {
+  try {
+    if (process.argv.includes('--help')) {
+      console.log('node worktree.cjs <status|doctor|register|claim|check|escalate|commit|finish> --project <目录> [--id YYYYMMDD-task] [--manifest JSON] [--message 提交摘要] [--reason 事实/裁决依据] [--accepted-head HASH] [--human-accepted-by 确认记录]');
+    } else {
+      const opts = options(process.argv.slice(2)); const ctx = context(opts);
+      let result;
+      if (opts.command === 'doctor') result = doctor(ctx);
+      else if (opts.command === 'status') {
+        result = locked(ctx, () => ({ enabled: ctx.enabled, primary_root: ctx.root, integration_branch: ctx.branch,
+          lock_timeout_minutes: ctx.timeout, tasks: records(ctx).map(x => ({ ...x,
+            wait_exceeded: !!x.waiting_since && Date.now() - Date.parse(x.waiting_since) > ctx.timeout * 60000 })), archived: records(ctx, true) }));
+      } else result = locked(ctx, () => ({ register, claim, check, escalate, commit, finish })[opts.command](ctx, opts));
+      console.log(JSON.stringify(result, null, 2));
+      if (result.status === 'blocked') process.exitCode = 2;
+    }
+  } catch (e) { console.error(e.message); process.exitCode = 1; }
+}

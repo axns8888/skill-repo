@@ -44,6 +44,8 @@ function output(result, code = 0) { assert.equal(result.status, code, result.std
 function decision(f, code = 0) { return output(run(f.root), code).decisions[0]; }
 function bad(f, pattern) { const r = run(f.root); assert.equal(r.status, 1, r.stdout); assert.match(r.stderr, pattern); assert.equal(r.stdout, ''); }
 function stage(f, taskId = a, extra = {}) {
+  if (extra.state === 'completed' && !Object.hasOwn(extra, 'completed_worktree'))
+    extra = { completed_worktree: output(run(f.root, 'status')).tasks.find(t => t.task_id === taskId).worktree_snapshot, ...extra };
   put(f.root, `_plan/autopilot/${taskId}/stage.json`, { task_id: taskId, stage: 'P1', state: 'ready',
     owner: `window/${taskId}`, updated_at: new Date(Date.now() - 60000).toISOString(), ...extra });
 }
@@ -67,11 +69,11 @@ function completed(f, task, extra = {}) {
     completed_worktree: output(run(f.root, 'status')).tasks.find(t => t.task_id === task.task_id).worktree_snapshot, ...extra });
 }
 function accepted(f, task) {
-  put(task.worktree, `_plan/process/${task.task_id}/acceptance.md`, 'Human acceptance record and test evidence\n');
+  put(task.worktree, `_plan/process/${task.task_id}/acceptance.md`, 'Technical checks passed; human acceptance tracked independently\n');
   const head = commit(task.worktree, task.task_id);
   stage(f, task.task_id, { stage: 'P4', state: 'completed', evidence: 'acceptance.md', completed_head: head,
     completed_worktree: output(run(f.root, 'status')).tasks.find(t => t.task_id === task.task_id).worktree_snapshot,
-    acceptance: { result: 'passed', accepted_head: head, accepted_by: 'human/test-record' } });
+    acceptance: { result: 'passed', accepted_head: head } });
   config(f, { version: 1, capabilities: { finish_task: { enabled: true } } });
   return head;
 }
@@ -118,6 +120,7 @@ test('P0 confirmation, stage ceiling and capability switches are independent', t
   const f = fixture(t); stage(f, a, { stage: 'P0', state: 'completed' });
   assert.equal(decision(f, 2).reason, 'p0_confirmation_pending');
   stage(f, a, { stage: 'P0', state: 'completed', user_confirmed: true }); assert.equal(decision(f).next_stage, 'P1');
+  config(f, { version: 1, capabilities: { advance: { max_stage: 'P3' } } });
   stage(f, a, { stage: 'P4' }); assert.equal(decision(f).reason, 'stage_cap');
   stage(f);
   for (const cap of ['advance', 'open_window']) {
@@ -162,7 +165,7 @@ test('pending dependencies block; completed archive releases the dependent task'
   values = output(run(f.root)).decisions; assert.equal(values[0].task_id, b); assert.equal(values[0].action, 'advance');
 });
 
-test('slot budget counts live windows; human items suppress all automatic actions', t => {
+test('slot budget counts stalled windows while independent tasks continue', t => {
   const f = fixture(t, true); register(f); register(f, b); stage(f); stage(f, b);
   config(f, { version: 1, slots: 1 });
   let values = output(run(f.root)).decisions;
@@ -170,8 +173,9 @@ test('slot budget counts live windows; human items suppress all automatic action
   window(f); values = output(run(f.root)).decisions;
   assert.equal(values[0].reason, 'window_active'); assert.equal(values[1].reason, 'slots_full');
   config(f, { version: 1, slots: 2 }); window(f, a, 40);
-  const result = output(run(f.root), 2); assert.equal(result.action_count, 0);
-  assert.equal(result.decisions.find(v => v.task_id === b).reason, 'batch_needs_human');
+  const result = output(run(f.root)); assert.equal(result.action_count, 1);
+  assert.equal(result.needs_human_count + result.recovery_count, 1); assert.equal(result.blocking_human_count, 0);
+  assert.equal(result.decisions.find(v => v.task_id === b).action, 'advance');
 });
 
 test('changed task HEAD invalidates previously completed evidence', t => {
@@ -179,15 +183,15 @@ test('changed task HEAD invalidates previously completed evidence', t => {
   commit(task.worktree, a); assert.equal(decision(f, 2).reason, 'stage_head_changed');
 });
 
-test('finish requires current human attestation, committed evidence, clean tree and integration', t => {
+test('finish requires current technical attestation, committed evidence, clean tree and integration', t => {
   const f = fixture(t, true); const task = register(f); const head = accepted(f, task);
-  assert.equal(decision(f).reason, 'integration_pending');
+  assert.equal(decision(f).action, 'finish');
   git(f.root, 'merge', '--ff-only', task.branch);
   const final = decision(f); assert.equal(final.action, 'finish'); assert.equal(final.accepted_head, head);
   const stageFile = path.join(f.root, `_plan/autopilot/${a}/stage.json`);
   const current = JSON.parse(fs.readFileSync(stageFile));
   stage(f, a, { ...current, acceptance: { ...current.acceptance, accepted_head: 'f'.repeat(40) } });
-  assert.equal(decision(f, 2).reason, 'awaiting_human_acceptance');
+  assert.equal(decision(f, 2).reason, 'technical_acceptance_invalid');
   put(f.root, `_plan/autopilot/${a}/stage.json`, current);
   put(task.worktree, 'temporary.txt', 'leftover'); assert.equal(decision(f, 2).reason, 'stage_worktree_changed');
   fs.unlinkSync(path.join(task.worktree, 'temporary.txt'));
@@ -199,8 +203,8 @@ test('finish requires current human attestation, committed evidence, clean tree 
 
 test('single-task finish is explicitly unsupported and coordination locks block advice', t => {
   const f = fixture(t); put(f.root, `_plan/process/${a}/evidence.md`, 'Recorded\n');
-  stage(f, a, { stage: 'P4', state: 'completed', evidence: 'evidence.md' });
   config(f, { version: 1, capabilities: { finish_task: { enabled: true } } });
+  stage(f, a, { stage: 'P4', state: 'completed', evidence: 'evidence.md' });
   assert.equal(decision(f).reason, 'finish_requires_worktree');
   const g = fixture(t, true); register(g); stage(g);
   fs.mkdirSync(path.join(g.root, '.git/axns-devflow.lock')); bad(g, /协调锁/);
@@ -225,9 +229,9 @@ test('blocked tasks wait, timeout is calculated, and missing claims cannot dispa
     put(blocked.worktree, `_plan/process/${b}/parallel.json`, value);
   };
   mutate({ ...blocked, waiting_since: new Date(Date.now() - 121 * 60000).toISOString() });
-  assert.equal(output(run(f.root), 2).decisions.find(v => v.task_id === b).reason, 'wait_timeout');
+  assert.equal(output(run(f.root)).decisions.find(v => v.task_id === b).reason, 'wait_timeout');
   mutate({ ...blocked, status: 'claimed', waiting_since: null, holds_claims: false });
-  assert.equal(output(run(f.root), 2).decisions.find(v => v.task_id === b).reason, 'claims_missing');
+  assert.equal(output(run(f.root)).decisions.find(v => v.task_id === b).reason, 'claims_missing');
 });
 
 
@@ -246,4 +250,73 @@ test('runtime symlinks cannot redirect state outside the project', t => {
   const f = fixture(t); const external = path.join(f.temp, 'external-runtime'); fs.mkdirSync(external);
   fs.symlinkSync(external, path.join(f.root, '_plan/autopilot'), 'junction');
   bad(f, /链接/);
+});
+
+function humanPolicy(f, enabled, blocking) {
+  put(f.root, '_plan/prompts/acceptance.json', { version: 1, human_acceptance: { enabled, blocking } });
+}
+
+test('human policy defaults off, validates strictly and changes dispatch identity independently', t => {
+  const f = fixture(t); stage(f);
+  const first = decision(f); assert.equal(first.human_acceptance, 'disabled');
+  assert.deepEqual(output(run(f.root, 'status')).human_acceptance, { enabled: false, blocking: false });
+  humanPolicy(f, true, false);
+  const next = decision(f); assert.equal(next.action, 'advance'); assert.equal(next.human_acceptance, 'pending');
+  assert.notEqual(next.dispatch_id, first.dispatch_id);
+  for (const value of [
+    '{broken', { version: 2, human_acceptance: { enabled: false, blocking: false } },
+    { version: 1, human_acceptance: { enabled: 'false', blocking: false } },
+    { version: 1, human_acceptance: { enabled: false, blocking: true } },
+    { version: 1, human_acceptance: { enabled: true } },
+    { version: 1, human_acceptance: { enabled: true, blocking: false, typo: true } },
+    { version: 1, human_acceptance: { enabled: true, blocking: false }, typo: true }
+  ]) { put(f.root, '_plan/prompts/acceptance.json', value); bad(f, /JSON|acceptance|human_acceptance/); }
+});
+
+test('nonblocking human acceptance permits finish and archives pending without fabricated approval', t => {
+  const f = fixture(t, true); const task = register(f); const head = accepted(f, task);
+  git(f.root, 'merge', '--ff-only', task.branch); humanPolicy(f, true, false);
+  const value = decision(f); assert.equal(value.action, 'finish'); assert.equal(value.human_acceptance, 'pending');
+  assert.equal(value.human_accepted_by, undefined);
+  const done = output(wtRun(f, 'finish', a, '--accepted-head', head));
+  assert.deepEqual(done.human_acceptance, { enabled: true, blocking: false, status: 'pending' });
+  assert.equal(fs.existsSync(task.worktree), false);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(f.root, `_plan/archive/${a}.pointer`))).human_acceptance, done.human_acceptance);
+});
+
+test('blocking human gate uses primary policy, current separate receipt and holds only its task', t => {
+  const f = fixture(t, true); const task = register(f);
+  put(task.worktree, '_plan/prompts/acceptance.json', { version: 1, human_acceptance: { enabled: false, blocking: false } });
+  const head = accepted(f, task); git(f.root, 'merge', '--ff-only', task.branch);
+  register(f, b); stage(f, b); humanPolicy(f, true, true);
+  const file = `_plan/autopilot/${a}/stage.json`; const saved = JSON.parse(fs.readFileSync(path.join(f.root, file)));
+  // A legacy mixed receipt cannot silently satisfy the new independent human gate.
+  put(f.root, file, { ...saved, acceptance: { ...saved.acceptance, accepted_by: 'legacy/human' } });
+  let result = output(run(task.worktree));
+  let value = result.decisions.find(d => d.task_id === a);
+  assert.equal(value.reason, 'awaiting_human_acceptance'); assert.equal(value.blocks_batch, false);
+  assert.equal(result.needs_human_count, 1); assert.equal(result.blocking_human_count, 0);
+  assert.equal(result.decisions.find(d => d.task_id === b).action, 'advance');
+  put(f.root, file, { ...saved, human_acceptance: { result: 'passed', accepted_by: 'human/current', accepted_head: 'f'.repeat(40) } });
+  assert.equal(output(run(f.root)).decisions[0].reason, 'awaiting_human_acceptance');
+  put(f.root, file, { ...saved, human_acceptance: { result: 'passed', accepted_by: 'human/current', accepted_head: head } });
+  value = output(run(f.root)).decisions[0];
+  assert.equal(value.action, 'finish'); assert.equal(value.human_acceptance, 'passed');
+  assert.equal(value.human_accepted_by, 'human/current');
+  const done = output(wtRun(f, 'finish', a, '--accepted-head', head, '--human-accepted-by', value.human_accepted_by));
+  assert.equal(done.human_acceptance.status, 'passed'); assert.equal(done.human_acceptance.accepted_head, head);
+});
+
+test('failed tasks hold only themselves; dependencies and shared-state corruption still prevent unsafe work', t => {
+  const f = fixture(t, true); register(f); register(f, b); stage(f, a, { state: 'failed', attempts: 1 }); stage(f, b);
+  let result = output(run(f.root));
+  assert.equal(result.decisions.find(v => v.task_id === a).reason, 'stage_failed');
+  assert.equal(result.decisions.find(v => v.task_id === b).action, 'advance');
+  assert.equal(result.needs_human_count, 0); assert.equal(result.recovery_count, 1); assert.equal(result.blocking_human_count, 0);
+  const pointer = JSON.parse(fs.readFileSync(path.join(f.root, `_plan/active/${b}.pointer`)));
+  pointer.depends_on = [a]; put(f.root, `_plan/active/${b}.pointer`, pointer);
+  put(pointer.worktree, `_plan/process/${b}/parallel.json`, pointer);
+  result = output(run(f.root), 2); assert.equal(result.action_count, 0);
+  assert.equal(result.decisions.find(v => v.task_id === b).reason, 'dependency_pending');
+  put(f.root, `_plan/active/${a}.pointer`, '{broken'); bad(f, /JSON/);
 });

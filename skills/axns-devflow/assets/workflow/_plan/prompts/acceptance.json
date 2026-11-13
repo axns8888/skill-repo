@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "human_acceptance": {
+    "enabled": false,
+    "blocking": false
+  }
+}

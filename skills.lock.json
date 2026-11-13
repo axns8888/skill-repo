@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "node": "v24.21.0",
+  "skills": {
+    "axns-copyright-gen": {
+      "sha256": "0c2d10f7ac1da23c7b720006dfdbd906f8fbed868b247033ac54566c9288700b",
+      "files": {
+        "README.md": "b99c88fdec09941f43de956b3b239d5406bfbf8fd4e026f27b630dd442274805",
+        "SKILL.md": "bde8ec4e56267b3574dd8638dda316c9aade32bf66bf1db76e32259659397366",
+        "references/cli.md": "f895901be458baea91b822cc3417f462fc20f2af71c9b4be67288590bbe79235",
+        "references/layout.md": "c66c48f47dc2cdc804e6ac7d4ef0161594d9198882aa878286ba689a5883c8ec",
+        "references/quick-prompt.md": "f79efdab727e3dba46b1cbadab81388353d0eb1cad8d9d3f9f754dd697060ce0",
+        "scripts/cli.js": "2d1f6cc48ba1e8b1cbbbf6603bfcdfbb94cdec5b55c3efc4060fca4d9b4c7f7e",
+        "templates/doc-config.template.md": "3aa622fc0535115835da2985cd55fd1ce6e851c27f30f929e3bc819677b15baa"
+      }
+    },
+    "axns-copyright-gen-code": {
+      "sha256": "e59ef46193e4df742b0ef68f34292305820693e69670caa10bf3a2c837734e89",
+      "files": {
+        "README.md": "51e4de6deb9b0966a128be5b37042d3b03668e031c4d344208498bfe083bd250",
+        "SKILL.md": "6561110ecde7d55e84cca10b827ad7e874ce6656888566b6b98471a0d32e4e47",
+        "references/docx-style.md": "7a5384837a9b0fc89004030b23895d7b38267cf215a897d5885602333723e3fc",
+        "references/format.md": "072f630fa3455be2656fcd18c735dec1f1438aef0dd7a0c0366e99e3f953d6e5",
+        "references/quick-prompt.md": "7d67a3e4a3cde56876a919ed4b048a9056610c8a5268445f1d71fb412cdfa81b",
+        "scripts/README.md": "cb431e2f31ad1275af54b675df3f4fa2c50ed295b5f6a06650187dc88702caf4",
+        "scripts/docx-style.js": "a6d3c7e08ac7943f861cae039ff0377004a91ccacd8ed4e8a4d4bbd317992674",
+        "scripts/generate-code-doc.js": "09579be62da74440a85253e2a253d0244db45f681d074d257024966b66e7b79e",
+        "templates/code-doc-config.example.json": "6525cf52055d8df8fd1768c629842a02d27d9aae26f1360fdb6fcd6d3c5cdbd4",
+        "templates/docx-style.example.json": "7d30f5f3e9ebaa671aae8eda565ea1ebf2666aaa53f6724c88ec2b51dd22c227"
+      }
+    },
+    "axns-copyright-gen-doc": {
+      "sha256": "4181eb08db667600657a1e6ce7b7001cb81c6d732bd11c2bfb0d35ca0aad0aa4",
+      "files": {
+        "README.md": "5232354e7c2fc4cbd428d48c8a213ac4acbeb53ffc0ecf6e0d8bde12446834f7",
+        "SKILL.md": "706a0933264ec9fab88421e2bd30898c6258d05f14f58820fa14e7e067edb57c",
+        "references/docx-style.md": "7a5384837a9b0fc89004030b23895d7b38267cf215a897d5885602333723e3fc",
+        "references/outline.md": "fe690cfe855b15a0a87889c319019f4f482ddf381a7d91f1bebd9bee8142e7ee",
+        "references/prompt-kit.md": "2d3d3661f2862155a013a9a3f7ec426d04718e7cd0ea11cb6a61af6e7bd0ace5",
+        "references/quick-prompt.md": "32372d7cd3ba497c7ad359aec6fc56b40c4af4a7403be62832d2dd34cd8e0561",
+        "references/writing-rules.md": "b292684417570262488d9d8f8fcf8f29a69007597962fa0b1f2ba9f7af15881b",
+        "scripts/docx-style.js": "a6d3c7e08ac7943f861cae039ff0377004a91ccacd8ed4e8a4d4bbd317992674",
+        "templates/README.md": "0a595d8e1f926a3e1259c72da4888ba2c5eadb9904fd6ff99ae7ae97dfdb7b6d",
+        "templates/capture-screenshots.example.js": "d697303bc20a9c76a0483c39961c97ea76f27cec2a9eca795a246d9dd3fa6fac",
+        "templates/config.example.json": "883462dee1244014f8bb396d09ff845cd19aef744b2d58fa3dcc14aca60694bf",
+        "templates/docx-style.example.json": "7d30f5f3e9ebaa671aae8eda565ea1ebf2666aaa53f6724c88ec2b51dd22c227",
+        "templates/md-to-docx.example.js": "3151c8f8b25e7092375136e383b4f12db39ed576a773e858f81c605bc5704163"
+      }
+    },
+    "axns-copyright-gen-intro": {
+      "sha256": "5eff8f0663bd128204ec1fc4741595b31b4a41c12205e8bb909ae7df6b93b32d",
+      "files": {
+        "README.md": "d4a33db8f4e6a7ceff7eca8d92be93a8e0c0a1f1d09fb42c6d549d4d72c2752d",
+        "SKILL.md": "06ea922af8b64b17e7ba5efdc71ed621379b007c22eb030eb6c3a6df990b7504",
+        "references/field-limits.md": "4b7c9c110da568bcbbc8db96e767f8319bee91f8dca890da6cb1e18ba4f700c8",
+        "references/quick-prompt.md": "af323f4036f73691ec9c304d1950e1b34413680fe821921fba30f53bd661a618",
+        "references/style-guide.md": "54f3c04d66c877b3818271aeab6e4424975b323ccd63f1c5f4634422328bbb88",
+        "scripts/count-source-lines.js": "0a034fdacfb5f2307e4d456792e40d7ab2c6c1c154aa9e71b62566603549cd8e",
+        "templates/软著登记信息.example.md": "73c92d2dc4f90435ba1bbf856cbd247a04faaf49384dcd72286bce49974672f4"
+      }
+    },
+    "axns-devflow": {
+      "sha256": "22b09c9756f9ef0440b7a56ee61c72f2f8307cb9dfed40c3590e5528d1059ff0",
+      "files": {
+        "README.md": "37571683903e49b5b7254852246298eee50f0760bde15494006de147cf1d3f8b",
+        "SKILL.md": "d1d920ad1214e98c02411a064e3bb189967624f69271c739e88159cf517dc5a6",
+        "agents/openai.yaml": "d7bece94f1a35dc19af7503eeb5f377ee05021e5d15662135896157f716bcf30",
+        "assets/project-baseline.md": "7b91bb8c5be259a058f335511710c3d677c0704f156217b246a3689f293b4a1d",
+        "assets/task-records.md": "a81f87457d7cb6c7b63b374b2802947674041647d99bec6331671f98babd14af",
+        "assets/workflow/_doc/README.md": "d652f1479edeeffc6c345f3f2a82adf10a878dd8ca82ddef81d31c32713807df",
+        "assets/workflow/_doc/demos/README.md": "85936256adb68aedbe119c0821cd2c52c30bdfdb2ac85fd76372be488c683f23",
+        "assets/workflow/_doc/scripts/README.md": "31f18c97870f625928671b2e401a3809f1f1a8baccfceea1532a4aceb905bee8",
+        "assets/workflow/_doc/使用说明文档/README.md": "78a5637df19b0b34db4925c264e746e6c244fbaf348a1cd919f4e9e4c19175be",
+        "assets/workflow/_doc/第三方插件文档/README.md": "bdffd8cb0ce04ff604ffed9f4c5007c7e13bbf46de99f70b1dcbf2b736cbf93f",
+        "assets/workflow/_plan/README.md": "cf7e5b312998a4bd83b76df670ecca0354dc347178409a5751dc93dd99680004",
+        "assets/workflow/_plan/flow.md": "baec77753e721c049d70bf9b6f02d5e2a34051882697122ba3d8575592ba5de3",
+        "assets/workflow/_plan/future/README.md": "d2906d3dfcb1e26a893780cee868b184ced25bc8b8af066ac4fc042eb0a5a760",
+        "assets/workflow/_plan/guides/README.md": "981803e4fce9f6c29a38d7f5b19305f2df74aaadc0683bf6295a56d38e6b9b4b",
+        "assets/workflow/_plan/ledger/README.md": "42fb9caef614099edc75b0c75cbda4047d7306d6c16cdbd80e0c8af94fb10fad",
+        "assets/workflow/_plan/process/README.md": "37270e2d59975bcd81cb74b2486a13631c416ec296143def9117e6c05ac443bf",
+        "assets/workflow/_plan/prompts/README.md": "c0f7006ee547df5425f279dbf45e6c562c86b067ad2dd82edcbf7556b2186c47",
+        "assets/workflow/_plan/prompts/acceptance.json": "afafdb92efaba76e28796f240b7d9acd660ab23dc39ee4c2f67c2c2ed68e25fe",
+        "prompts/window/P0-open.md": "a808936acda414ca9cf5ac115a4ce174503df7c088533bfec796dab63ecd5fc3",
+        "prompts/window/P1-register.md": "f4154780fa02838225302f9642211525c24e61d03142ec2bdfc8a58c1abf1b02",
+        "prompts/window/P2-execute.md": "7f3611e16b17651558bbb73867f581392750cc6f629de5acad41592d1ebfb89f",
+        "prompts/window/P3-review.md": "3f0c3c56d7152badc45d2f4dfaa78db866edef780635b1d80bb3cb427581268c",
+        "prompts/window/P4-accept.md": "f2e239de3889f8979d4f9b4f59710e8d53dbe1cbc205f6e18e0676cbea4d992d",
+        "prompts/window/P5-escalate.md": "e41be7d40653835f0ca45b50b738ddb8ac742d0f311d148644e1def80a4cc4af",
+        "references/acceptance.md": "77a6a898615d078332f82cb42366c6eb50634224b06cf78c2e4142a3849cfd76",
+        "references/project-layout.md": "39b0b7d537c01af92dadf77a5fd9b7218fefa786bf15cf14a6d99de6de9b2283",
+        "references/prompt-kit.md": "b6534f5a0c436753f6bd2c188e4ee6c1c139d06c75000d0ea2f44311512d2d6b",
+        "references/quality-gates.md": "84eb6d4d59d3d4d06e0cfaec03fcafa0b606f975c8f5feb84e320a21519d6d23",
+        "references/tool-integration.md": "55f0cfe413fd31fab446258b2a7991da7bf40c8ef0c315cacf3ec75feb9c388d",
+        "references/workflow.md": "6f2a71f4d86494b46322151afb0206cee66835d567dbc0fe5be8dd9a6c39759f",
+        "scripts/init-workflow.cjs": "a597f464b9e1c75f67587eedb2fde0181f4cd8b0d3915b5cd89f9d1c25a23f49"
+      }
+    },
+    "axns-devflow-ext-autopilot": {
+      "sha256": "1bfd55e9125acdd80bcf2691c7f8c1b0f3f8642719353f12d411ebd2d7cb4899",
+      "files": {
+        "README.md": "43b97a34882d6f023d5bbe9dbf795591b8cd6b824ac358daa52114a31cb2dcb9",
+        "SKILL.md": "7417b7da4d92713036805ea0556285c2b92301bd75e2b9c5a6ad2f8f419b2c69",
+        "references/config.md": "34eed13502cdc380de8a7bec041842b20fd2cd2ae17256e0b2ff964a89b91bac",
+        "references/execution.md": "786d7edcce1fc2e656783870e7d7a102cb4d3b08493bf533a0f16e721da10af0",
+        "references/platforms.md": "95d0a33dae8a0c0885ebee43638b7b3335d7d26468825c02547aaec3c8679c82",
+        "references/protocol.md": "36c139e91e5009d0191de3f215efbe3025b5da359f3dff7bd0673cd86df5b0fd",
+        "scripts/adapters/command.cjs": "c7e380bb1531495dc1fde79c31dec5b1d1ff4afd164946be59438d585a8d0925",
+        "scripts/adapters/orca.cjs": "77c14e44990b757d4feddb9764ac950e11dec5788b56bf51996c55b1f9119757",
+        "scripts/autopilot.cjs": "af28be9028bcc352df35d68ab4738a45b0d39fdccc5d9ce27e708eb03db9c56e",
+        "scripts/lib/acceptance.cjs": "e5da22ac530ad8e69f6c2e0f82324bcd7c9dff63411dd6e8bdce376ce1907e11",
+        "scripts/lib/core.cjs": "6cd276bde7cdf41ff0644178310244cc043e80ab3ddb3904ac2221910e80efe6",
+        "scripts/lib/dispatch.cjs": "3c587d5a6e3ac06d9f5c00b44eb2e65a60073c529768a1fc6055d5b1f8ddf21c",
+        "scripts/lib/runtime.cjs": "512f659fe8c1b4596aac697b9b1b9d5bf8f7dcc0091ea0cb0ffbb0dc72058bfb",
+        "scripts/runner.cjs": "d430c9d160796cab3bd3994885e8540ea1a093b5619bb2637f289c5d4a6da586"
+      }
+    },
+    "axns-devflow-ext-worktree": {
+      "sha256": "f67284325c5c006b2c21bef7136b0f6d4cf540029eba8ce69b57a1996d54b0ea",
+      "files": {
+        "README.md": "10c91160fcf1c6e93ab8eb92a0304f47f6e3be0cc02dce4a16fbd9862e3f5a67",
+        "SKILL.md": "54b7e0ce1f77fa71c5374b41bfcee65473ab3a52e1a65190409b0ab10ae268ac",
+        "references/orca-comparison.md": "f40a01792f52b4cfe44d32586a01c275b12d00a3f6f2aba73aeda11ba1caa924",
+        "references/protocol.md": "00811bce2dbaec2a707d6e912d70fee9427c60cd3eadbf32aaa3ad96f1ba3c83",
+        "scripts/lib/acceptance.cjs": "e5da22ac530ad8e69f6c2e0f82324bcd7c9dff63411dd6e8bdce376ce1907e11",
+        "scripts/worktree.cjs": "760a31eb125a37f7c459ae564e75e8e622470929e334b36dc78f99b45d3aba6e"
+      }
+    },
+    "axns-ops-bt": {
+      "sha256": "7f9884b2dff3001ff786effc83e3ff5cff50db3b929d2b33e3a60d91cb4e85e0",
+      "files": {
+        "README.md": "24b80099c99214295ca4f11a6d0c8572291277fe835c54c5b0ed1969aeeb8f96",
+        "SKILL.md": "bf4dec8c8ee4daca57384351bc2ddb4aa975886f337f9f90ca20a7db4e63bb80",
+        "agents/openai.yaml": "c80b3aed1e634e4cf5c54cd850f09b0bb16a0c260358b99ea2e28e265890f1fb",
+        "assets/evolution-record.template.json": "3c841812ab435557946a7eff032b9b42cd6e1ce720a9b8b513f2332d46627c65",
+        "assets/operation-plan.template.json": "79075d4baf9391333c1014586843c70252f02d60a30a5030fbb97e70b32afbc0",
+        "config/operations.json": "2b4d72c71ca671be81f7de25ea97b1f5fd8c0d32bcfc671f6f4d69f16c4cc54b",
+        "references/evolution.md": "20a794db697fc5ed61fac38b9a284bea98c0e4deb20917305b781c96db02fedf",
+        "references/execution.md": "42a89d8011791cfab0539b3c29077f2425d301956be4f34af3e313504c5130b7",
+        "references/safety.md": "33afa32cb039014a1dae0b365d80a0cda64021bd1e3ee28ba5a884115968630f",
+        "references/sources.md": "09ddd82ecd33c9f10dff8f1633f24b9b986d4704b439fc10d713e29561e420fc",
+        "scripts/bt-api.cjs": "18c00ba72687badf855e1c214260c4da027b17665cab35f7a32c3827f80e710f"
+      }
+    }
+  }
+}

@@ -9,7 +9,7 @@
 | [axns-ops-bt](skills/axns-ops-bt/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
 | [axns-devflow](skills/axns-devflow/README.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
 | [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、scope/修改权校验及 P0–P5 窗口协议 |
-| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | 项目显式启用后的任务巡检与调度建议 | 只读阶段判定、窗口占用与模型路由；实际自动执行需接入平台适配器 |
+| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | 项目显式启用后的任务巡检与调度建议 | 只读判定、可选执行层、互斥领取与证据回调；提供 Orca 安装计划及通用平台桥 |
 | [axns-copyright-gen](skills/axns-copyright-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
 | [axns-copyright-gen-code](skills/axns-copyright-gen-code/SKILL.md) | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
@@ -17,11 +17,22 @@
 
 ## 安装
 
+个人开发机优先从本仓库同步，GitHub 用于发布已验证版本并供其他电脑复用。详见 [本地开发与跨机一致性](docs/local-development.md)。
+
+```sh
+npm run skills:sync
+npm run skills:check
+```
+
+默认安装 devflow、worktree、autopilot 三项；安装所有本仓库技能时追加 `-- --profile all`。首次使用前按 `.nvmrc` 准备 Node。修改源码后先 `npm run skills:lock` 和 `npm run validate`，再同步。其他电脑按文档检出固定 tag 或提交。
+
+以下为通用远程安装方式：
+
 ```bash
 npx skills add axns8888/skill-repo
 ```
 
-在安装界面选择技能和目标 Agent。需要 worktree 隔离时同时选择 axns-devflow 与 axns-devflow-ext-worktree，并按扩展说明在项目中启用；默认单任务。需要调度建议时可再选择 axns-devflow-ext-autopilot，按其说明显式启用；自动执行需要平台适配器。使用整套软著聚合流程时，请同时选择全部 4 个 axns-copyright 技能。单独使用操作手册、源码或登记信息时，只安装对应技能即可。
+在安装界面选择技能和目标 Agent。需要 worktree 隔离时同时选择 axns-devflow 与 axns-devflow-ext-worktree，并按扩展说明在项目中启用；默认单任务。需要调度建议时可再选择 axns-devflow-ext-autopilot，按其说明显式启用；自动执行需开启执行配置并按说明接入平台会话。使用整套软著聚合流程时，请同时选择全部 4 个 axns-copyright 技能。单独使用操作手册、源码或登记信息时，只安装对应技能即可。
 
 只安装指定技能：
 
@@ -125,11 +136,11 @@ CLI 的 `generator` 执行源码 Word 导出；登记信息正文、操作手册
 ## 本地验证
 
 ```bash
-node --test tests/axns-copyright.test.cjs tests/axns-ops-bt.test.cjs tests/workflow-init.test.cjs tests/worktree.test.cjs tests/autopilot.test.cjs
+node --test tests/axns-copyright.test.cjs tests/axns-ops-bt.test.cjs tests/workflow-init.test.cjs tests/worktree.test.cjs tests/autopilot.test.cjs tests/autopilot-runner.test.cjs
 npx skills add . --list
 ```
 
-第一条运行软著行为测试、本地模拟面板测试，以及开发流程目录初始化、重复执行保留已有文件和可移植性测试，以及隔离 Git 仓库中的 worktree 登记、范围/持权冲突、依赖、验收清理及 autopilot 阶段、去重建议与验收身份测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
+第一条运行软著行为测试、本地模拟面板测试，以及开发流程目录初始化、重复执行保留已有文件和可移植性测试，以及隔离 Git 仓库中的 worktree 登记、范围/持权冲突、依赖、验收清理及 autopilot 阶段、去重建议、验收身份、执行互斥、回调与恢复测试；第二条检查实际技能发现。完整 Word 导出和真实页面截图还需相应运行依赖与环境。
 
 ## 许可证
 

@@ -166,7 +166,7 @@ test('finish preserves dirty or unmerged work; completed tasks archive evidence 
   assert.equal(register(f, b, ['src/b.txt'], ['shared.lock']).status, 2);
   const root = wt(f, a); const accepted = `_plan/process/${a}/acceptance.md`;
   put(root, 'src/a.txt', 'implemented'); let head = commit(root, a);
-  fail(run(f.root, 'finish', a, '--accepted-head', head), /尚未合入/);
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /acceptance.md/);
   git(f.root, 'merge', '--ff-only', `task/${a}`);
   fail(run(f.root, 'finish', a, '--accepted-head', head), /acceptance.md/);
   put(root, accepted, '实际命令、复核关闭与用户验收依据已记录。\n'); head = commit(root, a, 'acceptance');
@@ -179,9 +179,10 @@ test('finish preserves dirty or unmerged work; completed tasks archive evidence 
   fs.unlinkSync(path.join(root, 'generated.cache'));
   const done = ok(run(f.root, 'finish', a, '--accepted-head', head));
   assert.equal(done.status, 'completed'); assert.equal(done.holds_claims, false);
+  assert.deepEqual(done.human_acceptance, { enabled: false, blocking: false, status: 'disabled' });
   assert.ok(!fs.existsSync(root)); assert.ok(fs.existsSync(path.join(f.root, accepted)));
   assert.ok(fs.existsSync(path.join(f.root, `_plan/archive/${a}.pointer`)));
-  assert.equal(git(f.root, 'branch', '--list', `task/${a}`), `task/${a}`);
+  assert.equal(git(f.root, 'branch', '--list', `task/${a}`), '');
   assert.equal(events(f).at(-1).event, 'task.completed');
   assert.deepEqual(events(f).at(-1).released, ['shared.lock']);
   assert.equal(ok(run(f.root, 'claim', b)).status, 'claimed');
@@ -272,4 +273,204 @@ test('no-ff no-commit stops a possible fast-forward for validation, and copied h
   assert.equal(git(wt(f, a), 'rev-parse', 'HEAD'), before);
   assert.equal(git(wt(f, a), 'rev-parse', 'MERGE_HEAD'), integration);
   ok(run(wt(f, a), 'check', a));
+});
+
+
+test('doctor is read-only while disabled and while a coordination lock or partial records exist', t => {
+  const disabled = fixture(t, false);
+  const index = path.join(disabled.root, '.git/index');
+  const beforeIndex = fs.statSync(index).mtimeMs;
+  const report = ok(run(disabled.root, 'doctor'));
+  assert.equal(report.enabled, false); assert.equal(report.consistent_snapshot, false);
+  assert.equal(report.coordination_lock.present, false);
+  assert.ok(!fs.existsSync(path.join(disabled.root, '_plan')));
+  assert.ok(!fs.existsSync(path.join(disabled.root, '.git/axns-devflow.lock')));
+  assert.equal(fs.statSync(index).mtimeMs, beforeIndex);
+
+  const f = fixture(t); ok(register(f, a, ['src/a.txt']));
+  const meta = `_plan/process/${a}/parallel.json`;
+  put(wt(f, a), meta, '{"partial":true}');
+  put(f.root, `_plan/active/${b}.pointer`, '{broken');
+  const ownerText = JSON.stringify({ pid: 12345, hostname: 'another-machine', command: 'register', task_id: b });
+  put(f.root, '.git/axns-devflow.lock/owner.json', ownerText);
+  const registryBefore = fs.readFileSync(path.join(f.root, '_plan/registry.jsonl'), 'utf8');
+  fail(run(f.root, 'status'), /协调锁被占用/);
+  const partial = ok(run(wt(f, a), 'doctor'));
+  assert.equal(partial.primary_root, fs.realpathSync(f.root));
+  assert.equal(partial.coordination_lock.owner.pid, 12345);
+  assert.deepEqual(partial.tasks.find(x => x.task_id === a).issues, ['metadata_mismatch']);
+  assert.deepEqual(partial.tasks.find(x => x.task_id === b).issues, ['pointer_invalid']);
+  assert.equal(fs.readFileSync(path.join(f.root, '.git/axns-devflow.lock/owner.json'), 'utf8'), ownerText);
+  assert.equal(fs.readFileSync(path.join(f.root, '_plan/registry.jsonl'), 'utf8'), registryBefore);
+  assert.equal(fs.readFileSync(path.join(wt(f, a), meta), 'utf8'), '{"partial":true}');
+});
+
+test('locked worktree removal is an expected refusal and NUL listing preserves the lock reason', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt']));
+  const root = wt(f, a);
+  put(root, `_plan/process/${a}/acceptance.md`, '用户验收通过，证据见测试记录。\n');
+  const head = commit(root, a, 'accepted'); git(f.root, 'merge', '--ff-only', `task/${a}`);
+  const reason = '用户锁定，保留现场\nsecond line with spaces';
+  git(f.root, 'worktree', 'lock', '--reason', reason, root);
+  const report = ok(run(f.root, 'doctor'));
+  const state = report.tasks.find(x => x.task_id === a);
+  assert.equal(state.git.locked, true); assert.equal(state.git.lock_reason, reason);
+  assert.deepEqual(state.issues, []);
+  ok(run(root, 'check', a));
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /Git worktree 已锁定/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  assert.equal(pointers(f)[0].holds_claims, true); assert.ok(fs.existsSync(root));
+  git(f.root, 'worktree', 'unlock', root);
+  assert.equal(ok(run(f.root, 'finish', a, '--accepted-head', head)).status, 'completed');
+});
+
+test('detached or moved worktrees are diagnosed and refused without retaining the coordination lock', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  git(root, 'checkout', '--detach');
+  assert.ok(ok(run(f.root, 'doctor')).tasks[0].issues.includes('detached_head'));
+  fail(run(root, 'check', a), /detached_head/);
+  fail(run(f.root, 'claim', a), /branch_mismatch/);
+  assert.equal(pointers(f)[0].holds_claims, true);
+  git(root, 'checkout', `task/${a}`);
+  const moved = path.join(f.temp, 'moved worktree'); git(f.root, 'worktree', 'move', root, moved);
+  const state = ok(run(f.root, 'doctor')).tasks[0];
+  assert.ok(state.issues.includes('registration_missing')); assert.ok(state.issues.includes('directory_missing'));
+  fail(run(f.root, 'claim', a), /registration_missing/);
+  fail(run(f.root, 'finish', a, '--accepted-head', git(moved, 'rev-parse', 'HEAD')), /directory_missing|其他 worktree 使用/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  assert.equal(pointers(f)[0].holds_claims, true);
+});
+
+test('prunable unregistered worktrees are reported and cannot be silently reused', t => {
+  const f = fixture(t); const root = wt(f, a); const backup = path.join(f.temp, 'preserved worktree');
+  git(f.root, 'worktree', 'add', '-b', `task/${a}`, root, 'main');
+  fs.renameSync(root, backup);
+  git(f.root, 'update-ref', '-d', `refs/heads/task/${a}`, git(f.root, 'rev-parse', 'main'));
+  const report = ok(run(f.root, 'doctor'));
+  assert.equal(report.tasks.length, 0); assert.equal(report.unregistered_worktrees.length, 1);
+  assert.equal(report.unregistered_worktrees[0].prunable, true);
+  fail(register(f, a, ['src/a.txt']), /仍登记同名 worktree/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  assert.ok(fs.existsSync(path.join(backup, 'src/a.txt')));
+  assert.equal(ok(run(f.root, 'doctor')).unregistered_worktrees.length, 1);
+});
+
+test('unexpected I/O failure retains the lock owner and doctor exposes partial state', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt']));
+  const registry = path.join(f.root, '_plan/registry.jsonl'); fs.unlinkSync(registry); fs.mkdirSync(registry);
+  fail(run(f.root, 'escalate', a, '--reason', '用户要求排查登记故障'), /保留协调锁/);
+  const report = ok(run(f.root, 'doctor')); const lock = report.coordination_lock;
+  assert.equal(lock.present, true); assert.equal(lock.owner.command, 'escalate');
+  assert.equal(lock.owner.task_id, a); assert.ok(Number.isInteger(lock.owner.pid));
+  assert.ok(lock.owner.hostname); assert.ok(lock.owner.started_at); assert.ok(lock.owner.token);
+  assert.ok(report.tasks[0].issues.includes('metadata_mismatch'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(f.root, `_plan/active/${a}.pointer`), 'utf8')).holds_claims, true);
+  assert.ok(fs.existsSync(path.join(lock.path, 'owner.json')));
+});
+
+
+test('initialized submodules are refused before removal, even when user config hides their changes', t => {
+  const f = fixture(t); const moduleRoot = path.join(f.temp, 'module source'); fs.mkdirSync(moduleRoot);
+  git(moduleRoot, 'init', '-b', 'main'); git(moduleRoot, 'config', 'user.name', 'Test');
+  git(moduleRoot, 'config', 'user.email', 'test@example.invalid'); git(moduleRoot, 'config', 'commit.gpgsign', 'false');
+  put(moduleRoot, 'module.txt', 'baseline\n'); git(moduleRoot, 'add', '.'); git(moduleRoot, 'commit', '-m', 'module baseline');
+  git(f.root, '-c', 'protocol.file.allow=always', 'submodule', 'add', moduleRoot, 'vendor/module');
+  git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'add module');
+  ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  put(root, `_plan/process/${a}/acceptance.md`, '已完成真实验收。\n');
+  const head = commit(root, a, 'accepted'); git(f.root, 'merge', '--ff-only', `task/${a}`);
+  git(root, '-c', 'protocol.file.allow=always', 'submodule', 'update', '--init');
+  put(root, 'vendor/module/module.txt', 'local submodule changes\n');
+  git(f.root, 'config', 'diff.ignoreSubmodules', 'all');
+  assert.equal(git(root, 'status', '--porcelain'), '');
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /未提交/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  git(path.join(root, 'vendor/module'), 'checkout', '--', 'module.txt');
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /已初始化的 submodule/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  assert.equal(pointers(f)[0].holds_claims, true);
+  assert.ok(fs.existsSync(path.join(root, 'vendor/module/.git')));
+});
+
+
+test('direct finish enforces primary human policy and preserves task on missing receipt or invalid policy', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt']));
+  const taskRoot = wt(f, a);
+  put(taskRoot, '_plan/prompts/acceptance.json', JSON.stringify({ version: 1, human_acceptance: { enabled: false, blocking: false } }));
+  put(taskRoot, `_plan/process/${a}/acceptance.md`, 'Technical verification and review passed; human confirmation separate.');
+  const head = commit(taskRoot, a); git(f.root, 'merge', '--ff-only', `task/${a}`);
+  put(f.root, '_plan/prompts/acceptance.json', JSON.stringify({ version: 1, human_acceptance: { enabled: true, blocking: true } }));
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /等待人工验收/);
+  assert.ok(fs.existsSync(taskRoot)); assert.equal(pointers(f)[0].holds_claims, true);
+  fail(run(f.root, 'finish', a, '--accepted-head', head, '--human-accepted-by', ' '), /等待人工验收/);
+  put(f.root, '_plan/prompts/acceptance.json', '{broken');
+  fail(run(f.root, 'finish', a, '--accepted-head', head, '--human-accepted-by', 'human/record'), /配置无效/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  put(f.root, '_plan/prompts/acceptance.json', JSON.stringify({ version: 1, human_acceptance: { enabled: true, blocking: true } }));
+  const done = ok(run(f.root, 'finish', a, '--accepted-head', head, '--human-accepted-by', 'human/record'));
+  assert.deepEqual(done.human_acceptance, { enabled: true, blocking: true, status: 'passed', result: 'passed', accepted_by: 'human/record', accepted_head: head });
+});
+
+test('commit validates the entire task from a subdirectory and finish merges, deletes and retries idempotently', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  put(root, 'outside.txt', 'must not commit');
+  fail(run(path.join(root, 'src'), 'commit', a), /越界文件/);
+  assert.equal(git(root, 'diff', '--cached', '--name-only'), '');
+  fs.unlinkSync(path.join(root, 'outside.txt'));
+  put(root, 'src/a.txt', 'implemented\n');
+  put(root, `_plan/process/${a}/acceptance.md`, 'Verified implementation; actual review evidence.\n');
+  const head = ok(run(root, 'commit', a, '--message', '实现并验证')).head;
+  assert.match(git(root, 'log', '-1', '--format=%s'), new RegExp(`^${a}:`));
+  assert.equal(ok(run(root, 'commit', a)).head, head);
+  assert.notEqual(git(f.root, 'rev-parse', 'main'), head);
+  const done = ok(run(f.root, 'finish', a, '--accepted-head', head));
+  assert.equal(git(f.root, 'rev-parse', 'main'), head);
+  assert.deepEqual(done.cleanup, { worktree_removed: true, branch_deleted: true });
+  assert.equal(git(f.root, 'branch', '--list', `task/${a}`), '');
+  assert.equal(ok(run(f.root, 'finish', a, '--accepted-head', head)).duplicate, true);
+  assert.equal(events(f).filter(e => e.event === 'task.completed').length, 1);
+});
+
+test('finish preserves a dirty integration checkout and requires recombination after integration advances', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  put(root, 'src/a.txt', 'task\n'); put(root, `_plan/process/${a}/acceptance.md`, 'verified\n');
+  let head = ok(run(root, 'commit', a)).head;
+  put(f.root, 'src/b.txt', 'user work\n');
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /集成工作区不干净/);
+  assert.equal(fs.readFileSync(path.join(f.root, 'src/b.txt'), 'utf8'), 'user work\n');
+  git(f.root, 'add', 'src/b.txt'); git(f.root, 'commit', '-m', 'independent change');
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /集成分支已前移/);
+  assert.ok(fs.existsSync(root)); assert.equal(pointers(f)[0].holds_claims, true);
+  git(root, 'merge', '--no-ff', '--no-commit', 'main');
+  head = ok(run(root, 'commit', a, '--message', '组合复验')).head;
+  ok(run(f.root, 'finish', a, '--accepted-head', head));
+  assert.equal(fs.readFileSync(path.join(f.root, 'src/b.txt'), 'utf8'), 'user work\n');
+});
+
+test('partial branch deletion failure retains claims and resumes from the durable archive', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  put(root, `_plan/process/${a}/acceptance.md`, 'verified\n');
+  const head = ok(run(root, 'commit', a)).head;
+  const branchLock = path.join(f.root, `.git/refs/heads/task/${a}.lock`);
+  fs.writeFileSync(branchLock, 'simulate concurrent Git operation');
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /修复后重试/);
+  assert.ok(!fs.existsSync(root)); assert.equal(pointers(f)[0].holds_claims, true);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(f.root, `_plan/archive/${a}.pointer`))).status, 'finishing');
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  fs.unlinkSync(branchLock);
+  const done = ok(run(f.root, 'finish', a, '--accepted-head', head));
+  assert.equal(done.status, 'completed'); assert.equal(pointers(f).length, 0);
+  assert.equal(git(f.root, 'branch', '--list', `task/${a}`), '');
+});
+
+test('resume never deletes a task branch that acquired a new commit after partial cleanup', t => {
+  const f = fixture(t); ok(register(f, a, ['src/a.txt'])); const root = wt(f, a);
+  put(root, `_plan/process/${a}/acceptance.md`, 'verified\n'); const head = ok(run(root, 'commit', a)).head;
+  const branchLock = path.join(f.root, `.git/refs/heads/task/${a}.lock`); fs.writeFileSync(branchLock, 'busy');
+  fail(run(f.root, 'finish', a, '--accepted-head', head)); fs.unlinkSync(branchLock);
+  const next = git(f.root, 'commit-tree', `${head}^{tree}`, '-p', head, '-m', 'new work');
+  git(f.root, 'update-ref', `refs/heads/task/${a}`, next, head);
+  fail(run(f.root, 'finish', a, '--accepted-head', head), /分支不得前移/);
+  assert.equal(git(f.root, 'rev-parse', `task/${a}`), next);
+  assert.equal(pointers(f)[0].holds_claims, true);
 });

@@ -58,7 +58,8 @@ for (const name of skills) {
       assert.ok(fs.statSync(path.join(root, dir, 'README.md')).size > 0, dir);
     }
     for (const file of ['_plan/flow.md', '_plan/prompts/project.md', '_plan/prompts/stages.md',
-      '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md']) {
+      '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
+      '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md']) {
       assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
     }
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/project.md'), 'utf8').includes(projectName));
@@ -72,6 +73,9 @@ for (const name of skills) {
     for (const runtime of ['.worktrees', '_plan/active', '_plan/archive', '_plan/registry.jsonl', '_plan/.active_plan']) {
       assert.ok(!fs.existsSync(path.join(root, runtime)), runtime);
     }
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '_plan/prompts/acceptance.json'), 'utf8')),
+      { version: 1, human_acceptance: { enabled: false, blocking: false } });
+    assert.match(fs.readFileSync(path.join(root, '_plan/guides/tool-integration.md'), 'utf8'), /原生任务清单|编程器原生 Todo/);
     assertLocalLinks(root);
   });
 
@@ -86,6 +90,8 @@ for (const name of skills) {
     assert.equal(run(skill, '--project-root', root).status, 0);
     assert.deepEqual(fs.readFileSync(path.join(root, '_plan/README.md')), original);
     fs.appendFileSync(path.join(root, '_plan/prompts/project.md'), '\n用户已填写的项目约定\n');
+    fs.writeFileSync(path.join(root, '_plan/prompts/acceptance.json'),
+      JSON.stringify({ version: 1, human_acceptance: { enabled: true, blocking: true } }));
     const before = snapshot(root);
     assert.equal(run(skill, '--project-root', root, '--project-name', 'another name').status, 0);
     assert.deepEqual(snapshot(root), before);
@@ -123,6 +129,8 @@ for (const name of skills) {
     const root = path.join(temp, '独立项目');
     const result = run(copied, '--project-root', root);
     assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '_plan/prompts/acceptance.json'), 'utf8')),
+      { version: 1, human_acceptance: { enabled: false, blocking: false } });
     assertLocalLinks(root);
   });
 

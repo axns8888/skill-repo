@@ -3,6 +3,7 @@
 | 文件 | 用途 |
 | --- | --- |
 | [project.md](project.md) | 项目当前开发基线；初始化后按真实情况填写 |
+| [acceptance.json](acceptance.json) | 独立人工验收开关，默认关闭；语义见 [配置说明](../../../../references/acceptance.md) |
 | [window/P0-open.md](../../../../prompts/window/P0-open.md) | 窗口协议入口；P1 登记、P2 执行、P3 复核、P4 验收、P5 升级 |
 | [stages.md](stages.md) | 使用 ${{skill_name}} 的可复制阶段指令 |
 
@@ -10,4 +11,4 @@
 
 首次使用指令前，确认当前工具能够读取本技能；未安装时在指令中写明可访问的技能路径。根据实际项目替换已知变量，未核实事实保持待核实。
 
-窗口协议默认走单任务；只有 AGENTS.md 的 extensions 包含 worktree 才加载扩展。P5 仅扩展启用时使用。一个窗口只接一个任务，结案后新任务另开窗口。
+窗口协议默认走单任务；只有 AGENTS.md 的 extensions 包含 worktree 才加载扩展。P5 仅扩展启用时使用。一轮执行只处理一个任务；结案或完成执行权交接后可复用会话，接续时重新核实任务身份、工作目录和授权。P0 不增加已有执行授权之外的确认点。
