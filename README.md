@@ -1,6 +1,6 @@
 # skill-repo
 
-本仓库提供宝塔面板运维、项目开发流程与中国软件著作权材料准备的 Agent Skills。开发流程由不绑定语言与框架的 axns-devflow 统一提供，技术约定保存在各项目中；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
+本仓库提供宝塔面板运维、项目开发流程、设计图转 Vue 3 与中国软件著作权材料准备的 Agent Skills。开发流程由不绑定语言与框架的 axns-devflow 统一提供，技术约定保存在各项目中；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
 
 ## 技能列表
 
@@ -10,6 +10,7 @@
 | [axns-devflow](skills/axns-devflow/README.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
 | [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、scope/修改权校验及 P0–P5 窗口协议 |
 | [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | 项目显式启用后的任务巡检与调度建议 | 只读判定、可选执行层、互斥领取与证据回调；提供 Orca 安装计划及通用平台桥 |
+| [axns-ui-img2vue](skills/axns-ui-img2vue/README.md) | 单图、批量设计图转 Vue 3，或按图修改已有页面 | 页面与组件、多状态整合、素材复用及验证结果；由当前会话模型直接完成 |
 | [axns-copyright-gen](skills/axns-copyright-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
 | [axns-copyright-gen-code](skills/axns-copyright-gen-code/SKILL.md) | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
@@ -54,6 +55,7 @@ npx skills add axns8888/skill-repo --list
 
 | 原技能名称 | 当前名称 |
 | --- | --- |
+| ui-to-vue | axns-ui-img2vue |
 | basic_dev_flow | axns-devflow |
 | ops-bt-agent | axns-ops-bt |
 | ruanzhu-gen | axns-copyright-gen |

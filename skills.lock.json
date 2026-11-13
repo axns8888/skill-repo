@@ -140,6 +140,13 @@
         "references/sources.md": "09ddd82ecd33c9f10dff8f1633f24b9b986d4704b439fc10d713e29561e420fc",
         "scripts/bt-api.cjs": "18c00ba72687badf855e1c214260c4da027b17665cab35f7a32c3827f80e710f"
       }
+    },
+    "axns-ui-img2vue": {
+      "sha256": "b55c09df6c12b8a3a3c81d19232f5d76a89715b7a8527771f5f07a88140d3106",
+      "files": {
+        "README.md": "88d2a048a09b7ed54285b803abf2ae6a695d70b3a4387c591dc7b23a10e0db40",
+        "SKILL.md": "7425b04850a27a23cf09c92a6cc360893cc340989ea6d6aadcd82cdc02e0130d"
+      }
     }
   }
 }

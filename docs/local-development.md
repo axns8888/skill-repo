@@ -25,7 +25,7 @@ npm run skills:sync
 npm run skills:check
 ```
 
-脚本仅使用 Node 内置模块，无需 npm install。默认同步 devflow、worktree、autopilot 三项；全部八项本仓库技能可使用 `npm run skills:sync -- --profile all`，检查时也带 `--profile all`。
+脚本仅使用 Node 内置模块，无需 npm install。默认同步 devflow、worktree、autopilot 三项；全部本仓库技能（包括 axns-ui-img2vue）可使用 `npm run skills:sync -- --profile all`，检查时也带 `--profile all`。
 
 - 中央安装副本：用户主目录下 `.agents/skills/<skill>`，与源码独立。
 - Codex / DSH：发现对应 `.codex` / `.dsh` 用户目录时，为这三项创建或保留指向中央副本的技能链接。也可显式指定 `--targets agents,codex,dsh`。
