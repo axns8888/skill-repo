@@ -60,10 +60,10 @@
       }
     },
     "axns-devflow": {
-      "sha256": "ff55c82776817d6d88e4ce13fc0d7494b50a67d9ef81c0d57caf0f33447eb274",
+      "sha256": "e71eba4b0fe0c81124ec59f8a7f50453fff7e1da0ba9b3f24b9e47e0fbe91d8e",
       "files": {
-        "README.md": "0eabdbf37c2ab3c7aa5798278f38d6d3f537623f7b0e3a7632b75bc84f8aa9ac",
-        "SKILL.md": "396c5de4d26c7df180f7362cfe919847b68b4d6c4e9eae9c64e588c31970a17c",
+        "README.md": "87cdc561c8f2eb9339f3c0dd02e7ce0d911c9b3762e00bf3590c8b22ce9fd4b7",
+        "SKILL.md": "e1f2af30e06f77f5f7ec50d6793d93c4cbd81c0706ff19e100a4de915cf8ecd9",
         "agents/openai.yaml": "d7bece94f1a35dc19af7503eeb5f377ee05021e5d15662135896157f716bcf30",
         "assets/architecture-baseline.md": "179ffd20c12a1d23a01608826d138cdf9ce6631d096ffdce5310fbc9d7cfdfac",
         "assets/coding-baseline.md": "3e381b04a9a3499b6c522f8bc8d05d862ddf0642c6a132658ec3d83be1d9cdf2",
@@ -83,28 +83,28 @@
         "assets/workflow/_plan/process/README.md": "37270e2d59975bcd81cb74b2486a13631c416ec296143def9117e6c05ac443bf",
         "assets/workflow/_plan/prompts/README.md": "b00be6d491a4ad5a60961adb09e6aa65c56cdcb9edb51b352fc7566b716f13b3",
         "assets/workflow/_plan/prompts/acceptance.json": "afafdb92efaba76e28796f240b7d9acd660ab23dc39ee4c2f67c2c2ed68e25fe",
-        "prompts/window/P0-open.md": "a808936acda414ca9cf5ac115a4ce174503df7c088533bfec796dab63ecd5fc3",
-        "prompts/window/P1-register.md": "f4154780fa02838225302f9642211525c24e61d03142ec2bdfc8a58c1abf1b02",
+        "prompts/window/P0-open.md": "4ce9dbb187178bebf6195c06fbe5177fb5a265d2562131928409b9e7df21dfb6",
+        "prompts/window/P1-register.md": "c37b72c17d47b3947e391b9b0ab37768a44e6972e5a3669c341e01ea0809e0e9",
         "prompts/window/P2-execute.md": "2ef0d34a38e3c369261912159a117f52368233aafc5a71b082171a12bcd7f2ca",
         "prompts/window/P3-review.md": "0f8b06cd2fbe70d3eb1ec50ca7254c2a35141a827231746da117219d393a7981",
         "prompts/window/P4-accept.md": "f2e239de3889f8979d4f9b4f59710e8d53dbe1cbc205f6e18e0676cbea4d992d",
         "prompts/window/P5-escalate.md": "e41be7d40653835f0ca45b50b738ddb8ac742d0f311d148644e1def80a4cc4af",
         "references/acceptance.md": "77a6a898615d078332f82cb42366c6eb50634224b06cf78c2e4142a3849cfd76",
-        "references/engineering-standards.md": "a7691a840bd9af96b896aa793c407c8ab96f1f567e09dd905eecbeacaf96104a",
-        "references/project-layout.md": "f4991278116d13237516ee11c8c0ff2aad0e66247930d32fa6838dd5037fdb99",
+        "references/engineering-standards.md": "15f9c729c69a279c3ecb673ab61849ffa11b803e83ea008dfc8d8627ef1bf2df",
+        "references/project-layout.md": "abc0ce2a606d220c0dc785d1aa5f2467356da6c9d2b9548312ff34232b712938",
         "references/prompt-kit.md": "685f9570d0e0759dba3faeb93c13a13ffe3de22273c75ed8fc554795d57788f1",
         "references/quality-gates.md": "61954ef727b02ea1796e357a61d6d0522275dca2c815504ca4036a990d32259a",
-        "references/tool-integration.md": "55f0cfe413fd31fab446258b2a7991da7bf40c8ef0c315cacf3ec75feb9c388d",
+        "references/tool-integration.md": "cef161b1e53bc1857d52b3a1b4da82928110434d5e95b6cb4363a00699fc9197",
         "references/workflow.md": "15bffd0a647cdc3ba37733767685e59f6d6efeffd58a837e0f5bd2d105264450",
         "scripts/init-workflow.cjs": "200d28761269f06174384ab51955526364363d9478c102e22cc7a9c9351bfa38"
       }
     },
     "axns-devflow-ext-autopilot": {
-      "sha256": "1bfd55e9125acdd80bcf2691c7f8c1b0f3f8642719353f12d411ebd2d7cb4899",
+      "sha256": "054e882aca48b6cee1f508b9515c7772c45a5d9e83e3f5ab639db9af0af01c09",
       "files": {
         "README.md": "43b97a34882d6f023d5bbe9dbf795591b8cd6b824ac358daa52114a31cb2dcb9",
         "SKILL.md": "7417b7da4d92713036805ea0556285c2b92301bd75e2b9c5a6ad2f8f419b2c69",
-        "references/config.md": "34eed13502cdc380de8a7bec041842b20fd2cd2ae17256e0b2ff964a89b91bac",
+        "references/config.md": "d93d46c63e08e8ebcef1b646b10ce93f9257931def7c8c9b6c26dc6c88d134c9",
         "references/execution.md": "786d7edcce1fc2e656783870e7d7a102cb4d3b08493bf533a0f16e721da10af0",
         "references/platforms.md": "95d0a33dae8a0c0885ebee43638b7b3335d7d26468825c02547aaec3c8679c82",
         "references/protocol.md": "36c139e91e5009d0191de3f215efbe3025b5da359f3dff7bd0673cd86df5b0fd",
@@ -119,12 +119,12 @@
       }
     },
     "axns-devflow-ext-worktree": {
-      "sha256": "f67284325c5c006b2c21bef7136b0f6d4cf540029eba8ce69b57a1996d54b0ea",
+      "sha256": "bec357c9f10b5ea9c8219031019162dcf3170038ad4b347a5b18a9932549ad80",
       "files": {
-        "README.md": "10c91160fcf1c6e93ab8eb92a0304f47f6e3be0cc02dce4a16fbd9862e3f5a67",
-        "SKILL.md": "54b7e0ce1f77fa71c5374b41bfcee65473ab3a52e1a65190409b0ab10ae268ac",
+        "README.md": "bc650f0e2e1415df411a1a77c79706ce5a9ee1ecf42e7d3749da2ae9361800cb",
+        "SKILL.md": "04b0a76b2346904377b371178561a573924e2a9e7f7e1bef6196e5a582169fd7",
         "references/orca-comparison.md": "f40a01792f52b4cfe44d32586a01c275b12d00a3f6f2aba73aeda11ba1caa924",
-        "references/protocol.md": "00811bce2dbaec2a707d6e912d70fee9427c60cd3eadbf32aaa3ad96f1ba3c83",
+        "references/protocol.md": "28be823e0146d0b690d85caeac0ae170f3b8845516c6169c0ca0476fa2690c92",
         "scripts/lib/acceptance.cjs": "e5da22ac530ad8e69f6c2e0f82324bcd7c9dff63411dd6e8bdce376ce1907e11",
         "scripts/worktree.cjs": "760a31eb125a37f7c459ae564e75e8e622470929e334b36dc78f99b45d3aba6e"
       }

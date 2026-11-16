@@ -28,7 +28,7 @@
 | 字段 | 约束与含义 |
 | --- | --- |
 | `version` | 必填整数 `1` |
-| `slots` | 默认 2，正整数；worktree 模式的并行窗口上限，单任务有效值固定为 1 |
+| `slots` | 默认 2，正整数；worktree 模式同时持有执行权的并行窗口上限，单任务有效值固定为 1。它不限制生命周期内先后创建的 worktree 总数，也不会自动创建任务或 worktree；新独立任务仍由宿主 P1 登记 |
 | `capabilities` | 四个可独立关闭的能力，所有 `enabled` 必须为 JSON 布尔值 |
 | `advance.max_stage` | 默认 P4，允许 P0–P4，禁止 P5；限制建议的目标阶段 |
 | `open_window.only_registered` | 固定为 true，false 会报错；不得绕过宿主登记 |

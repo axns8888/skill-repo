@@ -50,6 +50,8 @@ scope 冲突（包含 scope 覆盖他人的 shared_claims）拒绝登记；share
 
 所有命令使用 Node.js 标准库与 Git，无安装依赖；以下 `<脚本>` 指本扩展 `scripts/worktree.cjs`。--project 显式指定项目根或任务 worktree；--manifest 路径相对于命令调用目录。
 
+worktree 的生命周期以独立 task-id 为单位：新任务在 P1 登记时创建专属目录和分支，且在该任务首次业务修改前完成；同一任务的后续阶段、返修和跨会话恢复复用它。任务结案清理后，后续独立任务以新 task-id 重新登记创建，禁止把已登记或已结案的目录/分支改名接管。执行会话可以复用，任务工作区不可跨独立任务复用。
+
 ```powershell
 node "<脚本>" status --project "<项目>"
 node "<脚本>" doctor --project "<项目>"

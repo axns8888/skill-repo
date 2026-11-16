@@ -17,6 +17,12 @@ description: >-
 3. 一轮执行绑定一个 task-id 和 `task/<task-id>` 分支、`.worktrees/<task-id>`；跨窗口通过主检出目录 `_plan/active/`、`_plan/registry.jsonl` 通信。任务计划与证据只在本任务 `_plan/process/<task-id>/` 维护。会话在结案或完成执行权交接后可复用；切换任务时重新核实登记、目录、分支和持权，不把上一任务的修改权带入新任务。
 4. 用 `scripts/worktree.cjs` 登记、重新仲裁、检查、自动提交、升级及结案；遗留锁或工作区异常用只读 `doctor` 排查。脚本只依赖 Node.js 与 Git，批次 1（生命周期/登记）和批次 2（scope/修改权）同时启用。退出码 0 成功、2 已登记但 blocked、1 拒绝或错误。
 
+## 创建时机与复用
+
+worktree 按**独立开发任务**创建，不按会话、阶段或 Todo 条目创建。新任务在 P1 正式登记时确定唯一 task-id、目标与 scope，并从当前集成分支创建 `.worktrees/<task-id>` 和 `task/<task-id>`；应在该任务首次业务代码修改前完成登记和检查。同一任务的实施、复核、返修及跨会话恢复沿用该 worktree。任务验收并按协议结案后，finish 合入、归档并清理该任务 worktree/本地分支；下一个独立任务使用新的 task-id 和新 worktree。
+
+可复用 Agent 会话或执行窗口，但不能把已登记任务 worktree 当作另一个独立任务的通用工作区，也不能仅改 task-id 标签接管旧目录。`slots` 是同时占用的并行窗口上限，不是项目可创建的 worktree 总数；窗口释放后可登记后续任务继续推进。自动调度只处理已登记任务，不会把待办清单自动拆成并创建任务。如何拆分任务取决于依赖、scope 和并行价值：同一可交付目标的连续步骤归入一个任务；独立目标才另行登记。
+
 ## 必须保持
 
 - scope 使用仓库相对的精确文件/目录前缀，活动持权任务的 scope 不相交；共享文件单列 shared_claims，同一时刻唯一持权。blocked 不获得任何修改权；escalated 保留原有权但停止推进。
