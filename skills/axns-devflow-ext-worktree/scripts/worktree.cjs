@@ -40,12 +40,14 @@ function mkdir(root, relative) {
   return target;
 }
 function validId(id) {
-  if (!/^\d{8}-[a-z0-9][a-z0-9-]{0,55}$/.test(id || '')) reject('task-id 必须是 YYYYMMDD-短标识（小写字母、数字、连字符）');
+  if (!/^(?:\d{8}-[a-z0-9][a-z0-9-]{0,55}|\d{6}-[A-Z]\d{2,4}-[a-z0-9]+(?:-[a-z0-9]+){0,15})$/.test(id || '') || id.length > 80) {
+    reject('task-id 必须是 YYMMDD-类型序号-任务标题；旧 YYYYMMDD-短标识仅用于兼容');
+  }
   return id;
 }
 function options(argv) {
   const opts = { command: argv.shift() };
-  const names = new Set(['--project', '--id', '--manifest', '--reason', '--accepted-head', '--human-accepted-by', '--message']);
+  const names = new Set(['--project', '--id', '--type', '--title', '--manifest', '--reason', '--accepted-head', '--human-accepted-by', '--message']);
   while (argv.length) {
     const key = argv.shift();
     if (!names.has(key) || !argv[0] || argv[0].startsWith('--') || opts[key.slice(2)] !== undefined) reject(`无效参数：${key}`);
@@ -53,7 +55,10 @@ function options(argv) {
   }
   if (!['status', 'doctor', 'register', 'claim', 'check', 'escalate', 'commit', 'finish'].includes(opts.command)) reject('命令：status | doctor | register | claim | check | escalate | commit | finish');
   if (!opts.project) reject('必须显式指定 --project <项目或任务 worktree>');
-  if (!['status', 'doctor'].includes(opts.command)) validId(opts.id);
+  if (opts.command === 'register' && !opts.id) {
+    if (!/^[A-Z]$/.test(opts.type || '') || !/^[a-z0-9]+(?:-[a-z0-9]+){0,15}$/.test(opts.title || '') || opts.title.length > 60) reject('自动编号需要 --type A --title 小写短标题');
+  } else if (!['status', 'doctor'].includes(opts.command)) validId(opts.id);
+  if ((opts.type || opts.title) && (opts.command !== 'register' || opts.id)) reject('--type/--title 仅用于 register 自动编号，不能与 --id 混用');
   if (opts.command === 'register' && !opts.manifest) reject('register 需要 --manifest <JSON>');
   if (opts.command === 'escalate' && !opts.reason?.trim()) reject('escalate 需要 --reason <事实及证据位置>');
   return opts;
@@ -248,10 +253,44 @@ function locked(ctx, action) {
     throw e;
   }
 }
+function registrationId(ctx, opts) {
+  // Reserve identities under the same repository lock as registration. Archives
+  // and orphan Git resources also consume a sequence: never rename to take over.
+  const ids = new Set([...records(ctx), ...records(ctx, true)].map(x => x.task_id));
+  for (const branch of git(ctx.root, ['for-each-ref', '--format=%(refname:short)', 'refs/heads/task/']).split('\n')) {
+    if (branch.startsWith('task/')) ids.add(branch.slice(5));
+  }
+  for (const entry of worktrees(ctx.root)) ids.add(path.basename(entry.path));
+  const managed = safe(ctx.root, path.join(ctx.root, '.worktrees'));
+  if (fs.existsSync(managed)) for (const name of fs.readdirSync(managed)) ids.add(name);
+  if (opts.id && /^\d{8}-/.test(opts.id)) return opts.id; // Preserve existing clients and recovery.
+  const registry = safe(ctx.root, path.join(ctx.root, '_plan/prompts/task-types.json'));
+  let config;
+  try { config = read(fs.existsSync(registry) ? registry : path.join(__dirname, '../assets/task-types.json')); }
+  catch (e) { if (e instanceof SyntaxError) reject('task-types.json 不是有效 JSON'); throw e; }
+  if (!config || config.version !== 1 || !config.types || Array.isArray(config.types) || typeof config.types !== 'object' ||
+      !Object.keys(config.types).length || Object.entries(config.types).some(([code, label]) => !/^[A-Z]$/.test(code) || typeof label !== 'string' || !label.trim()) ||
+      new Set(Object.values(config.types).map(x => x.trim())).size !== Object.keys(config.types).length) reject('task-types.json 需要 version:1 和唯一的单字母类型/非空名称');
+  const now = new Date();
+  const date = opts.id ? opts.id.slice(0, 6) : `${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const code = opts.id ? opts.id[7] : opts.type;
+  if (!Object.hasOwn(config.types, code)) reject(`未声明的任务类型 ${code}；先复用已有类型，确需新增时经用户评审更新 task-types.json`);
+  const parsed = new Date(Date.UTC(2000 + Number(date.slice(0, 2)), Number(date.slice(2, 4)) - 1, Number(date.slice(4, 6))));
+  if (`${String(parsed.getUTCFullYear()).slice(-2)}${String(parsed.getUTCMonth() + 1).padStart(2, '0')}${String(parsed.getUTCDate()).padStart(2, '0')}` !== date) reject('任务编号日期无效');
+  const prefix = `${date}-${code}`;
+  const sequences = [...ids].filter(x => x.startsWith(prefix)).map(x => Number(x.slice(prefix.length).match(/^\d{2,4}(?=-)/)?.[0] || 0));
+  const sequence = opts.id ? Number(opts.id.slice(prefix.length).split('-')[0]) : Math.max(0, ...sequences) + 1;
+  if (sequence < 1 || sequence > 9999 || sequences.includes(sequence)) reject('日期、类型和序号已使用或无效；新任务必须使用新序号');
+  const id = validId(opts.id || `${prefix}${String(sequence).padStart(2, '0')}-${opts.title}`);
+  ctx.task_id = id;
+  const ownerPath = path.join(ctx.lock, 'owner.json');
+  write(ownerPath, { ...read(ownerPath), task_id: id });
+  return id;
+}
 function register(ctx, opts) {
-  const id = opts.id;
+  const id = registrationId(ctx, opts);
   const m = manifest(path.resolve(opts.manifest), id);
-  if (fs.existsSync(pointer(ctx, id)) || fs.existsSync(pointer(ctx, id, true))) reject('task-id 已使用，请为新窗口分配新编号');
+  if (fs.existsSync(pointer(ctx, id)) || fs.existsSync(pointer(ctx, id, true))) reject('task-id 已使用；新独立任务分配新编号，原任务恢复沿用已登记编号与工作区');
   const worktree = safe(ctx.root, path.join(ctx.root, '.worktrees', id));
   if (fs.existsSync(worktree) || git(ctx.root, ['show-ref', '--verify', `refs/heads/task/${id}`], true).status === 0) reject('任务目录或分支已存在，禁止接管');
   if (worktrees(ctx.root).some(x => samePath(x.path, worktree))) reject('Git 仍登记同名 worktree，先运行 doctor；禁止自动 prune 或接管');
@@ -278,7 +317,7 @@ function register(ctx, opts) {
   if (shared.length) data.waiting_since = data.created_at;
   mkdir(worktree, `_plan/process/${id}`);
   fs.writeFileSync(path.join(worktree, `_plan/process/${id}/plan.md`),
-    `# ${id}\n\n状态：待填写任务目标与成功标准。\n\n## 目标与边界\n\n## 实施计划\n\n## 证据与复核\n\n## 当前结论与下一步\n`, { flag: 'wx' });
+    `# ${id}\n\n状态：已登记，待补足原目标与成功标准，不代表实施完成。\n\n## 目标与边界\n\n本批目标、交付物、停止条件、scope、依赖及整合责任：待填写。\n未来独立需求进入台账，不无限追加到本工作区。\n\n## 实施计划\n\n上下文预算依据（不可观测则未知）、执行单元及验证方法：待填写。\n\n## 证据与复核\n\n## 当前结论与下一步\n\n跨窗口接续在此保留阶段、已有授权、cwd/分支/被检提交、未提交差异归属、执行者与持权、有效证据、未关闭项及下一动作。\n`, { flag: 'wx' });
   save(ctx, data, shared.length ? 'task.blocked' : 'task.claimed', { blocked_by: shared });
   return data;
 }
@@ -447,7 +486,7 @@ module.exports = { context, finish };
 if (require.main === module) {
   try {
     if (process.argv.includes('--help')) {
-      console.log('node worktree.cjs <status|doctor|register|claim|check|escalate|commit|finish> --project <目录> [--id YYYYMMDD-task] [--manifest JSON] [--message 提交摘要] [--reason 事实/裁决依据] [--accepted-head HASH] [--human-accepted-by 确认记录]');
+      console.log('node worktree.cjs <status|doctor|register|claim|check|escalate|commit|finish> --project <目录> [--id YYMMDD-A01-task | register --type A --title task] [--manifest JSON] [--message 提交摘要] [--reason 事实/裁决依据] [--accepted-head HASH] [--human-accepted-by 确认记录]');
     } else {
       const opts = options(process.argv.slice(2)); const ctx = context(opts);
       let result;

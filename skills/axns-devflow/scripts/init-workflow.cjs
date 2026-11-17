@@ -58,6 +58,7 @@ function initialize(opts) {
     [path.join(skill, 'references', 'quality-gates.md'), '_plan/guides/quality-gates.md'],
     [path.join(skill, 'references', 'acceptance.md'), '_plan/guides/acceptance.md'],
     [path.join(skill, 'references', 'tool-integration.md'), '_plan/guides/tool-integration.md'],
+    [path.join(skill, 'references', 'context-handoff.md'), '_plan/guides/context-handoff.md'],
   );
   for (const source of filesUnder(path.join(skill, 'prompts', 'window'))) {
     sources.push([source, `_plan/prompts/window/${path.basename(source)}`]);

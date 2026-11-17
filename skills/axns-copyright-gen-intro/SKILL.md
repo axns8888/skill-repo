@@ -6,6 +6,8 @@ description: >-
   Use when the user mentions 软著登记信息、软著申请信息、开发的硬件环境、运行的硬件环境、
   开发目的、主要功能、技术特点、源程序量、编程语言、axns-copyright-gen-intro，
   或要填写版权中心/代理机构在线登记表的软件基本信息字段。
+metadata:
+  version: "1.0.0-rc.1"
 ---
 
 # 软著登记信息生成（axns-copyright-gen-intro）

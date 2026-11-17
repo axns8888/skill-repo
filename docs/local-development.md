@@ -16,6 +16,8 @@ flowchart TD
 
 ## 本机日常更新
 
+修改技能时，先按 [技能版本管理](versioning.md) 更新对应技能的 `metadata.version`、技能 README 版本记录及根 README 版本列表。每个技能独立升级，初始基线为 `1.0.0-rc.1`。
+
 在仓库目录运行，PowerShell、bash 使用相同命令：
 
 ```sh
@@ -31,6 +33,7 @@ npm run skills:check
 - Codex / DSH：发现对应 `.codex` / `.dsh` 用户目录时，为这三项创建或保留指向中央副本的技能链接。也可显式指定 `--targets agents,codex,dsh`。
 - 每次替换前保留旧目录；不会保留旧文件混入新版，也不修改无关技能。第一次迁移旧安装时也会备份。
 - 后续发现已安装副本被修改，默认拒绝覆盖。先把需要的修改合回源码；确实要覆盖时使用 `--replace-modified`，旧内容仍会备份。
+- 移动目录遇到 `EPERM`、`EBUSY` 或 `EACCES` 时，间隔 100/250/500 毫秒重试，合计最多 4 次。持续失败会显示具体路径并回滚；检查使用该技能目录的终端、执行器或其他程序及目录权限后再重试。不会强制终止进程或改成原地覆盖文件。
 - 安装失败自动回滚本轮改动。已有同步锁不自动抢占；进程意外终止时，先检查 `.agents/skill-repo/sync.lock/owner.json`、备份及实际目录，确认旧进程停止后恢复。
 - 安装收据：`.agents/skill-repo/install.json`，记录源提交、是否包含未提交修改、每项技能 SHA-256、Node/Git 版本、入口和备份位置。`skills:check` 按实际文件核验，不只相信收据。
 - 原中央目录备份位于 `.agents/skill-repo/backups/<本轮>/previous/`；原平台独立副本备份位于平台目录的 `skill-repo-backups/<本轮>/`。链接到中央副本的既有入口不重复备份。

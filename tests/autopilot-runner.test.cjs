@@ -81,6 +81,22 @@ test('execution requires explicit opt-in; read-only advice remains usable', t =>
   assert.equal(run(f, 'claim').status, 1);
 });
 
+test('typed task ID survives session-adapter claim and evidence handoff callbacks', t => {
+  const f = fixture(t);
+  const typed = '261117-F01-session-recovery';
+  put(f.root, '_plan/.active_plan', typed);
+  json(run(f, 'init', '--id', typed, '--stage', 'P2', '--owner', 'controller/test'));
+  const claimed = claim(f);
+  const request = claimed.request;
+  assert.equal(request.task_id, typed);
+  put(f.root, `_plan/process/${typed}/evidence.md`, 'Fixture callback evidence\n');
+  const done = json(run(f, 'complete', ...args(request), '--evidence', 'evidence.md', '--handoff'));
+  assert.ok(done);
+  const recorded = JSON.parse(fs.readFileSync(path.join(f.root, '_plan/autopilot', typed, 'stage.json'), 'utf8'));
+  assert.equal(recorded.task_id, typed);
+  assert.equal(recorded.state, 'completed');
+});
+
 test('native session executes P2 then P3, records real callbacks and stops at stage cap', t => {
   const f = fixture(t); config(f, { version: 1, execution: { enabled: true }, capabilities: { advance: { max_stage: 'P3' } } }); init(f);
   assert.equal(json(run(f, 'precheck')).actionable, true);

@@ -37,7 +37,8 @@
 }
 ```
 
-- task-id：`YYYYMMDD-short-name`，后半为小写字母、数字和连字符；关闭后的编号不复用。
+- task-id：新任务用 `YYMMDD-类型序号-任务标题`，例如 `261117-A01-weknora-mcp-config`；标题为小写字母/数字的连字符短语，完整编号不超过 80 字符。日期取本地日期，序号按日期+类型递增、至少两位（01～9999），归档后不复用同一序号。分支为 `task/<task-id>`，目录为 `.worktrees/<task-id>`。已有 `YYYYMMDD-short-name` 继续支持恢复及旧客户端，不批量改名。
+- 类型注册表：优先读取主检出 `_plan/prompts/task-types.json`，缺少时用扩展内置默认 A 新增、M 修改、F 修复、R 复核。初始化仅补缺，不覆盖项目已经声明的编码。先按主要交付目标选既有编码，配置/文档/重构通常归 M，纠错归 F；跨类型任务按主目标归类，独立目标才拆分。编码不按模块、技术栈或每项业务新增。同义类型合并；确无适用类型时先由用户评审小范围更新表，不自动扩展。已有项目编码不同则沿用其表，不强制重编历史。
 - scope：仓库相对路径，文件必须精确匹配；目录必须以 `/` 结尾。`src/a/` 与 `src/a/file.py` 相交，与 `src/ab/` 不相交。不支持 glob、绝对路径、反斜杠、`..`。路径按大小写不敏感保守比较，兼容 Windows 协作。
 - shared_claims：精确文件路径，不能与本任务 scope 重叠。共享文件若落在大目录范围内，需把 scope 拆成较小目录/文件，让该文件只属于 shared_claims。两个任务的 shared_claims 可以请求同一文件，但只会有一个任务成功持权。
 - `.git/`、`.worktrees/`、`_plan/active/`、`_plan/archive/`、`_plan/registry.jsonl`、`_plan/.active_plan` 和 `_plan/process/` 是保留范围，不可声明或用祖先目录覆盖。自己的 `_plan/process/<task-id>/` 隐式允许，其他任务记录不能改。提示词、基线和台账可声明精确 scope/shared_claims，按普通任务独占/串行维护。
@@ -49,6 +50,10 @@ scope 冲突（包含 scope 覆盖他人的 shared_claims）拒绝登记；share
 ## 命令与阶段
 
 所有命令使用 Node.js 标准库与 Git，无安装依赖；以下 `<脚本>` 指本扩展 `scripts/worktree.cjs`。--project 显式指定项目根或任务 worktree；--manifest 路径相对于命令调用目录。
+
+新任务推荐 `node "<脚本>" register --project "<主检出目录>" --type A --title weknora-mcp-config --manifest "<JSON>"`。脚本在现有共享锁内，依据活动/归档记录、残留 Git 任务分支和 worktree 分配下一序号；返回的 task-id 用于后续所有操作。也支持显式 `--id 261117-A01-weknora-mcp-config`，会检查已声明类型、有效日期和已占用序号，不允许换标题复用同一编号。锁占用时先核实原进程，不能通过重试另造同一任务。登记失败且没有持久资源时不算已创建任务，仍按实际登记核实。
+
+类型表格式为 `{"version":1,"types":{"A":"新增","M":"修改","F":"修复","R":"复核"}}`。类型键为单个大写字母，名称非空且唯一；修改类型表属于共享项目规范，按既有 scope/shared_claims 维护。
 
 worktree 的生命周期以独立 task-id 为单位：新任务在 P1 登记时创建专属目录和分支，且在该任务首次业务修改前完成；同一任务的后续阶段、返修和跨会话恢复复用它。任务结案清理后，后续独立任务以新 task-id 重新登记创建，禁止把已登记或已结案的目录/分支改名接管。执行会话可以复用，任务工作区不可跨独立任务复用。
 

@@ -4,6 +4,8 @@ description: >-
   从仓库已实现功能生成软著用户操作说明书，支持 Markdown/Word、页面截图与 Word 嵌图。
   Use when the user asks for 软著操作手册、用户操作说明书、截图嵌入 Word，
   或明确提及 axns-copyright-gen-doc。单独生成源码材料、登记信息或编排整套材料时使用对应技能。
+metadata:
+  version: "1.0.0-rc.1"
 ---
 
 # 软著操作说明书生成（axns-copyright-gen-doc）

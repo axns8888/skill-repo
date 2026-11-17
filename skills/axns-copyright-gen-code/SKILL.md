@@ -5,6 +5,8 @@ description: >-
   可配置路径占比与忽略规则并导出 Word。Use when the user mentions 软著源码、程序鉴别材料、
   源码文档、60页源码、前后各30页、有效代码行、axns-copyright-gen-code，
   或要从仓库抽取固定页数源码用于软著登记。
+metadata:
+  version: "1.0.0-rc.1"
 ---
 
 # 软著源码文档生成（axns-copyright-gen-code）

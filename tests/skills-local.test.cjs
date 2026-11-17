@@ -96,3 +96,55 @@ test('missing loader links and runtime version drift fail the consistency check'
   const result = check(f.root, { ...f.opts, targets: 'agents' }, { ...f.lock, node: 'v0.0.0' });
   assert.equal(result.node_matches, false); assert.equal(result.ok, false);
 });
+
+for (const code of ['EPERM', 'EBUSY', 'EACCES']) {
+  test('temporary directory rename refusal is retried without losing backup: ' + code, t => {
+    const f = fixture(t), original = path.join(f.canonical, names[0]);
+    fs.mkdirSync(original, { recursive: true }); fs.writeFileSync(path.join(original, 'old'), 'preserve');
+    const rename = fs.renameSync; let attempts = 0, result;
+    fs.renameSync = (from, to) => {
+      if (from === original && ++attempts <= 2) throw Object.assign(new Error('simulated ' + code), { code });
+      return rename(from, to);
+    };
+    try { result = install(f.root, f.opts, f.lock); }
+    finally { fs.renameSync = rename; }
+    assert.equal(attempts, 3);
+    assert.equal(fs.readFileSync(path.join(result.backups[0].to, 'old'), 'utf8'), 'preserve');
+    assert.equal(check(f.root, f.opts, f.lock).ok, true);
+  });
+}
+test('persistent rename refusal rolls back earlier skill updates and preserves the receipt', t => {
+  const f = fixture(t); install(f.root, f.opts, f.lock);
+  const before = inventory(f.canonical).sha256;
+  const receipt = path.join(f.home, '.agents/skill-repo/install.json');
+  const priorReceipt = fs.readFileSync(receipt, 'utf8');
+  for (const name of names) fs.appendFileSync(path.join(f.root, 'skills', name, 'SKILL.md'), 'new revision\n');
+  const next = snapshot(f.root); fs.writeFileSync(path.join(f.root, 'skills.lock.json'), JSON.stringify(next));
+  const blocked = path.join(f.canonical, names[2]), rename = fs.renameSync; let attempts = 0;
+  fs.renameSync = (from, to) => {
+    if (from === blocked) { attempts++; throw Object.assign(new Error('simulated EPERM'), { code: 'EPERM' }); }
+    return rename(from, to);
+  };
+  try { assert.throws(() => install(f.root, f.opts, next), error => error.code === 'EPERM' && /4 次/.test(error.message) && error.message.includes(blocked)); }
+  finally { fs.renameSync = rename; }
+  assert.equal(attempts, 4);
+  assert.equal(inventory(f.canonical).sha256, before);
+  assert.equal(fs.readFileSync(receipt, 'utf8'), priorReceipt);
+  assert.equal(fs.existsSync(path.join(f.home, '.agents/skill-repo/sync.lock')), false);
+  assert.equal(check(f.root, f.opts, f.lock).ok, true);
+  install(f.root, f.opts, next);
+  assert.equal(check(f.root, f.opts, next).ok, true);
+});
+test('non-transient directory rename errors fail immediately', t => {
+  const f = fixture(t), original = path.join(f.canonical, names[0]);
+  fs.mkdirSync(original, { recursive: true }); fs.writeFileSync(path.join(original, 'old'), 'keep');
+  const rename = fs.renameSync; let attempts = 0;
+  fs.renameSync = (from, to) => {
+    if (from === original) { attempts++; throw Object.assign(new Error('simulated EINVAL'), { code: 'EINVAL' }); }
+    return rename(from, to);
+  };
+  try { assert.throws(() => install(f.root, f.opts, f.lock), error => error.code === 'EINVAL'); }
+  finally { fs.renameSync = rename; }
+  assert.equal(attempts, 1);
+  assert.equal(fs.readFileSync(path.join(original, 'old'), 'utf8'), 'keep');
+});

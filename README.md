@@ -4,17 +4,24 @@
 
 ## 技能列表
 
-| Skill | 适用场景 | 产出 |
-| --- | --- | --- |
-| [axns-ops-bt](skills/axns-ops-bt/README.md) | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
-| [axns-devflow](skills/axns-devflow/README.md) | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
-| [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、scope/修改权校验及 P0–P5 窗口协议 |
-| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | 项目显式启用后的任务巡检与调度建议 | 只读判定、可选执行层、互斥领取与证据回调；提供 Orca 安装计划及通用平台桥 |
-| [axns-ui-img2vue](skills/axns-ui-img2vue/README.md) | 单图、批量设计图转 Vue 3，或按图修改已有页面 | 页面与组件、多状态整合、素材复用及验证结果；由当前会话模型直接完成 |
-| [axns-copyright-gen](skills/axns-copyright-gen/SKILL.md) | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
-| [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/SKILL.md) | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
-| [axns-copyright-gen-code](skills/axns-copyright-gen-code/SKILL.md) | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
-| [axns-copyright-gen-intro](skills/axns-copyright-gen-intro/SKILL.md) | 登记表基本信息 | 可分段复制的 Markdown 字段 |
+| Skill | 当前版本 | 适用场景 | 产出 |
+| --- | --- | --- | --- |
+| [axns-skill-evolution](skills/axns-skill-evolution/README.md) | `1.0.0-rc.1` | 收集任意技能的实际问题、用户评审与改进移交 | `_doc/skill进化树/<技能名称>/YYMMDD-标题.md`，批准范围及分层验证证据；可独立使用 |
+| [axns-ops-bt](skills/axns-ops-bt/README.md) | `1.0.0-rc.1` | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
+| [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.1` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
+| [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | `1.0.0-rc.1` | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、scope/修改权校验及 P0–P5 窗口协议 |
+| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | `1.0.0-rc.1` | 项目显式启用后的任务巡检与调度建议 | 只读判定、可选执行层、互斥领取与证据回调；提供 Orca 安装计划及通用平台桥 |
+| [axns-ui-img2vue](skills/axns-ui-img2vue/README.md) | `1.0.0-rc.1` | 单图、批量设计图转 Vue 3，或按图修改已有页面 | 页面与组件、多状态整合、素材复用及验证结果；由当前会话模型直接完成 |
+| [axns-copyright-gen](skills/axns-copyright-gen/README.md) | `1.0.0-rc.1` | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
+| [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/README.md) | `1.0.0-rc.1` | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
+| [axns-copyright-gen-code](skills/axns-copyright-gen-code/README.md) | `1.0.0-rc.1` | 源码程序鉴别材料 | 按配置抽取源码的 Word 文档 |
+| [axns-copyright-gen-intro](skills/axns-copyright-gen-intro/README.md) | `1.0.0-rc.1` | 登记表基本信息 | 可分段复制的 Markdown 字段 |
+
+## 版本管理
+
+全部 10 个技能从 `1.0.0-rc.1` 建立统一版本基线，后续按技能独立升级。每个技能以 `SKILL.md` 的 `metadata.version` 为版本来源，自己的 README 展示当前版本并按时间倒序保存版本记录。升级时同步更新本页列表、对应技能的版本字段及 README，记录改动、验证结果和必要的迁移说明。
+
+预发布使用 `目标版本-rc.序号`；正式版本遵循 MAJOR.MINOR.PATCH。详细升级规则、记录要求和本地验证步骤见 [技能版本管理](docs/versioning.md)。技能版本、仓库发布 tag 与内容校验快照分别记录，版本号本身不表示已发布或已安装。
 
 ## 安装
 

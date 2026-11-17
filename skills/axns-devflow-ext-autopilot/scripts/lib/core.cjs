@@ -27,7 +27,7 @@ function boolean(value, fallback, label) {
   return value;
 }
 function id(value) {
-  if (typeof value !== 'string' || !/^\d{8}-[a-z0-9][a-z0-9-]{0,55}$/.test(value)) fail(`无效 task-id：${value}`);
+  if (typeof value !== 'string' || value.length > 80 || !/^(?:\d{8}-[a-z0-9][a-z0-9-]{0,55}|\d{6}-[A-Z]\d{2,4}-[a-z0-9]+(?:-[a-z0-9]+){0,15})$/.test(value)) fail(`无效 task-id：${value}`);
   return value;
 }
 function relativePath(relative) {

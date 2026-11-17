@@ -1,5 +1,7 @@
 # axns-devflow 的可选 worktree 扩展
 
+当前版本：`1.0.0-rc.1`（预发布）。版本来源为 [SKILL.md](SKILL.md) 的 `metadata.version`。
+
 安装时同时选择 `axns-devflow`、`axns-devflow-ext-worktree`。安装扩展不等于启用；项目仍默认单任务模式。
 
 ## 工作流程
@@ -7,6 +9,8 @@
 扩展在同一仓库的本机 worktree 之间协调任务；宿主的 P1–P4 仍负责开发与验收。AI 在用户任务授权内连续推进，commit 校验范围后提交，finish 将已验收候选快进合入、归档并删除本任务 worktree 和本地分支。
 
 ### 创建与复用规则
+
+任务先定义有界目标与完成标准；持续收集需求也按批次交付，后续独立需求进入新任务。新编号例如 `261117-A01-weknora-mcp-config`，默认 A 新增、M 修改、F 修复、R 复核；优先沿用项目已声明的类型，不按模块无限增码。使用 `register --type A --title weknora-mcp-config --manifest "<JSON>" --project "<项目>"` 可在共享锁内分配本地日期及下一序号；格式、项目类型表与旧编号兼容见 [协议](references/protocol.md)。
 
 每个**独立登记的开发任务**在 P1 创建一个对应 worktree，且在该任务首次业务代码修改前完成登记。一个任务的 P2 实施、P3 复核、返修、P4 验收以及跨会话接续都留在同一 worktree；阶段或会话切换不另建工作区。结案清理后，下一个独立任务必须使用新 task-id 登记并创建新 worktree，不接管前一个已结案任务的目录或分支。
 
@@ -77,3 +81,13 @@ node "<扩展技能目录>/scripts/worktree.cjs" doctor --project "<项目目录
 DSH/Orca 的原生自动化和清单继续使用；启用本扩展后由本扩展统一登记工作区及共享修改权，Orca 和 PyCharm 打开已登记目录。平台自身的 worktree 创建功能不同时为同一任务再建工作区。跨平台执行权交接与清单分工见 [工具协作](../axns-devflow/references/tool-integration.md)。
 
 默认自动收尾仅覆盖本任务的本地资源。已显式关闭的 autopilot 能力继续生效；要启用跨会话闭环，配置 `advance.max_stage: P4`、`finish_task.enabled: true` 和 `execution.enabled: true`。P4 窗口回调交接后，下一轮主目录的 claim/tick 执行收尾。
+
+## 版本管理与记录
+
+本技能独立维护版本。每个后续变更批次同步更新 `SKILL.md` 的 `metadata.version`、本页当前版本和下表；最新记录置顶，保留历史。记录日期、具体改动和验证结果，涉及不兼容变更时补充迁移说明。
+
+预发布按 `1.0.0-rc.1 → 1.0.0-rc.2` 递增，通过相应验证后可发布 `1.0.0`。正式版修复递增 PATCH，兼容新增递增 MINOR，不兼容变更递增 MAJOR；下一轮预发布使用目标版本加 `-rc.1`。仅修改本技能时，无需连带升级其他技能。
+
+| 版本 | 日期 | 变更记录 | 验证与状态 |
+| --- | --- | --- | --- |
+| `1.0.0-rc.1` | 2026-11-17 | 建立工作区扩展的版本基线，包含有界任务、类型命名、验收合入与工作区释放。统一版本字段及 README 版本记录。 | 本地源码基线；版本一致性及源码快照检查通过，尚未发布或同步安装。 |

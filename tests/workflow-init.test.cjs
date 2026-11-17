@@ -61,7 +61,7 @@ for (const name of skills) {
       '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
       '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md',
       '_plan/prompts/architecture.md', '_plan/prompts/coding.md', '_plan/prompts/ui.md',
-      '_plan/guides/engineering-standards.md']) {
+      '_plan/guides/engineering-standards.md', '_plan/guides/context-handoff.md', '_plan/prompts/task-types.json']) {
       assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
     }
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/project.md'), 'utf8').includes(projectName));
@@ -94,6 +94,8 @@ for (const name of skills) {
     fs.appendFileSync(path.join(root, '_plan/prompts/project.md'), '\n用户已填写的项目约定\n');
     fs.writeFileSync(path.join(root, '_plan/prompts/acceptance.json'),
       JSON.stringify({ version: 1, human_acceptance: { enabled: true, blocking: true } }));
+    fs.writeFileSync(path.join(root, '_plan/prompts/task-types.json'),
+      JSON.stringify({ version: 1, types: { C: '项目既有类型', M: '修改' } }));
     const before = snapshot(root);
     assert.equal(run(skill, '--project-root', root, '--project-name', 'another name').status, 0);
     assert.deepEqual(snapshot(root), before);

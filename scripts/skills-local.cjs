@@ -9,6 +9,21 @@ const DEVFLOW = ['axns-devflow', 'axns-devflow-ext-worktree', 'axns-devflow-ext-
 const HASH = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const samePath = (a, b) => process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
 const exists = p => { try { fs.lstatSync(p); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } };
+// Keep directory swaps transactional; tolerate brief filesystem sharing/permission refusals.
+function renameDirectory(from, to) {
+  const delays = [100, 250, 500];
+  for (let attempt = 0; ; attempt++) {
+    try { fs.renameSync(from, to); return; }
+    catch (error) {
+      if (!['EPERM', 'EBUSY', 'EACCES'].includes(error.code)) throw error;
+      if (attempt === delays.length) {
+        error.message += '; 移动目录已尝试 4 次仍失败，请检查目录占用或访问权限：' + from + ' -> ' + to;
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delays[attempt]);
+    }
+  }
+}
 function json(p) { return JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, '')); }
 function write(p, value) {
   fs.mkdirSync(path.dirname(p), { recursive: true });
@@ -115,11 +130,11 @@ function install(root, opts, lock) {
       fs.mkdirSync(path.dirname(dst), { recursive: true });
       if (exists(dst)) {
         fs.mkdirSync(path.dirname(backup), { recursive: true });
-        fs.renameSync(dst, backup); backups.push({ from: dst, to: backup });
-        undo.push(() => fs.renameSync(backup, dst));
+        renameDirectory(dst, backup); backups.push({ from: dst, to: backup });
+        undo.push(() => renameDirectory(backup, dst));
       }
-      fs.renameSync(staged, dst);
-      undo.push(() => { fs.mkdirSync(path.dirname(staged), { recursive: true }); fs.renameSync(dst, staged); });
+      renameDirectory(staged, dst);
+      undo.push(() => { fs.mkdirSync(path.dirname(staged), { recursive: true }); renameDirectory(dst, staged); });
     }
     for (const name of l.names) {
       const dst = path.join(l.canonical, name);
@@ -140,8 +155,8 @@ function install(root, opts, lock) {
         if (exists(entry)) {
           // Keep backup on the same volume as the entry for reliable rename/restore.
           const backup = path.join(path.dirname(base), 'skill-repo-backups', run, name);
-          fs.mkdirSync(path.dirname(backup), { recursive: true }); fs.renameSync(entry, backup);
-          backups.push({ from: entry, to: backup }); undo.push(() => fs.renameSync(backup, entry));
+          fs.mkdirSync(path.dirname(backup), { recursive: true }); renameDirectory(entry, backup);
+          backups.push({ from: entry, to: backup }); undo.push(() => renameDirectory(backup, entry));
         }
         fs.symlinkSync(dst, entry, process.platform === 'win32' ? 'junction' : 'dir');
         undo.push(() => fs.unlinkSync(entry)); linked.push(entry);

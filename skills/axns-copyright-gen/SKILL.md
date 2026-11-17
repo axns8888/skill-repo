@@ -6,6 +6,8 @@ description: >-
   Use when the user mentions axns-copyright-gen、软著 init、软著 generator、软著一键生成、
   初始化软著配置、一次生成操作手册与源码与登记信息，或要编排 axns-copyright-gen-doc /
   axns-copyright-gen-code / axns-copyright-gen-intro。
+metadata:
+  version: "1.0.0-rc.1"
 ---
 
 # 软著材料聚合（axns-copyright-gen）

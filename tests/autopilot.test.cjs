@@ -43,6 +43,17 @@ function run(root, command = 'decide', ...extra) {
 function output(result, code = 0) { assert.equal(result.status, code, result.stderr || result.stdout); return JSON.parse(result.stdout); }
 function decision(f, code = 0) { return output(run(f.root), code).decisions[0]; }
 function bad(f, pattern) { const r = run(f.root); assert.equal(r.status, 1, r.stdout); assert.match(r.stderr, pattern); assert.equal(r.stdout, ''); }
+
+test('autopilot reads typed worktree identities and preserves their exact advisory task ID', t => {
+  const f = fixture(t, true);
+  const typed = '261117-M01-platform-config';
+  const task = register(f, typed);
+  stage(f, typed);
+  const current = output(run(f.root, 'status')).tasks.find(x => x.task_id === typed);
+  assert.ok(current);
+  assert.equal(current.task_root, task.worktree);
+  assert.equal(decision(f).task_id, typed);
+});
 function stage(f, taskId = a, extra = {}) {
   if (extra.state === 'completed' && !Object.hasOwn(extra, 'completed_worktree'))
     extra = { completed_worktree: output(run(f.root, 'status')).tasks.find(t => t.task_id === taskId).worktree_snapshot, ...extra };

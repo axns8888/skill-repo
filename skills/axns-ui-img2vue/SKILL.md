@@ -2,6 +2,7 @@
 name: axns-ui-img2vue
 description: 根据单张 UI 截图或设计导出图生成 Vue 3 页面与组件，批量处理多页面和同页多状态，或按图还原、修改已有 Vue 页面。适用于结合图片、文字要求、现有代码与素材实施界面的任务；由当前会话模型直接看图和编写代码，沿用项目组件库与样式方案。
 metadata:
+  version: "1.0.0-rc.1"
   origin: community
 ---
 

@@ -7,7 +7,7 @@ description: >-
   面板故障和相关工具兼容性修复。
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.0.0-rc.1"
 ---
 
 # 宝塔面板智能运维

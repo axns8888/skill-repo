@@ -1,5 +1,7 @@
 # 软著材料聚合编排：axns-copyright-gen
 
+当前版本：`1.0.0-rc.1`（预发布）。版本来源为 [SKILL.md](SKILL.md) 的 `metadata.version`。
+
 把一个项目或一个端的配置与三套材料对应起来：登记信息、源码 Word、操作手册及截图。需要同时安装三个子技能；只生成其中一套时，也可直接使用对应子技能。
 
 ## 工作流程
@@ -48,3 +50,13 @@ flowchart TD
 | [axns-copyright-gen-doc](../axns-copyright-gen-doc/README.md) | 操作手册 Markdown / Word、页面截图 |
 
 执行细则见 [SKILL.md](SKILL.md)，参数见 [CLI 说明](references/cli.md)，材料对应关系见 [目录约定](references/layout.md)，调用示例见 [提示词](references/quick-prompt.md)。
+
+## 版本管理与记录
+
+本技能独立维护版本。每个后续变更批次同步更新 `SKILL.md` 的 `metadata.version`、本页当前版本和下表；最新记录置顶，保留历史。记录日期、具体改动和验证结果，涉及不兼容变更时补充迁移说明。
+
+预发布按 `1.0.0-rc.1 → 1.0.0-rc.2` 递增，通过相应验证后可发布 `1.0.0`。正式版修复递增 PATCH，兼容新增递增 MINOR，不兼容变更递增 MAJOR；下一轮预发布使用目标版本加 `-rc.1`。仅修改本技能时，无需连带升级其他技能。
+
+| 版本 | 日期 | 变更记录 | 验证与状态 |
+| --- | --- | --- | --- |
+| `1.0.0-rc.1` | 2026-11-17 | 建立聚合编排技能的版本基线，覆盖 init 配置与 doc/code/intro 三类材料协作。统一版本字段及 README 版本记录。 | 本地源码基线；版本一致性及源码快照检查通过，尚未发布或同步安装。 |

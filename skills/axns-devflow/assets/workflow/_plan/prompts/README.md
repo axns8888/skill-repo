@@ -7,6 +7,7 @@
 | [ui.md](ui.md) | 布局、令牌、公共组件、页面模式和状态；无界面注明不适用 |
 | [project.md](project.md) | 项目当前开发基线；初始化后按真实情况填写 |
 | [acceptance.json](acceptance.json) | 独立人工验收开关，默认关闭；语义见 [配置说明](../../../../references/acceptance.md) |
+| [task-types.json](task-types.json) | 新任务命名的类型表；复用项目已有编码，默认 A 新增、M 修改、F 修复、R 复核，避免按模块增码 |
 | [window/P0-open.md](../../../../prompts/window/P0-open.md) | 窗口协议入口；P1 登记、P2 执行、P3 复核、P4 验收、P5 升级 |
 | [stages.md](stages.md) | 使用 ${{skill_name}} 的可复制阶段指令 |
 

@@ -53,6 +53,59 @@ function commit(root, id, message = 'implementation') { git(root, 'add', '.'); g
 function events(f) { return fs.readFileSync(path.join(f.root, '_plan/registry.jsonl'), 'utf8').trim().split('\n').map(JSON.parse); }
 function pointers(f) { return ok(run(f.root, 'status')).tasks; }
 
+test('typed task IDs merge a bounded batch, survive recovery and allocate past archives and Git remnants', t => {
+  const f = fixture(t);
+  const now = new Date();
+  const date = `${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const m = manifest(f, 'auto-new', ['src/a.txt']);
+  const first = ok(run(f.root, 'register', null, '--type', 'A', '--title', 'weknora-mcp-config', '--manifest', m));
+  assert.equal(first.task_id, `${date}-A01-weknora-mcp-config`);
+  assert.equal(ok(run(first.worktree, 'check', first.task_id)).result, 'passed');
+  // A serial owner handoff keeps the exact task branch and workspace.
+  const transfer = manifest(f, 'handoff', ['src/a.txt']);
+  const resumed = ok(run(first.worktree, 'claim', first.task_id, '--manifest', transfer, '--reason', '原执行者已停写，串行交接'));
+  assert.equal(resumed.worktree, first.worktree);
+  assert.equal(pointers(f).length, 1);
+  put(first.worktree, 'src/a.txt', 'bounded batch completed\n');
+  put(first.worktree, `_plan/process/${first.task_id}/acceptance.md`, 'Fixture validation: scoped diff and commit identity checked.\n');
+  const head = ok(run(first.worktree, 'commit', first.task_id)).head;
+  const done = ok(run(f.root, 'finish', first.task_id, '--accepted-head', head));
+  assert.equal(done.holds_claims, false);
+  assert.equal(git(f.root, 'rev-parse', 'main'), head);
+  assert.ok(!fs.existsSync(first.worktree));
+  assert.equal(git(f.root, 'branch', '--list', `task/${first.task_id}`), '');
+  fail(register(f, `${date}-A01-different-title`, ['src/a.txt']), /序号已使用/);
+  git(f.root, 'branch', `task/${date}-A05-orphan`);
+  fs.mkdirSync(path.join(f.root, '.worktrees', `${date}-A08-unregistered`));
+  const second = ok(run(f.root, 'register', null, '--type', 'A', '--title', 'next-goal', '--manifest', m));
+  assert.equal(second.task_id, `${date}-A09-next-goal`);
+  assert.notEqual(first.worktree, second.worktree);
+  assert.equal(second.base_commit, head);
+  assert.equal(ok(run(f.root, 'status')).archived[0].task_id, first.task_id);
+});
+
+test('project type registry overrides defaults and invalid typed IDs cannot create workspaces', t => {
+  const f = fixture(t);
+  put(f.root, '_plan/prompts/task-types.json', JSON.stringify({ version: 1, types: { C: '项目既有新增', M: '修改' } }));
+  git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'project codes');
+  fail(register(f, '261117-A01-unknown', ['src/a.txt']), /未声明/);
+  fail(register(f, '261132-C01-invalid-date', ['src/a.txt']), /日期无效/);
+  fail(register(f, '261117-C00-zero', ['src/a.txt']), /序号/);
+  fail(run(f.root, 'register', '261117-C01-../escape', '--manifest', manifest(f, 'invalid-id', ['src/a.txt'])), /task-id/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.worktrees')));
+  put(f.root, '_plan/prompts/task-types.json', '{');
+  fail(register(f, '261117-C01-use-existing-code', ['src/a.txt']), /有效 JSON/);
+  assert.ok(!fs.existsSync(path.join(f.root, '.git/axns-devflow.lock')));
+  put(f.root, '_plan/prompts/task-types.json', JSON.stringify({ version: 1, types: { C: '项目既有新增', M: '修改' } }));
+  const first = ok(register(f, '261117-C01-use-existing-code', ['src/a.txt']));
+  const m = manifest(f, 'followup', ['src/b.txt'], [], [first.task_id]);
+  const second = ok(run(f.root, 'register', null, '--type', 'M', '--title', 'followup', '--manifest', m));
+  assert.deepEqual(second.depends_on, [first.task_id]);
+  fail(run(second.worktree, 'check', second.task_id), /依赖未完成/);
+  const registry = JSON.parse(fs.readFileSync(path.join(f.root, '_plan/prompts/task-types.json'), 'utf8'));
+  assert.deepEqual(Object.keys(registry.types), ['C', 'M']);
+});
+
 test('disabled extension is read-only and refuses registration', t => {
   const f = fixture(t, false); const before = git(f.root, 'status', '--porcelain');
   assert.equal(ok(run(f.root, 'status')).enabled, false);
