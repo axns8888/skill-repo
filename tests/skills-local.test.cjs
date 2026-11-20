@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { snapshot, verify, install, check, inventory } = require('../scripts/skills-local.cjs');
 const cache = path.resolve(__dirname, '../.cache');
-const names = ['axns-devflow', 'axns-devflow-ext-worktree', 'axns-devflow-ext-autopilot'];
+const names = ['axns-devflow', 'axns-devflow-ext-worktree', 'axns-devflow-ext-autopilot', 'axns-copyright-gen'];
+const devflowNames = names.slice(0, 3);
 function fixture(t) {
   fs.mkdirSync(cache, { recursive: true });
   const base = fs.mkdtempSync(path.join(cache, 'skills-local-test-'));
@@ -29,11 +30,23 @@ test('local migration backs up old contents, removes obsolete files and shares e
   const f = fixture(t), old = path.join(f.canonical, names[0]);
   fs.mkdirSync(old, { recursive: true }); fs.writeFileSync(path.join(old, 'old.md'), 'keep this');
   const result = install(f.root, f.opts, f.lock);
-  assert.equal(result.changed.length, 3); assert.equal(result.linked.length, 6);
+  assert.equal(result.changed.length, names.length); assert.equal(result.linked.length, names.length * 2);
   assert.equal(fs.readFileSync(path.join(result.backups[0].to, 'old.md'), 'utf8'), 'keep this');
   assert.equal(fs.existsSync(path.join(old, 'old.md')), false);
   assert.equal(check(f.root, f.opts, f.lock).ok, true);
   assert.equal(fs.realpathSync(path.join(f.home, '.dsh/skills', names[0])), fs.realpathSync(old));
+});
+test('default sync includes every locked skill; devflow profile is opt-in and limited', t => {
+  const f = fixture(t);
+  const defaults = install(f.root, f.opts, f.lock);
+  assert.equal(defaults.changed.length, names.length);
+  assert.equal(check(f.root, f.opts, f.lock).skills.length, names.length);
+
+  const minimal = fixture(t), opts = { ...minimal.opts, profile: 'devflow' };
+  const result = install(minimal.root, opts, minimal.lock);
+  assert.equal(result.changed.length, devflowNames.length);
+  assert.deepEqual(check(minimal.root, opts, minimal.lock).skills.map(skill => skill.name), devflowNames);
+  assert.equal(fs.existsSync(path.join(minimal.canonical, 'axns-copyright-gen')), false);
 });
 test('repeated sync preserves links and creates no replacement backups', t => {
   const f = fixture(t); install(f.root, f.opts, f.lock);

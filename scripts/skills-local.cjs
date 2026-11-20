@@ -80,7 +80,7 @@ function options(argv) {
 function layout(root, opts, lock) {
   const home = path.resolve(opts.home || os.homedir());
   const canonical = path.join(home, '.agents', 'skills');
-  const names = opts.profile === 'all' ? Object.keys(lock.skills) : DEVFLOW;
+  const names = opts.profile === 'devflow' ? DEVFLOW : Object.keys(lock.skills);
   if (opts.profile && !['all', 'devflow'].includes(opts.profile)) throw new Error('profile 仅支持 devflow/all');
   const targets = opts.targets ? opts.targets.split(',') : ['codex', 'dsh'].filter(name => fs.existsSync(path.join(home, '.' + name)));
   if (targets.some(name => !['agents', 'codex', 'dsh'].includes(name))) throw new Error('targets 仅支持 agents,codex,dsh；其他加载目录用 --entry');

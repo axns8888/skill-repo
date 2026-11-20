@@ -32,7 +32,7 @@ npm run skills:sync
 npm run skills:check
 ```
 
-默认安装 devflow、worktree、autopilot 三项；安装所有本仓库技能时追加 `-- --profile all`。首次使用前按 `.nvmrc` 准备 Node。修改源码后先 `npm run skills:lock` 和 `npm run validate`，再同步。其他电脑按文档检出固定 tag 或提交。
+默认同步并检查锁文件中的全部本仓库技能；只有显式追加 `-- --profile devflow` 时，才仅处理 devflow、worktree、autopilot 三项。首次使用前按 `.nvmrc` 准备 Node。修改源码后先 `npm run skills:lock` 和 `npm run validate`，再同步。其他电脑按文档检出固定 tag 或提交。
 
 以下为通用远程安装方式：
 
