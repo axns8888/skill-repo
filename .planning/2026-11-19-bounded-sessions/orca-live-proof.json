@@ -1,0 +1,77 @@
+{
+  "verified_at": "2026-11-20T01:53:12.712Z",
+  "scope": "isolated_real_orca_two_unit_chain",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v3-20261120-eJWU22",
+  "task_id": "20261120-orca-live-chain-v3",
+  "stage": "P2",
+  "state": "completed",
+  "automatic_continuation": true,
+  "same_workspace": true,
+  "distinct_sessions": true,
+  "previous_dispatch_link_verified": true,
+  "active_window": false,
+  "attempts": 0,
+  "windows": [
+    {
+      "dispatch_id": "ee0a25e3337cb4e58dffa2820135bb95491421517ac789106204014a834e9894",
+      "session_id": "codex_605cd9ee_02da_4b62_ad78_b59ead279437",
+      "operation_id": "1795139124776-e59361a246784af990e8d77cbf3f6ae7",
+      "prompt_outcome": "journaled",
+      "created_at": "2026-11-20T01:45:24.168Z",
+      "request_bytes": 13533
+    },
+    {
+      "dispatch_id": "584b0080491bc35bdb9758fce86641ac48d0c7842776f7b1e008750697ac7624",
+      "session_id": "codex_a528169b_60a1_4748_b150_0753e6ff98cc",
+      "operation_id": "1795139261852-7ab48d9dd63b4fb8925f5b45a16b522a",
+      "prompt_outcome": "journaled",
+      "created_at": "2026-11-20T01:47:40.314Z",
+      "request_bytes": 13665
+    }
+  ],
+  "receipts": [
+    {
+      "dispatch_id": "ee0a25e3337cb4e58dffa2820135bb95491421517ac789106204014a834e9894",
+      "owner": "command/ceca1547-cc14-4114-ab98-525eaa651c25",
+      "session_id": "codex_605cd9ee_02da_4b62_ad78_b59ead279437",
+      "outcome": "yield",
+      "evidence": "first.md",
+      "at": "2026-11-20T01:47:36.628Z"
+    },
+    {
+      "dispatch_id": "584b0080491bc35bdb9758fce86641ac48d0c7842776f7b1e008750697ac7624",
+      "owner": "command/bcd3eea3-0498-4b87-84d9-6d78e6e9d873",
+      "session_id": "codex_a528169b_60a1_4748_b150_0753e6ff98cc",
+      "outcome": "complete",
+      "evidence": "second.md",
+      "at": "2026-11-20T01:50:10.866Z"
+    }
+  ],
+  "outputs": [
+    {
+      "file": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v3-20261120-eJWU22\\out\\first.txt",
+      "bytes": 17,
+      "sha256": "92dfdf086265d8919c7a2c12cdb41aab2b0c3270c0b14c19aa90017a3f4aa718"
+    },
+    {
+      "file": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v3-20261120-eJWU22\\out\\second.txt",
+      "bytes": 18,
+      "sha256": "c8e9ef67470e4ac5cda4e9eef0d3458b8b3113d9d6bba36fcab4dfe2e7251516"
+    }
+  ],
+  "final_decision": "stage_cap",
+  "token_usage": "unobserved",
+  "business_task_recovered": false,
+  "earlier_probes": [
+    {
+      "metadata": "orca-live-fixture.json",
+      "result": "held_after_missing_steps",
+      "ownership_retained": true
+    },
+    {
+      "metadata": "orca-live-fixture-02.json",
+      "result": "held_after_record_relative_path_error",
+      "ownership_retained": true
+    }
+  ]
+}

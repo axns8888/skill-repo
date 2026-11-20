@@ -24,25 +24,31 @@ function reconcile(project, opts, response) {
     const now = new Date().toISOString();
     if (response.state === 'running') {
       readyTask(d);
+      if (w.acknowledged_at && w.session_id !== response.session_id) fail('平台查询的 session_id 与已确认接管者不一致');
       if (d.stage?.stage === w.stage && d.stage.state === 'running' && w.phase === 'running') {
         // Adapter query confirms liveness, not worker progress; it must not refresh the worker heartbeat.
         atomic(file(ctx, opts.id, 'window.json'), { ...w, session_id: response.session_id });
       } else {
         if (JSON.stringify(d.stage) !== JSON.stringify(w.initial_stage)) fail('启动期间阶段发生变化，保留占位');
         atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: w.stage, state: 'running', owner: opts.owner,
-          updated_at: now, attempts: w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0 });
+          updated_at: now, attempts: w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0,
+          ...(w.initial_stage.stage === w.stage ? { last_dispatch_id: w.initial_stage.last_dispatch_id, last_session_id: w.initial_stage.last_session_id } : {}),
+          ...runtime.unitState(w.request) });
         atomic(file(ctx, opts.id, 'window.json'), { ...w, phase: 'running', session_id: response.session_id, heartbeat_at: now });
-        event(d, 'started', { owner: opts.owner, dispatch_id: opts.dispatch, session_id: response.session_id });
+        event(d, 'started', { owner: opts.owner, dispatch_id: opts.dispatch, session_id: response.session_id }, w.request.work_unit ? ctx.root : null);
       }
       return { code: 0, result: { action: 'running', request: w.request, session_id: response.session_id } };
     }
     if (response.state === 'absent' && w.phase === 'reserved') {
       if (JSON.stringify(d.stage) !== JSON.stringify(w.initial_stage)) fail('阶段已变化，不能按未启动释放');
-      event(d, 'start_absent', { dispatch_id: opts.dispatch, reason: response.reason });
+      event(d, 'start_absent', { dispatch_id: opts.dispatch, reason: response.reason }, w.request.work_unit ? ctx.root : null);
       atomic(receiptFile(ctx, opts.id, opts.dispatch), { task_id: opts.id, owner: opts.owner, dispatch_id: opts.dispatch,
         outcome: 'not_started', reason: response.reason, at: now }, true);
-      atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: w.stage, state: 'ready', owner: opts.owner,
-        updated_at: now, attempts: (w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0) + 1 });
+      atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: w.stage, state: 'ready',
+        owner: w.request.work_unit ? w.initial_stage.owner : opts.owner,
+        updated_at: now, attempts: (w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0) + 1,
+        ...(w.request.work_unit ? { ...runtime.unitState(w.request),
+          last_dispatch_id: w.request.previous_dispatch_id, last_session_id: w.request.previous_session_id } : {}) });
       fs.unlinkSync(file(ctx, opts.id, 'window.json'));
       return { code: 0, result: { action: 'start_failed', reason: response.reason } };
     }

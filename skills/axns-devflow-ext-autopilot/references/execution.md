@@ -8,7 +8,12 @@
 
 | 命令 | 参数及行为 |
 | --- | --- |
-| init | --id --stage --owner；为已登记任务创建缺失的 ready 状态，拒绝覆盖 |
+| init | --id --stage --owner；可传 --unit（相对任务记录目录的短工单 JSON）；为已登记任务创建缺失的 ready 状态，拒绝覆盖 |
+| prepare | --id --owner --unit；为下一合法阶段登记短工单引用；不越过阶段/证据门禁，工单文件须已包含在当前验证快照 |
+| takeover | --id --owner --dispatch --session-id --cwd；接续会话确认真实身份、工作目录、HEAD 并取得本派发写权限 |
+| yield | --id --owner --dispatch --evidence --next-unit；记录当前短工单结果并在同阶段交接，正常轮换不累计失败次数 |
+| resume-yield | 上述 yield 参数及 --confirmed-stopped；控制者核实旧执行者停止后恢复上下文阻断或半写 yield，沿用阶段与 attempts |
+| brief | --id；只读输出至多 12 KiB 的新窗口接续摘要，不包含旧对话、源码或日志全文 |
 | claim | session 模式；可指定 --id、--owner；领取一个阶段并返回 request，缺省 owner 为独立 UUID |
 | tick | command 模式；可指定 --id、--owner；互斥预留后调用外部桥 start |
 | heartbeat | --id --owner --dispatch；更新真实工作进度心跳 |
@@ -28,10 +33,11 @@
 1. 控制者核实任务已有授权与当前阶段，再 init。例如现有任务等待实施时 init --id <task-id> --stage P2 --owner controller/setup。禁止用 init 覆盖失败或补造完成。
 2. 自动化平台唤醒一个 Agent；Agent 从主检出目录执行 claim；返回 finished 表示已自动收尾，结束本轮即可；返回 request 时工单给出 task_id、stage、owner、dispatch_id、cwd、route、prompt、callbacks。callbacks 为可执行文件与字面参数数组，按所在 shell 正确转义，禁止 eval 拼接。
 3. 切到 request.cwd，读取项目约定和现有计划；按 request.prompt 仅完成指定阶段。P1 复用现有登记；不创建第二个任务。项目写入前及步骤之间调用 heartbeat。
-4. 真实成果与证据写入任务工作区 _plan/process/<task-id>/。--evidence 相对此目录，例如 self-check.md；文件必须非空。complete 表示该阶段门禁确已通过；失败或阻断调用 fail。P0 完成还要传 --user-confirmed，表示已核实适用的执行授权；在证据中引用原指令或可追溯位置，已有授权即可，无须另问一次。用户要求本次回报后等待时，须等该确认，不能沿用更早授权。P4 不自动生成技术或人工验收结论。
-5. 使用原工单的 complete/fail callbacks，把证据路径占位符替换为真实文件名。--handoff 表示执行权已交接，之后结束本轮；后续项目写入会使完成身份失效。下次唤醒才领取下一阶段。默认 P2 → P3 → P4，worktree 的 P4 完成后由下一轮自动收尾；显式较低阶段上限仍停止。
+4. `execution.require_units=true` 时 init 和每次后续阶段派发都要求短工单。工单在 `_plan/process/<task-id>/` 下以 JSON 保存并固定摘要；P2 多工单通过 yield 串行接续。旧执行者先停止业务写入并 yield；新短工单 session 再执行 takeover，核实 cwd/HEAD/工作区快照、真实平台 session_id 和交接回执；确认前不可写。heartbeat 回报累计 --steps，token 可观测时加 --remaining-tokens；预算到达时返回 yield_required/work_permitted=false，先保存下一工单并 yield。平台无法强杀执行中调用，故此门禁在步骤间合作式生效。协调窗口也应按宿主交接规则自行轮换。
+5. 真实成果与证据写入任务工作区 _plan/process/<task-id>/。--evidence 相对此目录，例如 self-check.md；文件必须非空。complete 表示该阶段门禁确已通过；失败或阻断调用 fail。P0 完成还要传 --user-confirmed，表示已核实适用的执行授权；在证据中引用原指令或可追溯位置，已有授权即可，无须另问一次。用户要求本次回报后等待时，须等该确认，不能沿用更早授权。P4 不自动生成技术或人工验收结论。
+6. 使用原工单的 complete/fail callbacks，把证据路径占位符替换为真实文件名。--handoff 表示执行权已交接，之后结束本轮；后续项目写入会使完成身份失效。下次唤醒才领取下一阶段。默认 P2 → P3 → P4，worktree 的 P4 完成后由下一轮自动收尾；显式较低阶段上限仍停止。
 
-同一存活会话可用同一 owner 重取自己的工单；这是恢复读取，不授权再次执行已完成动作。会话可在交接结束后于下一次明确任务指令或唤醒中复用；切换任务须重新 claim 并使用新 owner / dispatch，不能使用上一任务的回调。owner 跨任务不得复用；保留回执的已归档任务同样约束 owner。默认生成 UUID 可避免常见误用。配置了阶段模型时，claim 必须传真实 --provider、--model 及需要的 --reasoning；不匹配时不领取。runner 无法自行证明调用者提供的模型名称，平台须从真实会话信息核实。
+同一存活会话可用同一 owner 重取自己的工单；这是恢复读取，不授权再次执行已完成动作。旧阶段协议可在交接结束后于下一次明确任务指令或唤醒中复用会话；连续短工单必须使用新的平台会话与 owner，避免历史持续累积；切换任务须重新 claim 并使用新 owner / dispatch，不能使用上一任务的回调。owner 跨任务不得复用；保留回执的已归档任务同样约束 owner。默认生成 UUID 可避免常见误用。配置了阶段模型时，claim 必须传真实 --provider、--model 及需要的 --reasoning，档位有 executor 时还须 --executor 匹配；不匹配时不领取。runner 无法自行证明调用者提供的模型名称，平台须从真实会话信息核实。
 
 ## 并发、证据与中断
 
@@ -39,11 +45,25 @@ Git 使用共同 Git 目录 axns-devflow.lock，非 Git 使用 _plan/autopilot/.
 
 window.json 保存不可丢失的派发请求、原状态及执行配置；receipts/<dispatch_id>.json 保存幂等结果；任务记录目录的 autopilot-events.jsonl 记录实际生命周期。完成事件先落盘，再捕获当前 HEAD/工作区快照。worktree 的 P4 complete 事件保存在主目录 runtime events.jsonl，避免回调修改已验收提交；最终验收证据仍必须在候选中。重复完成回调不重写已完成阶段上的验收元数据；旧回调不改变新窗口。
 
-启动超时、命令错误、非法响应和未知结果均保留占位。recover 只查询同一 dispatch_id；只有权威 absent 且仍在 reserved 才增加 attempts 并释放。达到 max_attempts 后阻断，不重置计数。平台 stopped 不能证明阶段通过，仍需真实结果或中断证据。
+启动超时、命令错误、非法响应和未知结果均保留占位。recover 只查询同一 dispatch_id；只有权威 absent 且仍在 reserved 才增加 attempts 并释放；短工单引用和前次交接身份继续保留，下一轮可以领取原工单。达到 max_attempts 后阻断，不重置计数。平台 stopped 不能证明阶段通过，仍需真实结果或中断证据。
 
 session 失联/心跳过期不会自动接管。先核实原会话停止并记录依据，才能 interrupt --confirmed-stopped；该命令将阶段记为 failed，等待按宿主流程处理。已有完成回执时使用 handoff，不改写成中断。崩溃留下不一致状态时保留现场，禁止删窗口、刷新哈希或改 ready 来绕过门禁。
 
 execution.enabled 关闭后停止 init/claim/tick/retry，但已运行窗口可 heartbeat、complete/fail、recover、handoff 或 interrupt，以便完成交接。execution.enabled 关闭后不执行 finish；开启时通过原 worktree helper 完成本地合入和清理，提交由任务窗口执行 commit。
+
+## 上下文已溢出时恢复
+
+原窗口无法再调用工具时，由新协调会话读取 `runner.cjs brief --project <主目录> --id <原task-id>`，将返回的有界摘要作为恢复入口。保留原任务、工作区、计划与授权，按需读取文件，避免载入旧对话全文。此命令只读，不创建平台会话；实际新会话由平台入口启动。
+
+活动窗口仍存在时先查平台原会话及执行进程；上下文错误、超时、窗口关闭或心跳过期本身都不能证明写入已停止。确认停止后，将检查依据、已有改动、尚未完成工作写到原任务的恢复证据文件，并准备下一短工单，再执行：
+
+```powershell
+node "<扩展目录>/scripts/runner.cjs" resume-yield --project "<主目录>" --id "<原task-id>" --owner "<原owner>" --dispatch "<原dispatch_id>" --evidence "context-recovery.md" --next-unit "continue.json" --confirmed-stopped
+```
+
+这只是同阶段恢复，不声明旧工单或阶段通过，不清零 attempts。允许已进入 running 但尚未 takeover 的短工单收拢；reserved/unknown 启动仍须先 recover 查询或按 interrupt/retry 核实恢复。未确认停止会拒绝，旧式无短工单窗口沿用 interrupt/retry。execution.enabled 关闭时仍可收拢已有短工单，但不能启动新执行。
+
+若已有 yield 回执、更新 stage 或删除 window 时中断，使用原回执的 evidence/next-unit 和同一身份重试 resume-yield；它先核对 HEAD、工作区、证据、工单摘要与原窗口，再完成剩余状态更新。变化或身份不符则保留现场；旧回调不会覆盖后来已启动的新窗口。平台停止事实仍由控制者真实核验，脚本不凭标志自动终止进程。
 
 ## 失败重试与任务隔离
 

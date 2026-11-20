@@ -1,0 +1,8 @@
+{
+  "file": ".cache/model-page-ui-project/_plan/model-routing.json",
+  "checks": [
+    "execute_sol.reasoning=medium",
+    "ui_custom persisted"
+  ],
+  "evidence": ".cache/model-page-ui-proof.json and model-page-ui-mobile-proof.json"
+}

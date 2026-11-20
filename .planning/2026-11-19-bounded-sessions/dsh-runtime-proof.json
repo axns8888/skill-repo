@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-11-20T07:37:57.863Z",
+  "scripts": "D:\\Coding\\Axns8888\\skill-repo\\skills\\axns-devflow-ext-autopilot\\scripts",
+  "passed": true,
+  "inference_started": false,
+  "session_created": true,
+  "meter_measured": true,
+  "current_tokens": 0,
+  "stopped_before_inference": true,
+  "final_received": true,
+  "actual_process_exit": 1,
+  "telemetry_plugin_in_composition": true,
+  "scene_tool_in_composition": true,
+  "diagnostic": null
+}

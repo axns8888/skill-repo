@@ -1,0 +1,84 @@
+{
+  "checked_at": "2026-11-20T06:18:21.389296+00:00",
+  "scope": "Native DSH subagents, context/state assessment, compatibility and local installation; no model inference",
+  "completed_runs": [
+    {
+      "log": ".cache/dsh-native-final-tests.log",
+      "tests": 41,
+      "passed": 41,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-native-packaging-tests.log",
+      "tests": 30,
+      "passed": 30,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-native-session-proof-test.log",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-native-claim-recheck.log",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0
+    }
+  ],
+  "distinct_tests": 65,
+  "actual_dsh_composition": {
+    "source_cases": 3,
+    "installed_cases": 3,
+    "inference_started": false
+  },
+  "pure_dsh_session_claim_test_passed": true,
+  "requires_orca_for_native_subagents": false,
+  "context_observation": "Caller-supplied current snapshot; automatic telemetry not implemented",
+  "decision_automatically_executes_handoff": false,
+  "root_rotation_versus_child_dispatch": "Separate capabilities; native child spawn does not prove root session replacement",
+  "withdrawn": [
+    "New message-size limits",
+    "New task-board caps",
+    "Default fork disabling"
+  ],
+  "acceptance_scope": {
+    "deepseek_model_or_auth_failures_excluded": true,
+    "actual_inference_unverified": true,
+    "original_business_recovered": false,
+    "token_savings_measured": false
+  },
+  "model_config": {
+    "sha256": "74b527d0ff20610e8f75ca2ea2560dd4a5c2edcec99a75ca812aa0d51a1fe214",
+    "active_preset": "codex_only",
+    "available_native_preset": "dsh_native"
+  },
+  "installed_at": "2026-11-20T06:14:57.838Z",
+  "installed_receipt": "C:/Users/nikos/.agents/skill-repo/install.json",
+  "source_dirty": true,
+  "backups": [
+    {
+      "from": "C:\\Users\\nikos\\.agents\\skills\\axns-devflow",
+      "to": "C:\\Users\\nikos\\.agents\\skill-repo\\backups\\2026-11-20T06-14-56-805Z-67935387\\previous\\axns-devflow"
+    },
+    {
+      "from": "C:\\Users\\nikos\\.agents\\skills\\axns-devflow-ext-autopilot",
+      "to": "C:\\Users\\nikos\\.agents\\skill-repo\\backups\\2026-11-20T06-14-56-805Z-67935387\\previous\\axns-devflow-ext-autopilot"
+    }
+  ],
+  "additional_runs_not_counted": [
+    {
+      "log": ".cache/dsh-native-compat-tests.log",
+      "status": "stopped after default Node test isolation stalled at concurrent claim; isolated claim passed"
+    },
+    {
+      "log": ".cache/dsh-native-runner-recheck.log",
+      "status": "same default isolation stall; stopped only task-owned test processes"
+    },
+    {
+      "log": ".cache/dsh-native-runner-isolation-tests.log",
+      "status": "without isolation concurrent claim passed; extended worktree merge/cleanup checks intentionally stopped after relevant checks; partial run not counted"
+    }
+  ]
+}

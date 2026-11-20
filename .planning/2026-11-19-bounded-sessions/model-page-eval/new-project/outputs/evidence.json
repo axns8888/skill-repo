@@ -1,0 +1,9 @@
+{
+  "file": "skills/axns-devflow/assets/model-routing.json",
+  "checks": [
+    "planning",
+    "implementation",
+    "simple_execution"
+  ],
+  "evidence": "model-page-final-targeted.log: new project defaults and execution-disabled route integration passed"
+}

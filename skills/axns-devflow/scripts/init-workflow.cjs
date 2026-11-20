@@ -4,6 +4,7 @@
 // Initialize a project workflow using only resources shipped with this skill.
 const fs = require('node:fs');
 const path = require('node:path');
+const models = require('./lib/model-project.cjs');
 
 function options(argv) {
   const result = {};
@@ -11,10 +12,10 @@ function options(argv) {
     const arg = argv[i];
     if (arg === '--help' || arg === '-h') result.help = true;
     else if (arg === '--dry-run') result.dryRun = true;
-    else if (arg === '--project-root' || arg === '--project-name') {
+    else if (arg === '--project-root' || arg === '--project-name' || arg === '--models-from') {
       const value = argv[++i];
       if (!value || value.startsWith('--')) throw new Error(`${arg} 需要一个值`);
-      result[arg === '--project-root' ? 'root' : 'name'] = value;
+      result[arg === '--project-root' ? 'root' : arg === '--models-from' ? 'modelsFrom' : 'name'] = value;
     } else throw new Error(`未知参数：${arg}`);
   }
   if (!result.help && (!result.root || !result.root.trim())) {
@@ -59,6 +60,7 @@ function initialize(opts) {
     [path.join(skill, 'references', 'acceptance.md'), '_plan/guides/acceptance.md'],
     [path.join(skill, 'references', 'tool-integration.md'), '_plan/guides/tool-integration.md'],
     [path.join(skill, 'references', 'context-handoff.md'), '_plan/guides/context-handoff.md'],
+    [path.join(skill, 'references', 'model-routing.md'), '_plan/guides/model-routing.md'],
   );
   for (const source of filesUnder(path.join(skill, 'prompts', 'window'))) {
     sources.push([source, `_plan/prompts/window/${path.basename(source)}`]);
@@ -79,6 +81,10 @@ function initialize(opts) {
     });
     return { target, relative, content };
   });
+
+  const modelPlan = models.prepare(root, opts.modelsFrom);
+  if (modelPlan.created) plan.push({ target: modelPlan.file, relative: path.relative(root, modelPlan.file), content: modelPlan.content });
+  else console.log('复用模型配置：' + modelPlan.file + (modelPlan.missing.length ? '；配置页会补齐必备场景：' + modelPlan.missing.join(', ') : ''));
 
   // Preflight all paths before writing: an existing file is preserved, a type conflict is reported.
   const directories = new Set([root]);
@@ -127,8 +133,8 @@ function initialize(opts) {
 try {
   const opts = options(process.argv.slice(2));
   if (opts.help) {
-    console.log('用法：node init-workflow.cjs --project-root <项目路径> [--project-name <名称>] [--dry-run]');
-    console.log('仅补齐 _doc 与 _plan 开发流程；已有文件始终保留。无需安装第三方依赖。');
+    console.log('用法：node init-workflow.cjs --project-root <项目路径> [--project-name <名称>] [--models-from <默认模型表>] [--dry-run]');
+    console.log('补齐 _doc 与 _plan 开发流程并匹配或创建项目模型表；已有文件始终保留。无需安装第三方依赖。');
   } else initialize(opts);
 } catch (error) {
   console.error(`初始化失败：${error.message}`);

@@ -4,9 +4,13 @@ const { randomUUID } = require('node:crypto');
 const core = require('./lib/core.cjs');
 const runtime = require('./lib/runtime.cjs');
 const dispatch = require('./lib/dispatch.cjs');
+const continuation = require('./lib/continuation.cjs');
 const commands = {
-  init: ['id', 'stage', 'owner'], claim: ['id', 'owner', 'provider', 'model', 'reasoning'], tick: ['id', 'owner'],
-  heartbeat: ['id', 'owner', 'dispatch'], complete: ['id', 'owner', 'dispatch', 'evidence', 'handoff', 'user-confirmed', 'accepted-head', 'human-accepted-by'],
+  init: ['id', 'stage', 'owner', 'unit'], prepare: ['id', 'owner', 'unit'], claim: ['id', 'owner', 'executor', 'provider', 'model', 'reasoning', 'team-enabled', 'team-max-members', 'team-mode'], tick: ['id', 'owner'],
+  takeover: ['id', 'owner', 'dispatch', 'session-id', 'cwd', 'remaining-tokens'],
+  yield: ['id', 'owner', 'dispatch', 'evidence', 'next-unit'],
+  'resume-yield': ['id', 'owner', 'dispatch', 'evidence', 'next-unit', 'confirmed-stopped'], brief: ['id'],
+  heartbeat: ['id', 'owner', 'dispatch', 'steps', 'remaining-tokens'], complete: ['id', 'owner', 'dispatch', 'evidence', 'handoff', 'user-confirmed', 'accepted-head', 'human-accepted-by'],
   fail: ['id', 'owner', 'dispatch', 'evidence', 'handoff'], handoff: ['id', 'owner', 'dispatch'],
   retry: ['id', 'owner', 'dispatch', 'evidence'],
   recover: ['id', 'owner', 'dispatch'], interrupt: ['id', 'owner', 'dispatch', 'evidence', 'confirmed-stopped'],
@@ -41,16 +45,31 @@ function main(argv) {
     value = { code: actionable ? 0 : assessment.code || 3, result: { actionable: !!actionable, assessment: assessment.result } };
   } else if (command === 'finish') value = runtime.finalize(project, opts);
   else if (command === 'init') value = runtime.initialize(project, opts);
+  else if (command === 'prepare') value = continuation.prepare(project, opts);
+  else if (command === 'brief') value = continuation.brief(project, opts);
   else if (command === 'claim') {
-    if (!!opts.provider !== !!opts.model || opts.reasoning && !opts.model) core.fail('provider/model 必须同时提供，reasoning 需要 model');
+    if (!!opts.provider !== !!opts.model || (opts.reasoning || opts.executor) && !opts.model) core.fail('provider/model 必须同时提供，reasoning/executor 需要 model');
+    require('./lib/launch-policy.cjs').executor(opts.executor);
     opts.owner ||= 'session/' + randomUUID();
-    opts.route = opts.model ? { provider: opts.provider, model: opts.model, ...(opts.reasoning ? { reasoning: opts.reasoning } : {}) } : null;
+    opts.route = opts.model ? { provider: opts.provider, model: opts.model, ...(opts.reasoning ? { reasoning: opts.reasoning } : {}),
+      ...(opts.executor ? { executor: opts.executor } : {}) } : null;
+    if (opts['team-enabled'] !== undefined) {
+      if (!['true', 'false'].includes(opts['team-enabled'])) core.fail('--team-enabled 需要 true 或 false');
+      opts.team = { enabled: opts['team-enabled'] === 'true', ...(opts['team-max-members'] !== undefined ? { max_members: Number(opts['team-max-members']) } : {}) };
+      if (opts['team-mode'] !== undefined) opts.team.mode = opts['team-mode'];
+      require('./lib/launch-policy.cjs').selection({ team: opts.team }, {});
+    } else if (opts['team-max-members'] !== undefined || opts['team-mode'] !== undefined) core.fail('团队参数需要 --team-enabled true');
     value = runtime.reserve(project, opts, 'session');
   } else if (command === 'tick') value = dispatch.tick(project, opts);
   else {
     for (const key of ['id', 'owner', 'dispatch']) if (!opts[key]) core.fail('必须指定 --' + key);
-    if (['complete', 'fail', 'interrupt', 'retry'].includes(command) && !opts.evidence) core.fail('必须指定 --evidence');
-    if (command === 'retry') value = runtime.retry(project, opts);
+    if (['complete', 'fail', 'interrupt', 'retry', 'yield', 'resume-yield'].includes(command) && !opts.evidence) core.fail('必须指定 --evidence');
+    if (command === 'takeover') value = continuation.takeover(project, opts);
+    else if (['yield', 'resume-yield'].includes(command)) {
+      if (command === 'resume-yield' && !opts['confirmed-stopped']) core.fail('先核实原会话停止，再传 --confirmed-stopped；上下文溢出不构成停止证明');
+      if (!opts['next-unit']) core.fail('yield 必须指定 --next-unit');
+      value = continuation.yieldUnit(project, opts);
+    } else if (command === 'retry') value = runtime.retry(project, opts);
     else if (command === 'recover') value = dispatch.recover(project, opts);
     else if (command === 'handoff') value = runtime.handoff(project, opts);
     else if (command === 'interrupt') {
@@ -60,7 +79,16 @@ function main(argv) {
   }
   console.log(JSON.stringify(value.result, null, 2)); return value.code;
 }
-try {
-  if (process.argv.length <= 2 || process.argv.slice(2).includes('--help')) console.log('node runner.cjs <' + Object.keys(commands).join('|') + '> --project <项目> [参数]');
-  else process.exitCode = main(process.argv.slice(2));
-} catch (e) { console.error(e.message); process.exitCode = 1; }
+async function entry(argv) {
+  if (!argv.length || argv.includes('--help')) { console.log('node runner.cjs <' + Object.keys(commands).join('|') + '> --project <项目> [参数]'); return 0; }
+  const callback = ['takeover', 'yield', 'resume-yield', 'heartbeat', 'complete', 'fail', 'handoff'].includes(argv[0]);
+  for (let attempt = 0; ; attempt++) {
+    try { return main([...argv]); }
+    catch (error) {
+      if (!callback || attempt >= 19 || !['AXNS_COORDINATION_BUSY', 'AXNS_OBSERVATION_CHANGED'].includes(error.code)) throw error;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+}
+entry(process.argv.slice(2)).then(code => { process.exitCode = code; })
+  .catch(error => { console.error(error.message); process.exitCode = 1; });

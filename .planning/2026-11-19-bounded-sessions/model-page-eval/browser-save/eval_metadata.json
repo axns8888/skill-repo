@@ -1,0 +1,5 @@
+{
+  "eval_id": 3,
+  "prompt": "在页面修改推理强度并新建项目场景，保存后刷新仍能读取。",
+  "kind": "deterministic implementation evidence; no model-driven skill run"
+}

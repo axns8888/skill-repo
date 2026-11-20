@@ -1,0 +1,15 @@
+{
+  "executor": "dsh",
+  "route": {
+    "executor": "dsh",
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoning": "high"
+  },
+  "team": {
+    "enabled": true,
+    "max_members": 3
+  },
+  "verification": "composed_config_only",
+  "inference_started": false
+}

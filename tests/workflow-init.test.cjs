@@ -61,7 +61,8 @@ for (const name of skills) {
       '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
       '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md',
       '_plan/prompts/architecture.md', '_plan/prompts/coding.md', '_plan/prompts/ui.md',
-      '_plan/guides/engineering-standards.md', '_plan/guides/context-handoff.md', '_plan/prompts/task-types.json']) {
+      '_plan/guides/engineering-standards.md', '_plan/guides/context-handoff.md', '_plan/guides/model-routing.md',
+      '_plan/model-routing.json', '_plan/prompts/task-types.json']) {
       assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
     }
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/project.md'), 'utf8').includes(projectName));

@@ -47,9 +47,9 @@ flowchart TD
     U --> E
 ```
 
-session 模式由 DSH / Orca 已启动的 Agent 领取工单；command 模式需要接入方提供可执行的启动与查询 JSON 命令桥。派发结果不明时通过 recover 核对，不能盲目重复启动。worktree 模式还需满足范围和修改权检查；显式人工验收阻塞只等待当前任务。
+session 模式由 DSH / Orca 已启动的 Agent 领取工单；command 模式可选随附的直接 DSH 桥或 Orca 桥，也可接入其他可执行的启动与查询 JSON 命令桥。派发结果不明时通过 recover 核对，不能盲目重复启动。worktree 模式还需满足范围和修改权检查；显式人工验收阻塞只等待当前任务。
 
-只读入口 autopilot.cjs 始终输出建议；执行与回调使用 runner.cjs。Orca 适配器目前生成禁用状态的安装计划，实际定时任务尚未安装；DSH 按通用会话协议接入，具体产品接口需要接入方落实。接入方式见 [平台说明](references/platforms.md)，占位、回调与恢复细节见 [执行说明](references/execution.md)。
+只读入口 autopilot.cjs 始终输出建议；执行与回调使用 runner.cjs。Orca 适配器目前生成禁用状态的安装计划，实际定时任务尚未安装；DSH 已提供直接 headless 进程桥和有限控制器，也可由 Orca 承载。原生上下文观测、成员场景路由与选型报告见 [执行方式选择](references/execution-modes.md)。接入方式见 [平台说明](references/platforms.md)，占位、回调与恢复细节见 [执行说明](references/execution.md)。
 
 ## 1. 显式启用
 
@@ -160,3 +160,11 @@ init 仅用于尚无运行态的任务，已有 stage.json/window.json 时拒绝
 | 版本 | 日期 | 变更记录 | 验证与状态 |
 | --- | --- | --- | --- |
 | `1.0.0-rc.1` | 2026-11-17 | 建立调度扩展的版本基线，包含任务巡检、可选执行、互斥领取与证据回调。统一版本字段及 README 版本记录。 | 本地源码基线；版本一致性及源码快照检查通过，尚未发布或同步安装。 |
+
+
+## 纯 DSH 与 Orca 如何选择
+
+[执行方式与模型场景](references/execution-modes.md) 提供直接 DSH 自动接续、Orca 可选承载、单文件成员场景配置、原生推理强度限制与运行期上下文计量。使用 `scripts/execution-guide.cjs` 生成离线交互报告，可按实际需求对照两条路径。直接 DSH 创建后台 headless 新会话，当前不自动替换 Desktop 可见标签；程序验证与真实模型业务推理分别记录。
+
+
+本地模型配置页面：`node scripts/model-page.cjs --project-root <项目>`。编辑保存项目/个人模型表，支持基础与定制场景；执行层沿用Orca配置。项目模型表初始化由宿主Devflow提供。

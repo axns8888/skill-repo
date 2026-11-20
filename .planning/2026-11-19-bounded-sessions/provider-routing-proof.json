@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-11-20T03:01:37.997Z",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-provider-routing-FiEfkD",
+  "cases": [
+    {
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "team": {
+        "enabled": false
+      },
+      "directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-provider-routing-FiEfkD\\_plan\\autopilot\\20261120-provider-routing\\dsh\\37c48086-5bfa-4b4b-b495-80e8c14858d9",
+      "verification": "composed_config_only",
+      "inference_started": false
+    },
+    {
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "team": {
+        "enabled": true,
+        "max_members": 3
+      },
+      "directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-provider-routing-FiEfkD\\_plan\\autopilot\\20261120-provider-routing\\dsh\\9d34eb78-0559-4cd7-8a18-f0b5445d902e",
+      "verification": "composed_config_only",
+      "inference_started": false
+    }
+  ],
+  "incompatible_executor_refused": true
+}

@@ -1,0 +1,5 @@
+{
+  "eval_id": 1,
+  "prompt": "新建项目，保留Orca作为执行层。计划用GPT-6.2-Astra，一般执行用GPT-6.2-sol，简单执行用DeepSeek-V4.1-flash。",
+  "kind": "deterministic implementation evidence; no model-driven skill run"
+}

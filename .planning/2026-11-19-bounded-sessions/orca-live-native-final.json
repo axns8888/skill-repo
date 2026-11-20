@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-11-20T01:53:12.3013014Z",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v3-20261120-eJWU22",
+  "agents": [
+    {
+      "paneKey": "structured-agent-session-codex_605cd9ee_02da_4b62_ad78_b59ead279437:2318fd6c-a72f-4ab3-a423-b45655e575f6",
+      "state": "done",
+      "outcome": "success",
+      "interrupted": false,
+      "observed_prompt_excerpt_bytes": 290
+    },
+    {
+      "paneKey": "structured-agent-session-codex_a528169b_60a1_4748_b150_0753e6ff98cc:605dc629-f956-4d57-ae3f-ceb8ac92e92b",
+      "state": "done",
+      "outcome": "success",
+      "interrupted": false,
+      "observed_prompt_excerpt_bytes": 290
+    }
+  ]
+}

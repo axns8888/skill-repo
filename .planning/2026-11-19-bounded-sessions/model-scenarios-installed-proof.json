@@ -1,0 +1,60 @@
+{
+  "checked_at": "2026-11-20T07:44:15.217Z",
+  "scripts": "C:\\Users\\nikos\\.agents\\skills\\axns-devflow-ext-autopilot\\scripts",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-model-scenarios-0J1CHB\\project",
+  "cases": [
+    {
+      "preset": "deepseek_only",
+      "scenario": "documentation",
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "team": {
+        "enabled": false
+      },
+      "verification": "composed_config_only",
+      "directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-model-scenarios-0J1CHB\\project\\_plan\\autopilot\\20261120-model-scenarios\\dsh\\d20c87bd-c235-41e0-8f08-56adced3cd38",
+      "inference_started": false
+    },
+    {
+      "preset": "dsh_team",
+      "scenario": "implementation",
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "team": {
+        "enabled": true,
+        "max_members": 3
+      },
+      "verification": "composed_config_only",
+      "directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-model-scenarios-0J1CHB\\project\\_plan\\autopilot\\20261120-model-scenarios\\dsh\\a9bac93b-3e2a-4622-89fc-47344ac14dd8",
+      "inference_started": false
+    },
+    {
+      "preset": "dsh_native",
+      "scenario": "implementation",
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "team": {
+        "enabled": true,
+        "mode": "subagent"
+      },
+      "verification": "composed_config_only",
+      "directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-model-scenarios-0J1CHB\\project\\_plan\\autopilot\\20261120-model-scenarios\\dsh\\ff33c8a4-eb36-46b3-8552-abe6a444a72e",
+      "inference_started": false
+    }
+  ],
+  "personal_source_unchanged": true,
+  "dsh_automatic_handoff_supported": true,
+  "real_dsh_handoff_verified": false
+}

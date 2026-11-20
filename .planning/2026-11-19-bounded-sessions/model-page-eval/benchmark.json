@@ -1,0 +1,6 @@
+{
+  "note": "Deterministic feature evidence only. No model skill benchmark or token/cost comparison performed.",
+  "targeted_tests": 51,
+  "passed": 51,
+  "failed": 0
+}

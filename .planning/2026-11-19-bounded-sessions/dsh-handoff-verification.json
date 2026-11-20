@@ -1,0 +1,78 @@
+{
+  "checked_at": "2026-11-20T04:52:13.689Z",
+  "implementation": "DSH automatic command bridge and controller implemented",
+  "tests": [
+    {
+      "log": ".cache/dsh-handoff-final-tests.log",
+      "tests": 92,
+      "passed": 92,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-handoff-focused-final.log",
+      "tests": 47,
+      "passed": 47,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-handoff-packaging-final.log",
+      "tests": 21,
+      "passed": 21,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-fresh-context-final.log",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "log": ".cache/dsh-symbolic-profile-final.log",
+      "tests": 9,
+      "passed": 9,
+      "failed": 0
+    }
+  ],
+  "distinct_related_tests": 113,
+  "notes": "Focused, fresh-context and symbolic-profile runs repeat subsets; they are not added to distinct count.",
+  "model_config": {
+    "file": "D:\\Coding\\Axns8888\\skill-repo\\model-routing.json",
+    "sha256": "d21061222cfbd1422af79ca76f29dc5bd80a08deeecc785de717f88ca809dcd3",
+    "active_preset": "codex_only",
+    "codex_provider": "Codex",
+    "claude_provider": "Claude Code",
+    "claude_enabled": false
+  },
+  "installed_receipt": "C:/Users/nikos/.agents/skill-repo/install.json",
+  "source_dirty": true,
+  "composition_source": "model-scenarios-proof.json",
+  "composition_installed": "model-scenarios-installed-proof.json",
+  "real_dsh_sessions": [
+    {
+      "session_id": "session-ed5c0596-2d2f-482d-852d-8a3903477841",
+      "provider": "deepseek-official",
+      "takeover_confirmed": true,
+      "failure_code": "MISSING_CREDENTIAL"
+    },
+    {
+      "session_id": "session-8a85a74d-1a79-4222-8ab2-6ee15565a083",
+      "provider": "deepseek-account",
+      "takeover_confirmed": true,
+      "failure_code": "ACCOUNT_SIGN_IN_REQUIRED"
+    }
+  ],
+  "real_two_session_handoff_verified": false,
+  "remaining": "No DeepSeek model/authentication blocker under the user-confirmed program-chain scope. Actual two-session inference, original business recovery and token savings remain separate unverified facts.",
+  "original_business_recovered": false,
+  "token_savings_measured": false,
+  "historical_remaining_before_user_scope_change": "Configure usable credentials in local DSH; then verify two real bounded model sessions on the preserved integration fixture.",
+  "acceptance_scope": {
+    "confirmed_on": "2026-11-20",
+    "program_chain": "implemented_and_regression_validated",
+    "excluded_failures": [
+      "DeepSeek model invocation failures",
+      "DeepSeek authentication failures"
+    ],
+    "real_inference_results_retained": true
+  }
+}

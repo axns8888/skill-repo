@@ -1,0 +1,9 @@
+{
+  "file": "model-routing.json",
+  "checks": [
+    "existing preset preserved",
+    "project scene extension",
+    "save/reload and revision conflicts"
+  ],
+  "evidence": "model-page-final-targeted.log: reuse, project scene, conflict and observer tests passed"
+}

@@ -125,3 +125,11 @@ PyCharm 用于阅读、编辑、调试或接手当前阶段。打开 request.cwd
 - DSH `e8f7b93a344964de3dca1ace9e72b6e4d6de87cb`：[Schedule 指南](https://github.com/deepseek-ai/deepseek-harness/blob/e8f7b93a344964de3dca1ace9e72b6e4d6de87cb/docs/user/guide/schedule.zh.md)、[Todo 契约](https://github.com/deepseek-ai/deepseek-harness/blob/e8f7b93a344964de3dca1ace9e72b6e4d6de87cb/docs/subsystems/todo.zh.md)。
 - Orca `69dc20ed337c515ee27a6021f21eb573ea5d5b79`：[自动化 CLI](https://github.com/stablyai/orca/blob/69dc20ed337c515ee27a6021f21eb573ea5d5b79/docs/site/content/docs/cli/automations.mdx)、[任务入口及 DSH 支持](https://github.com/stablyai/orca/blob/69dc20ed337c515ee27a6021f21eb573ea5d5b79/README.md)。
 - PyCharm：[External Tools 官方说明](https://www.jetbrains.com/help/pycharm/configuring-third-party-tools.html)。
+
+## 持续执行的短会话接力
+
+已有 DSH 协调、Orca 执行授权时，协调者为每轮生成一个可验收短工单，以输入路径、范围、完成/停止条件及预算派发新执行会话。一个大阶段可以串行多个短工单；执行端只回报摘要和证据路径，原始日志留文件。新会话核实身份及接管后才写；旧执行者交接后结束本轮，正常换窗不暂停整体未完成目标。仅有交接文档或平台 running 回执不能称为接管成功。
+
+DSH 自动化若复用同一对话，历史仍会累积；持续短工单应核实平台是否每次创建独立会话，配合既有领取互斥及结果回调，不叠加重复唤醒。具体界面/参数按实际平台版本发现，不由技能猜测。协调窗口自己也要在预算边界前落盘轮换，不能不断吸收执行端全文报告。未启用 autopilot 时按宿主同一执行权与手动接管规则实施，不将启用扩展作为手动换窗先决条件。
+
+使用 autopilot runner 时，可采用 `execution.require_units=true` 及 `prepare/takeover/yield`，见扩展 execution/config/protocol；command 桥仍须接入方提供真实启动与查询。安装 Orca 或技能不等于已打通派发链路。真实验证应记录至少两个短会话在同阶段接续的 session-id/dispatch、旧停写及新接管证据，并分别观察协调会话峰值、总输入/输出、缓存用量及重复执行；不可观测项标未知，不能据会话数推算节省比例。

@@ -5,6 +5,7 @@ const os = require('node:os');
 const { randomUUID } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const core = require('./core.cjs');
+const units = require('./units.cjs');
 const { fail, safe, git, context, verify, evaluate } = core;
 
 function text(value, label) {
@@ -16,7 +17,16 @@ function atomic(file, data, exclusive = false) {
   const bytes = JSON.stringify(data, null, 2) + '\n';
   if (exclusive) { fs.writeFileSync(file, bytes, { flag: 'wx' }); return; }
   const temp = file + '.' + randomUUID() + '.tmp';
-  try { fs.writeFileSync(temp, bytes, { flag: 'wx' }); fs.renameSync(temp, file); }
+  try {
+    fs.writeFileSync(temp, bytes, { flag: 'wx' });
+    for (let attempt = 0; ; attempt++) {
+      try { fs.renameSync(temp, file); break; }
+      catch (error) {
+        if (process.platform !== 'win32' || attempt >= 9 || !['EPERM', 'EBUSY', 'EACCES'].includes(error.code)) throw error;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+      }
+    }
+  }
   finally { if (fs.existsSync(temp)) fs.unlinkSync(temp); }
 }
 function read(file) {
@@ -35,7 +45,7 @@ function locked(project, fn, newWork = true) {
   const before = context(project); writable(before, newWork); verify(before);
   const lock = before.common ? path.join(before.common, 'axns-devflow.lock') : safe(before.root, '_plan/autopilot/.lock');
   fs.mkdirSync(safe(before.root, '_plan/autopilot'), { recursive: true });
-  try { fs.mkdirSync(lock); } catch (e) { if (e.code === 'EEXIST') fail('协调锁被占用：' + lock); throw e; }
+  try { fs.mkdirSync(lock); } catch (e) { if (e.code === 'EEXIST') core.transient('AXNS_COORDINATION_BUSY', '协调锁被占用：' + lock); throw e; }
   const owner = { token: randomUUID(), pid: process.pid, hostname: os.hostname(), command: 'autopilot-runner', started_at: new Date().toISOString() };
   fs.writeFileSync(path.join(lock, 'owner.json'), JSON.stringify(owner), { flag: 'wx' });
   try {
@@ -96,29 +106,45 @@ function order(ctx, d, decision, owner) {
   if (!fs.existsSync(source)) fail('缺少宿主阶段提示词：' + source);
   const runner = path.resolve(__dirname, '../runner.cjs');
   const common = ['--project', ctx.root, '--id', d.task.task_id, '--owner', owner, '--dispatch', decision.dispatch_id];
+  const workUnit = d.stage.next_unit_stage === stage ? d.stage.next_unit : null;
+  if (workUnit && units.load(ctx, d, workUnit.file).sha256 !== workUnit.sha256) fail('短工单已变化；先 prepare 重新核实');
   const callbacks = {
-    heartbeat: [process.execPath, runner, 'heartbeat', ...common],
-    complete: [process.execPath, runner, 'complete', ...common, '--evidence', '<任务记录目录内的真实证据相对路径>', '--handoff'],
-    fail: [process.execPath, runner, 'fail', ...common, '--evidence', '<失败证据相对路径>', '--handoff'],
+    takeover: [process.execPath, runner, 'takeover', ...common, '--session-id', '<真实平台会话标识>', '--cwd', d.taskRoot],
+    yield: [process.execPath, runner, 'yield', ...common, '--evidence', '<相对record_dir的证据文件名>', '--next-unit', '<相对record_dir的下一工单文件名>'],
+    heartbeat: [process.execPath, runner, 'heartbeat', ...common, ...(workUnit ? ['--steps', '<累计完成步数>'] : [])],
+    complete: [process.execPath, runner, 'complete', ...common, '--evidence', '<相对record_dir的证据文件名>', '--handoff'],
+    fail: [process.execPath, runner, 'fail', ...common, '--evidence', '<相对record_dir的失败证据文件名>', '--handoff'],
   };
   const prefix = [
-    '使用 axns-devflow 及当前项目约定，执行本派发指定的一个阶段。',
+    '使用 axns-devflow 及当前项目约定，执行本派发指定阶段中的一个有界工作单元；不把整个大阶段塞入同一会话。',
     'task-id: ' + d.task.task_id, 'stage: ' + stage, '工作目录: ' + d.taskRoot,
     '计划与证据目录: _plan/process/' + d.task.task_id + '/',
     'DSH/Orca 原生任务清单使用本 task-id 关联项目计划，按本阶段更新进度；清单勾选不构成验收。',
     '若在 PyCharm 操作，打开本工单工作目录；跨工具继续执行前先核实原派发与执行权。',
     '任务已登记；沿用现有 task-id、计划、范围与授权。P1 仅核实和补齐现有登记，不重新创建任务。',
     '先读取项目 AGENTS.md、基线和本任务计划；沿用用户已授权的任务范围；worktree 任务自动提交、验收后本地合入、归档和删除本任务资源。外部发布及派生代理仍需各自授权。',
-    '执行任何项目写入前先调用 callbacks.heartbeat，并在步骤间更新心跳；会话结束不等于阶段完成。',
+    '工单 work_unit 非空时，先核实 cwd、分支、HEAD、原执行者停写与持权，调用 callbacks.takeover 回传真实 session-id；接管确认前禁止业务写入。',
+    '读取前先定位本工单所需范围，源码和日志分块读取；工具结果优先落文件，仅回传摘要与证据路径，单次输入/输出也须预留交接空间。',
+    '执行项目写入前及步骤间调用 callbacks.heartbeat；短工单须将回调中 --steps 占位替换为累计完成步数，不重复追加参数；可观测时传 --remaining-tokens。返回 work_permitted=false 时先落盘并 yield，不再开始新业务步骤。',
+    '短任务完成但本阶段仍有剩余工作、或预算要求换窗时，保存证据和下一工单，调用 callbacks.yield；complete 仅用于整个阶段门禁已通过。',
     '只有成功标准和本阶段门禁均满足、真实证据已落盘时才调用 callbacks.complete；阻断或执行失败调用 callbacks.fail。',
     'callbacks 是可执行文件与字面参数数组，请按当前 shell 正确转义，不拼接 eval。',
+    'callbacks 的 --evidence 和 --next-unit 都相对 record_dir（任务记录目录），例如 first.md、unit2.json；不要包含 _plan/process/task-id/ 前缀，也不要传绝对路径。work_unit.inputs/write_scope 仍相对项目工作目录。',
     '回调中替换证据路径；P0 完成须依据适用的已有执行授权或本次确认传 --user-confirmed，并在证据中引用依据，无需重复询问。用户要求本次回报后等待时须等该确认。P4 须真实验证并提交 acceptance.md，complete 额外传 --accepted-head <最终HEAD> 声明技术验收；不能伪造人工确认。P4 窗口只回调交接，下一轮 claim/tick 自动从主目录 finish，避免删掉当前工作目录。',
     '--handoff 表示交接本阶段执行权：该命令是本轮最后一次项目写入，之后结束本轮，不自行领取其他任务。',
+    'yield 是旧执行者最后一次项目写入并释放本轮持权，之后结束会话；新会话确认接管后继续同阶段。正常轮换不暂停整体目标。',
+    'work_unit: ' + JSON.stringify(workUnit) + '；为空时先按宿主规则明确本轮短目标与停止条件；需多窗时 prepare/yield，不能无限执行。',
     'callbacks: ' + JSON.stringify(callbacks), '',
   ].join('\n');
   return { version: 1, task_id: d.task.task_id, stage, owner, dispatch_id: decision.dispatch_id,
     project: ctx.root, cwd: d.taskRoot, head: d.head, worktree_snapshot: d.worktreeSnapshot,
-    route: decision.model, prompt: prefix + fs.readFileSync(source, 'utf8').replaceAll('{{task-id}}', d.task.task_id)
+    work_unit: workUnit, previous_session_id: d.stage.last_session_id ?? null,
+    previous_dispatch_id: d.stage.last_dispatch_id ?? null, previous_owner: d.stage.owner ?? null,
+    record_dir: path.join(d.taskRoot, '_plan/process', d.task.task_id),
+    route: decision.model, team: decision.team,
+    ...(decision.model?.executor === 'dsh' && decision.team?.enabled && decision.team.mode === 'subagent' && ctx.cfg.dsh_children ? { dsh_children: ctx.cfg.dsh_children } : {}),
+    ...(decision.preset ? { launch_context: { preset: decision.preset, scenario: decision.scenario } } : {}),
+    prompt: prefix + fs.readFileSync(source, 'utf8').replaceAll('{{task-id}}', d.task.task_id)
     .replaceAll('{{任务描述}}', '沿用 _plan/process/' + d.task.task_id + '/ 中现行计划的目标与范围'), callbacks };
 }
 function choose(ctx, taskId) {
@@ -129,8 +155,10 @@ function choose(ctx, taskId) {
   return { code: 0, decision };
 }
 function routeMatches(route, actual) {
-  return !route || actual && route.provider === actual.provider && route.model === actual.model &&
-    (!route.reasoning || route.reasoning === actual.reasoning);
+  return require('./launch-policy.cjs').routeMatches(route, actual);
+}
+function teamMatches(team, actual) {
+  return require('./launch-policy.cjs').teamMatches(team, actual);
 }
 function finalize(project, opts = {}) {
   return locked(project, ctx => {
@@ -158,6 +186,7 @@ function reserve(project, opts, adapter) {
     if (adapter !== 'session') fail('该 owner 已有派发；使用 recover 查询');
     matching(existing, opts.owner, existing.window.dispatch_id);
     if (!routeMatches(existing.window.request.route, opts.route)) fail('当前会话模型与派发路由不一致');
+    if (!teamMatches(existing.window.request.team, opts.team)) fail('当前会话团队策略与派发不一致');
     preflight(initial, existing);
     return locked(project, ctx => {
       const assessment = evaluate(ctx);
@@ -172,6 +201,9 @@ function reserve(project, opts, adapter) {
   const picked = choose(initial, opts.id); if (!picked.decision) { verify(initial); return picked; }
   if (adapter === 'session' && !routeMatches(picked.decision.model, opts.route)) {
     verify(initial); return { code: 2, result: { action: 'hold', reason: 'session_model_mismatch', required_route: picked.decision.model } };
+  }
+  if (adapter === 'session' && !teamMatches(picked.decision.team, opts.team)) {
+    verify(initial); return { code: 2, result: { action: 'hold', reason: 'session_team_mismatch', required_team: picked.decision.team } };
   }
   const beforeTask = task(initial, picked.decision.task_id); preflight(initial, beforeTask);
   return locked(project, ctx => {
@@ -194,6 +226,7 @@ function reserve(project, opts, adapter) {
       })) fail('该 owner 已用于其他任务，请使用独立会话');
     }
     const request = order(ctx, d, selected.decision, opts.owner);
+    if (request.work_unit && d.stage.last_dispatch_id && d.stage.owner === opts.owner) fail('短工单接续须使用新会话的独立 owner');
     verify(ctx);
     const now = new Date().toISOString();
     const window = { task_id: d.task.task_id, stage: request.stage, dispatch_id: request.dispatch_id,
@@ -201,10 +234,12 @@ function reserve(project, opts, adapter) {
       adapter, execution: ctx.cfg.execution, initial_stage: d.stage, request };
     // Exclusive reservation is the durable request; a crash after this point must be recovered, never re-started blindly.
     atomic(file(ctx, d.task.task_id, 'window.json'), window, true);
-    event(d, 'reserved', { owner: opts.owner, dispatch_id: request.dispatch_id, stage: request.stage, adapter });
+    event(d, 'reserved', { owner: opts.owner, dispatch_id: request.dispatch_id, stage: request.stage, adapter }, request.work_unit ? ctx.root : null);
     if (adapter === 'session') atomic(file(ctx, d.task.task_id, 'stage.json'), {
       task_id: d.task.task_id, stage: request.stage, state: 'running', owner: opts.owner, updated_at: now,
-      attempts: d.stage.stage === request.stage ? d.stage.attempts ?? 0 : 0 });
+      attempts: d.stage.stage === request.stage ? d.stage.attempts ?? 0 : 0,
+      ...(d.stage.stage === request.stage ? { last_dispatch_id: d.stage.last_dispatch_id, last_session_id: d.stage.last_session_id } : {}),
+      ...unitState(request) });
     return { code: 0, result: { action: adapter === 'session' ? 'claimed' : 'reserved', request } };
   });
 }
@@ -214,9 +249,11 @@ function initialize(project, opts) {
   return locked(project, ctx => {
     const d = task(ctx, opts.id); readyTask(d);
     if (d.stage || d.window) fail('运行态已存在；init 不覆盖完成、失败或活动阶段');
+    const unit = opts.unit ? units.load(ctx, d, opts.unit) : null;
+    if (ctx.cfg.execution.require_units && !unit) fail('启用 require_units 后 init 必须指定 --unit');
     verify(ctx);
     atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: opts.stage, state: 'ready', owner: opts.owner,
-      updated_at: new Date().toISOString(), attempts: 0 }, true);
+      updated_at: new Date().toISOString(), attempts: 0, ...(unit ? { next_unit: unit, next_unit_stage: opts.stage } : {}) }, true);
     return { code: 0, result: { action: 'initialized', task_id: opts.id, stage: opts.stage } };
   });
 }
@@ -239,7 +276,8 @@ function retry(project, opts) {
     verify(ctx);
     event(d, 'retry', { controller: opts.owner, previous_dispatch_id: opts.dispatch, stage: d.stage.stage, evidence: opts.evidence });
     atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: d.stage.stage, state: 'ready', owner: opts.owner,
-      updated_at: new Date().toISOString(), attempts: Math.max(1, d.stage.attempts ?? 0), retry_of: opts.dispatch, retry_evidence: opts.evidence });
+      updated_at: new Date().toISOString(), attempts: Math.max(1, d.stage.attempts ?? 0),
+      ...unitState({ stage: d.stage.stage, work_unit: d.stage.next_unit }), last_session_id: d.stage.last_session_id, retry_of: opts.dispatch, retry_evidence: opts.evidence });
     return { code: 0, result: { action: 'retry_ready', task_id: opts.id, stage: d.stage.stage, previous_dispatch_id: opts.dispatch } };
   });
 }
@@ -256,20 +294,31 @@ function callback(project, command, opts) {
   return locked(project, ctx => {
     const d = task(ctx, opts.id), w = matching(d, opts.owner, opts.dispatch);
     samePreflight(d0, d);
+    if (w.request.work_unit && !w.acknowledged_at && command !== 'fail') fail('短工单尚未 takeover 确认接管');
     if (command === 'heartbeat') {
+      let budget;
+      if (w.request.work_unit) {
+        if (opts.steps === undefined) fail('短工单 heartbeat 必须传 --steps 累计步数');
+        const steps = units.integer(Number(opts.steps), 'steps');
+        if (steps < (w.steps ?? 0)) fail('累计步数不得倒退');
+        const remaining = opts['remaining-tokens'] === undefined ? null : units.integer(Number(opts['remaining-tokens']), 'remaining-tokens');
+        budget = units.progress(w, Date.now(), steps, remaining);
+      }
       const now = new Date().toISOString();
       if (w.phase === 'reserved' && w.adapter === 'command') {
         readyTask(d);
         if (JSON.stringify(d.stage) !== JSON.stringify(w.initial_stage)) fail('启动期间阶段发生变化');
         verify(ctx);
         atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: w.stage, state: 'running', owner: opts.owner,
-          updated_at: now, attempts: w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0 });
+          updated_at: now, attempts: w.initial_stage.stage === w.stage ? w.initial_stage.attempts ?? 0 : 0, ...unitState(w.request) });
       } else {
         if (d.stage?.state !== 'running' || d.stage.stage !== w.stage || w.phase !== 'running') fail('窗口不在 running');
         verify(ctx);
       }
-      atomic(file(ctx, opts.id, 'window.json'), { ...w, phase: 'running', heartbeat_at: now });
-      return { code: 0, result: { action: 'heartbeat', dispatch_id: opts.dispatch } };
+      atomic(file(ctx, opts.id, 'window.json'), { ...w, phase: 'running', heartbeat_at: now,
+        ...(budget ? { steps: budget.steps, remaining_tokens: budget.remaining_tokens, rotation_reasons: budget.reasons } : {}) });
+      return { code: 0, result: { action: budget?.rotation_required ? 'yield_required' : 'heartbeat', dispatch_id: opts.dispatch,
+        ...(budget ? { work_permitted: !budget.rotation_required, budget } : {}) } };
     }
     let acceptance;
     if (command === 'complete' && w.stage === 'P4' && ctx.settings.worktree) {
@@ -300,13 +349,14 @@ function callback(project, command, opts) {
     } else {
       event(d, command, { owner: opts.owner, dispatch_id: opts.dispatch, stage: w.stage, evidence: opts.evidence }, acceptance ? ctx.root : null);
       receipt = { task_id: opts.id, owner: opts.owner, dispatch_id: opts.dispatch, stage: w.stage, outcome: command,
-        evidence: opts.evidence, head: d.head, worktree_snapshot: core.projectState(d.taskRoot, ctx.root, !!ctx.common),
+        evidence: opts.evidence, session_id: w.session_id, head: d.head, worktree_snapshot: core.projectState(d.taskRoot, ctx.root, !!ctx.common),
         at: new Date().toISOString() };
       atomic(receiptFile(ctx, opts.id, opts.dispatch), receipt, true);
     }
     const stage = { task_id: opts.id, stage: w.stage, state: command === 'complete' ? 'completed' : 'failed',
       owner: opts.owner, updated_at: receipt.at, attempts: (d.stage.attempts ?? 0) + (command === 'fail' ? 1 : 0),
-      last_dispatch_id: opts.dispatch, evidence: opts.evidence };
+      last_dispatch_id: opts.dispatch, evidence: opts.evidence, last_session_id: w.session_id,
+      ...(command === 'fail' ? unitState(w.request) : {}) };
     if (command === 'complete') Object.assign(stage, { completed_head: receipt.head, completed_worktree: receipt.worktree_snapshot,
       ...(w.stage === 'P0' ? { user_confirmed: true } : {}), ...(acceptance ? { acceptance } : {}),
       ...(acceptance && opts['human-accepted-by']?.trim() ? { human_acceptance: { result: 'passed', accepted_by: opts['human-accepted-by'], accepted_head: d.head } } : {}) });
@@ -335,14 +385,15 @@ function interrupt(project, opts) {
     verify(ctx);
     event(d, 'interrupted', { owner: opts.owner, dispatch_id: opts.dispatch, evidence: opts.evidence });
     const receipt = { task_id: opts.id, owner: opts.owner, dispatch_id: opts.dispatch, stage: w.stage, outcome: 'interrupt',
-      evidence: opts.evidence, head: d.head, worktree_snapshot: core.projectState(d.taskRoot, ctx.root, !!ctx.common),
+      evidence: opts.evidence, session_id: w.session_id, head: d.head, worktree_snapshot: core.projectState(d.taskRoot, ctx.root, !!ctx.common),
       at: new Date().toISOString() };
     atomic(receiptFile(ctx, opts.id, opts.dispatch), receipt, true);
     atomic(file(ctx, opts.id, 'stage.json'), { task_id: opts.id, stage: w.stage, state: 'failed', owner: opts.owner,
-      updated_at: receipt.at, attempts: (d.stage?.stage === w.stage ? d.stage.attempts ?? 0 : 0) + 1, last_dispatch_id: opts.dispatch, evidence: opts.evidence });
+      updated_at: receipt.at, attempts: (d.stage?.stage === w.stage ? d.stage.attempts ?? 0 : 0) + 1, last_dispatch_id: opts.dispatch, evidence: opts.evidence, last_session_id: w.session_id, ...unitState(w.request) });
     fs.unlinkSync(file(ctx, opts.id, 'window.json'));
     return { code: 2, result: { action: 'interrupted', receipt, reason: 'stage_requires_review' } };
   }, false);
 }
-module.exports = { text, atomic, read, writable, locked, task, readyTask, file, receiptFile, event, preflight,
+function unitState(request) { return request.work_unit ? { next_unit: request.work_unit, next_unit_stage: request.stage } : {}; }
+module.exports = { unitState, text, atomic, read, writable, locked, task, readyTask, file, receiptFile, event, preflight,
   samePreflight, matching, finalize, reserve, initialize, callback, handoff, interrupt, retry };

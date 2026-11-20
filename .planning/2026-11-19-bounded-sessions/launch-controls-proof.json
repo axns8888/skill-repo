@@ -1,0 +1,31 @@
+{
+  "checked_at": "2026-11-20T02:20:09.989Z",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-launch-controls-kvEK6k",
+  "cases": [
+    {
+      "team": {
+        "enabled": false
+      },
+      "route": {
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "manifest_directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-launch-controls-kvEK6k\\_plan\\autopilot\\20261120-launch-controls\\dsh\\cebd86cd-7e00-4404-a7cf-f991e69a6b20",
+      "verification": "composed_config_only"
+    },
+    {
+      "team": {
+        "enabled": true,
+        "max_members": 3
+      },
+      "route": {
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "manifest_directory": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-launch-controls-kvEK6k\\_plan\\autopilot\\20261120-launch-controls\\dsh\\03720e8c-1b6e-4233-970f-c4fd34a20516",
+      "verification": "composed_config_only"
+    }
+  ]
+}

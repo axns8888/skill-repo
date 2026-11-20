@@ -61,7 +61,7 @@ fs.appendFileSync(process.argv[3],JSON.stringify(v)+'\\n');
 if(fs.existsSync(path.join(v.request.project,'.git/axns-devflow.lock'))||fs.existsSync(path.join(v.request.project,'_plan/autopilot/.lock'))) throw Error('bridge invoked under lock');
 if(c[v.operation]==='crash') process.exit(9);
 if(c[v.operation]==='malformed') { console.log('bad JSON'); process.exit(0); }
-console.log(JSON.stringify({version:1,dispatch_id:v.request.dispatch_id,state:c[v.operation],session_id:'platform/session-1',reason:'authoritative platform lookup',effective_route:c.route||v.request.route}));`);
+console.log(JSON.stringify({version:1,dispatch_id:v.request.dispatch_id,state:c[v.operation],session_id:c.session_id||'platform/session-1',reason:'authoritative platform lookup',effective_route:c.route||v.request.route}));`);
   config(f, { version: 1, execution: { enabled: true, adapter: 'command', timeout_seconds: 2,
     command: { file: process.execPath, args: [script, control, log] } } });
   return { control, log };
@@ -479,4 +479,316 @@ test('ordinary stage failure wakes recovery without presenting it as a human dec
   const decision = adviceResult(f, 2).decisions[0];
   assert.equal(decision.recovery_required, true); assert.equal(decision.needs_human, false);
   assert.equal(json(run(f, 'precheck')).actionable, true);
+});
+
+
+function unit(f, name = 'unit-a.json', changes = {}) {
+  const value = { id: name.replace('.json', ''), goal: 'Implement one observable change',
+    inputs: ['src/a.txt'], write_scope: ['src'], done_when: ['The focused check passes'],
+    stop_when: ['The target is complete or a budget boundary is reached'],
+    budget: { max_steps: 3, max_minutes: 10, reserve_tokens: 1000 }, ...changes };
+  put(f.taskRoot, '_plan/process/' + taskId + '/' + name, value); return name;
+}
+function bounded(t, useGit = false) {
+  const f = fixture(t, useGit);
+  config(f, { version: 1, execution: { enabled: true, require_units: true } });
+  const name = unit(f);
+  json(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/setup', '--unit', name));
+  return f;
+}
+function takeover(f, request, session = request.owner, extra = []) {
+  return json(run(f, 'takeover', ...args(request), '--session-id', session, '--cwd', request.cwd, ...extra));
+}
+
+test('bounded units require explicit takeover and continue within P2 without consuming retries', t => {
+  const f = bounded(t); evidence(f); const first = claim(f, 'worker/one').request;
+  assert.equal(first.work_unit.spec.id, 'unit-a');
+  assert.equal(run(f, 'heartbeat', ...args(first), '--steps', '0').status, 1);
+  assert.equal(run(f, 'complete', ...args(first), '--evidence', 'evidence.md').status, 1);
+  assert.equal(run(f, 'takeover', ...args(first), '--session-id', 'session/one', '--cwd', f.temp).status, 1);
+  assert.equal(takeover(f, first, 'session/one').budget.context_status, 'unknown');
+  assert.equal(takeover(f, first, 'session/one').duplicate, true);
+  assert.equal(run(f, 'takeover', ...args(first), '--session-id', 'different', '--cwd', f.root).status, 1);
+  assert.equal(json(run(f, 'heartbeat', ...args(first), '--steps', '1')).work_permitted, true);
+  const next = unit(f, 'unit-b.json'); evidence(f, 'handoff-one.md');
+  const yielded = json(run(f, 'yield', ...args(first), '--evidence', 'handoff-one.md', '--next-unit', next));
+  assert.equal(yielded.receipt.outcome, 'yield');
+  assert.equal(state(f, 'stage.json').stage, 'P2'); assert.equal(state(f, 'stage.json').state, 'ready');
+  assert.equal(state(f, 'stage.json').attempts, 0);
+  assert.equal(fs.existsSync(path.join(f.root, '_plan/autopilot', taskId, 'window.json')), false);
+  assert.equal(run(f, 'claim', '--owner', first.owner).status, 1);
+  const second = claim(f, 'worker/two').request;
+  assert.equal(second.stage, 'P2'); assert.notEqual(second.dispatch_id, first.dispatch_id);
+  assert.equal(second.work_unit.spec.id, 'unit-b');
+  assert.equal(run(f, 'takeover', ...args(second), '--session-id', 'session/one', '--cwd', f.root).status, 1);
+  takeover(f, second, 'session/two');
+  const before = state(f, 'window.json');
+  assert.equal(json(run(f, 'yield', ...args(first), '--evidence', 'handoff-one.md', '--next-unit', next)).duplicate, true);
+  assert.deepEqual(state(f, 'window.json'), before);
+  assert.equal(run(f, 'heartbeat', ...args(first), '--steps', '2').status, 1);
+  unit(f, 'review.json', { write_scope: [], goal: 'Review the completed P2 changes' });
+  evidence(f, 'phase-done.md'); callback(f, 'complete', second, 'phase-done.md');
+  assert.equal(adviceResult(f, 2).decisions[0].reason, 'work_unit_required');
+  json(run(f, 'prepare', '--id', taskId, '--owner', 'controller/next', '--unit', 'review.json'));
+  const third = claim(f, 'worker/three').request;
+  assert.equal(third.stage, 'P3'); assert.equal(third.work_unit.spec.id, 'review');
+  assert.equal(run(f, 'takeover', ...args(third), '--session-id', 'session/one', '--cwd', f.root).status, 1);
+  takeover(f, third, 'session/three');
+});
+
+test('short-unit heartbeat exposes step, time and context boundaries without stealing ownership', t => {
+  const f = bounded(t); const request = claim(f).request;
+  takeover(f, request, 'budget/session');
+  assert.equal(run(f, 'heartbeat', ...args(request)).status, 1);
+  assert.equal(json(run(f, 'heartbeat', ...args(request), '--steps', '1', '--remaining-tokens', '900')).action, 'yield_required');
+  assert.equal(adviceResult(f, 2).decisions[0].reason, 'window_rotation_due');
+  assert.equal(json(run(f, 'precheck')).actionable, true);
+  const unknown = json(run(f, 'heartbeat', ...args(request), '--steps', '2'));
+  assert.equal(unknown.budget.context_status, 'unknown'); assert.equal(unknown.budget.remaining_tokens, null);
+  assert.equal(unknown.work_permitted, false); // A previous rotation request cannot be cleared by omitting telemetry.
+  assert.equal(run(f, 'heartbeat', ...args(request), '--steps', '1').status, 1);
+  const cap = json(run(f, 'heartbeat', ...args(request), '--steps', '3'));
+  assert.equal(cap.work_permitted, false); assert.ok(cap.budget.reasons.includes('step_budget'));
+  assert.equal(json(run(f, 'claim', '--owner', 'worker/not-owner'), 2).decisions[0].reason, 'window_rotation_due');
+  const w = state(f, 'window.json'); w.opened_at = new Date(Date.now() - 11 * 60000).toISOString();
+  put(f.root, '_plan/autopilot/' + taskId + '/window.json', w);
+  assert.ok(adviceResult(f, 2).decisions[0].budget.reasons.includes('time_budget'));
+  assert.equal(state(f, 'window.json').owner, request.owner);
+});
+
+test('unit validation and prepare preserve active ownership, evidence gates and immutable requests', t => {
+  const f = fixture(t); config(f, { version: 1, execution: { enabled: true, require_units: true } });
+  assert.equal(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/test').status, 1);
+  unit(f, 'bad.json', { write_scope: ['../escape'] });
+  assert.equal(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/test', '--unit', 'bad.json').status, 1);
+  unit(f); json(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/test', '--unit', 'unit-a.json'));
+  unit(f, 'unit-a.json', { goal: 'Changed after preparation' });
+  assert.equal(run(f, 'claim').status, 1);
+  json(run(f, 'prepare', '--id', taskId, '--owner', 'controller/test', '--unit', 'unit-a.json'));
+  const request = claim(f).request; takeover(f, request);
+  assert.equal(run(f, 'prepare', '--id', taskId, '--owner', 'controller/test', '--unit', 'unit-a.json').status, 1);
+  unit(f, 'next.json');
+  assert.equal(run(f, 'yield', ...args(request), '--evidence', 'missing.md', '--next-unit', 'next.json').status, 1);
+  evidence(f); callback(f, 'fail', request, 'evidence.md', ['--handoff'], 2);
+  evidence(f, 'repair.md');
+  json(run(f, 'retry', '--id', taskId, '--owner', 'controller/repair', '--dispatch', request.dispatch_id, '--evidence', 'repair.md'));
+  const retry = claim(f, 'worker/retry').request;
+  assert.equal(retry.work_unit.sha256, request.work_unit.sha256);
+  assert.equal(state(f, 'stage.json').attempts, 1);
+});
+
+test('unknown bounded command launch is queried and requires the real new session to acknowledge', t => {
+  const f = fixture(t); const b = bridge(f, 'unknown', 'running');
+  const cfg = JSON.parse(fs.readFileSync(path.join(f.root, '_plan/prompts/autopilot.json'))); cfg.execution.require_units = true; config(f, cfg);
+  unit(f); json(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/setup', '--unit', 'unit-a.json'));
+  const first = json(run(f, 'tick', '--owner', 'bridge/one'), 2);
+  const w = state(f, 'window.json'), request = w.request;
+  assert.equal(first.reason, 'launch_unknown');
+  assert.equal(json(run(f, 'tick', '--owner', 'bridge/two')).action, 'hold');
+  json(run(f, 'recover', ...args(request)));
+  assert.equal(state(f, 'window.json').acknowledged_at, undefined);
+  assert.equal(run(f, 'heartbeat', ...args(request), '--steps', '0').status, 1);
+  assert.equal(run(f, 'takeover', ...args(request), '--session-id', 'invented', '--cwd', f.root).status, 1);
+  takeover(f, request, 'platform/session-1');
+  const calls = fs.readFileSync(b.log, 'utf8').trim().split('\n').map(JSON.parse);
+  assert.deepEqual(calls.map(v => v.operation), ['start', 'query']);
+  assert.equal(calls[0].request.dispatch_id, calls[1].request.dispatch_id);
+  assert.equal(calls[0].request.work_unit.sha256, calls[1].request.work_unit.sha256);
+});
+
+test('takeover checks Git HEAD, and disabled execution still permits a cooperative yield', t => {
+  const f = bounded(t, true); git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'bounded baseline');
+  const request = claim(f).request;
+  put(f.root, 'src/a.txt', 'unauthorized pre-takeover change\n'); git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'changed before takeover');
+  assert.equal(run(f, 'takeover', ...args(request), '--session-id', 'session/git', '--cwd', f.root).status, 1);
+  git(f.root, 'reset', '--hard', request.head);
+  takeover(f, request, 'session/git');
+  unit(f, 'next.json'); evidence(f, 'handoff.md');
+  config(f, { version: 1, execution: { enabled: false, require_units: true } });
+  json(run(f, 'yield', ...args(request), '--evidence', 'handoff.md', '--next-unit', 'next.json'));
+  assert.equal(state(f, 'stage.json').state, 'ready');
+  assert.equal(run(f, 'claim', '--owner', 'next/disabled').status, 1);
+  git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'late commit after yield');
+  assert.equal(adviceResult(f, 2).decisions[0].reason, 'handoff_head_changed');
+});
+
+
+test('takeover context reserve remains a rotation boundary after telemetry becomes unknown', t => {
+  const f = bounded(t); const request = claim(f).request;
+  assert.equal(takeover(f, request, 'session/reserve', ['--remaining-tokens', '900']).work_permitted, false);
+  const result = json(run(f, 'heartbeat', ...args(request), '--steps', '0'));
+  assert.equal(result.budget.context_status, 'unknown');
+  assert.equal(result.work_permitted, false);
+  assert.deepEqual(result.budget.reasons, ['context_reserve']);
+});
+
+
+test('bounded worktree continuation keeps the original task workspace and enforces its scope', t => {
+  const f = fixture(t, true);
+  fs.unlinkSync(path.join(f.root, '_plan/.active_plan'));
+  put(f.root, 'AGENTS.md', 'extensions: [worktree, autopilot]\nintegration_branch: main\nautopilot_config: _plan/prompts/autopilot.json\n');
+  config(f, { version: 1, execution: { enabled: true, require_units: true } });
+  git(f.root, 'add', '.'); git(f.root, 'commit', '-m', 'bounded worktree');
+  const manifest = path.join(f.temp, 'manifest.json');
+  put(f.temp, 'manifest.json', { scope: ['src/a.txt'], shared_claims: [], depends_on: [], owner: 'controller/test' });
+  f.taskRoot = json(spawnSync(process.execPath, [worktree, 'register', '--project', f.root, '--id', taskId, '--manifest', manifest], { env, encoding: 'utf8' })).worktree;
+  unit(f, 'unit-a.json', { write_scope: ['src/a.txt'] });
+  json(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/setup', '--unit', 'unit-a.json'));
+  const first = claim(f, 'worker/worktree-one').request;
+  takeover(f, first, 'worktree/session-one');
+  put(f.taskRoot, 'src/a.txt', 'first bounded result\n'); evidence(f, 'handoff.md'); unit(f, 'unit-b.json', { write_scope: ['src/a.txt'] });
+  json(run(f, 'yield', ...args(first), '--evidence', 'handoff.md', '--next-unit', 'unit-b.json'));
+  const second = claim(f, 'worker/worktree-two').request;
+  assert.equal(second.cwd, first.cwd); assert.equal(second.task_id, first.task_id); assert.equal(second.stage, 'P2');
+  takeover(f, second, 'worktree/session-two');
+  put(f.taskRoot, 'src/outside.txt', 'outside scope\n'); evidence(f);
+  assert.match(run(f, 'complete', ...args(second), '--evidence', 'evidence.md', '--handoff').stderr, /worktree check/);
+  fs.unlinkSync(path.join(f.taskRoot, 'src/outside.txt')); callback(f, 'complete', second);
+  assert.equal(state(f, 'stage.json').state, 'completed');
+});
+
+
+test('bounded absent launch retains the unit and previous handoff until a fresh session takes over', t => {
+  const f = fixture(t), b = bridge(f, 'running');
+  const cfg = JSON.parse(fs.readFileSync(path.join(f.root, '_plan/prompts/autopilot.json'), 'utf8'));
+  cfg.execution.require_units = true; config(f, cfg); unit(f);
+  json(run(f, 'init', '--id', taskId, '--stage', 'P2', '--owner', 'controller/setup', '--unit', 'unit-a.json'));
+  put(f.temp, 'control.json', { start: 'absent', query: 'absent' });
+  assert.equal(json(run(f, 'tick')).action, 'start_failed');
+  assert.equal(state(f, 'stage.json').next_unit.spec.id, 'unit-a');
+  put(f.temp, 'control.json', { start: 'running', query: 'running' });
+  const first = json(run(f, 'tick')).request; takeover(f, first, 'platform/session-1');
+  unit(f, 'next.json'); evidence(f, 'handoff.md');
+  json(run(f, 'yield', ...args(first), '--evidence', 'handoff.md', '--next-unit', 'next.json'));
+  put(f.temp, 'control.json', { start: 'absent', query: 'absent' });
+  assert.equal(json(run(f, 'tick')).action, 'start_failed');
+  const ready = state(f, 'stage.json');
+  assert.equal(ready.next_unit.spec.id, 'next'); assert.equal(ready.last_dispatch_id, first.dispatch_id);
+  assert.equal(ready.last_session_id, 'platform/session-1'); assert.equal(ready.attempts, 2);
+  put(f.temp, 'control.json', { start: 'running', query: 'running', session_id: 'platform/session-2' });
+  const next = json(run(f, 'tick')).request;
+  assert.equal(next.previous_dispatch_id, first.dispatch_id); assert.equal(next.previous_owner, first.owner);
+  assert.equal(run(f, 'takeover', ...args(next), '--session-id', 'platform/session-1', '--cwd', f.root).status, 1);
+  takeover(f, next, 'platform/session-2');
+  assert.equal(fs.readFileSync(b.log, 'utf8').trim().split('\n').length, 4);
+});
+
+test('yield detects workspace changes before the next dispatch without replacing its snapshot', t => {
+  const f = bounded(t); const first = claim(f, 'worker/before').request; takeover(f, first);
+  unit(f, 'next.json'); evidence(f, 'handoff.md');
+  json(run(f, 'yield', ...args(first), '--evidence', 'handoff.md', '--next-unit', 'next.json'));
+  const original = state(f, 'stage.json');
+  put(f.root, 'src/a.txt', 'late write after yield\n');
+  const decision = adviceResult(f, 2).decisions[0];
+  assert.equal(decision.reason, 'handoff_worktree_changed');
+  assert.equal(json(run(f, 'claim', '--owner', 'worker/after'), 2).decisions[0].reason, 'handoff_worktree_changed');
+  assert.equal(run(f, 'prepare', '--id', taskId, '--owner', 'controller/recheck', '--unit', 'next.json').status, 1);
+  assert.deepEqual(state(f, 'stage.json'), original);
+});
+
+test('stopped context-overflow worker continues the same stage with a bounded read-only brief', t => {
+  const f = bounded(t), first = claim(f, 'worker/overflow').request;
+  takeover(f, first, 'overflow/session');
+  unit(f, 'continue.json'); evidence(f, 'stopped.md', 'Platform confirms the old execution has stopped after context overflow. Remaining work is in continue.json.\n');
+  put(f.root, 'large-log.txt', 'private-large-log\n'.repeat(5000));
+  const before = state(f, 'window.json');
+  const brief = json(run(f, 'brief', '--id', taskId));
+  assert.equal(brief.action, 'resume_brief'); assert.equal(brief.window.dispatch_id, first.dispatch_id);
+  assert.ok(Buffer.byteLength(JSON.stringify(brief)) <= 12288);
+  assert.ok(!JSON.stringify(brief).includes('private-large-log'));
+  assert.deepEqual(state(f, 'window.json'), before);
+  const resume = [...args(first), '--evidence', 'stopped.md', '--next-unit', 'continue.json'];
+  assert.equal(run(f, 'resume-yield', ...resume).status, 1);
+  assert.equal(run(f, 'resume-yield', ...args(first), '--evidence', 'missing.md', '--next-unit', 'continue.json', '--confirmed-stopped').status, 1);
+  assert.deepEqual(state(f, 'window.json'), before);
+  const result = json(run(f, 'resume-yield', ...resume, '--confirmed-stopped'));
+  assert.equal(result.receipt.recovery, 'confirmed_stopped');
+  assert.equal(state(f, 'stage.json').attempts, 0); assert.equal(state(f, 'stage.json').stage, 'P2');
+  const next = claim(f, 'worker/fresh').request;
+  assert.equal(run(f, 'takeover', ...args(next), '--session-id', 'overflow/session', '--cwd', f.root).status, 1);
+  takeover(f, next, 'fresh/session');
+  const current = state(f, 'window.json');
+  assert.equal(json(run(f, 'resume-yield', ...resume, '--confirmed-stopped')).duplicate, true);
+  assert.deepEqual(state(f, 'window.json'), current);
+  assert.equal(run(f, 'heartbeat', ...args(first), '--steps', '1').status, 1);
+});
+
+test('confirmed stopped recovery converges both yield crash points and rejects changed results', t => {
+  for (const crashPoint of ['receipt', 'stage']) {
+    const f = bounded(t), first = claim(f).request; takeover(f, first);
+    unit(f, 'continue.json'); evidence(f, 'handoff.md');
+    const window = state(f, 'window.json'), stage = state(f, 'stage.json');
+    const resume = [...args(first), '--evidence', 'handoff.md', '--next-unit', 'continue.json'];
+    const yielded = json(run(f, 'yield', ...resume));
+    put(f.root, '_plan/autopilot/' + taskId + '/window.json', window);
+    if (crashPoint === 'receipt') put(f.root, '_plan/autopilot/' + taskId + '/stage.json', stage);
+    const brief = json(run(f, 'brief', '--id', taskId));
+    assert.equal(brief.receipt.next_unit, 'continue.json'); assert.equal(brief.evidence, 'handoff.md');
+    assert.equal(brief.work_unit.file, 'continue.json');
+    assert.equal(run(f, 'yield', ...resume).status, 1);
+    put(f.root, 'late.txt', 'Unexpected write after the yield snapshot\n');
+    assert.equal(run(f, 'resume-yield', ...resume, '--confirmed-stopped').status, 1);
+    assert.deepEqual(state(f, 'window.json'), window);
+    fs.unlinkSync(path.join(f.root, 'late.txt'));
+    const recovered = json(run(f, 'resume-yield', ...resume, '--confirmed-stopped'));
+    assert.equal(recovered.recovered, true); assert.deepEqual(recovered.receipt, yielded.receipt);
+    assert.equal(state(f, 'stage.json').state, 'ready');
+    assert.equal(state(f, 'stage.json').attempts, stage.attempts);
+    const next = claim(f, 'worker/recovered').request; takeover(f, next, 'recovered/' + crashPoint);
+  }
+});
+
+test('stopped recovery preserves attempts and can drain an unacknowledged worker when new execution is disabled', t => {
+  const f = bounded(t), request = claim(f).request;
+  unit(f, 'continue.json'); evidence(f, 'stopped.md');
+  const stage = state(f, 'stage.json'); stage.attempts = 2;
+  put(f.root, '_plan/autopilot/' + taskId + '/stage.json', stage);
+  config(f, { version: 1, execution: { enabled: false, require_units: true } });
+  json(run(f, 'resume-yield', ...args(request), '--evidence', 'stopped.md', '--next-unit', 'continue.json', '--confirmed-stopped'));
+  assert.equal(state(f, 'stage.json').attempts, 2);
+  assert.equal(run(f, 'claim', '--owner', 'worker/disabled').status, 1);
+});
+
+test('startup consumes the unit time budget and wakes recovery without granting another writer', t => {
+  const f = bounded(t), request = claim(f).request;
+  const window = state(f, 'window.json'); window.opened_at = new Date(Date.now() - 11 * 60000).toISOString();
+  put(f.root, '_plan/autopilot/' + taskId + '/window.json', window);
+  const decision = adviceResult(f, 2).decisions[0];
+  assert.equal(decision.reason, 'window_rotation_due'); assert.equal(decision.recovery_required, true);
+  assert.equal(decision.takeover_confirmed, false); assert.equal(json(run(f, 'precheck')).actionable, true);
+  assert.equal(json(run(f, 'claim', '--owner', 'worker/contender'), 2).decisions[0].reason, 'window_rotation_due');
+  assert.equal(takeover(f, request, 'startup/session').work_permitted, false);
+  assert.equal(json(run(f, 'heartbeat', ...args(request), '--steps', '0')).work_permitted, false);
+  assert.equal(state(f, 'window.json').owner, request.owner);
+});
+
+test('session claim must attest the explicitly configured team policy before ownership', t => {
+  const f = fixture(t);
+  config(f, { version: 1, execution: { enabled: true }, launch: { default: { team: { enabled: true, max_members: 3 } } } });
+  init(f);
+  assert.equal(json(run(f, 'claim', '--owner', 'dsh/team'), 2).reason, 'session_team_mismatch');
+  assert.equal(fs.existsSync(path.join(f.root, '_plan/autopilot', taskId, 'window.json')), false);
+  const value = json(run(f, 'claim', '--owner', 'dsh/team', '--team-enabled', 'true', '--team-max-members', '3'));
+  assert.deepEqual(value.request.team, { enabled: true, max_members: 3 });
+  assert.equal(run(f, 'claim', '--owner', 'dsh/team', '--team-enabled', 'false').status, 1);
+  assert.equal(run(f, 'claim', '--owner', 'dsh/team', '--team-enabled', 'yes').status, 1);
+});
+test('configured disabled team is explicit while omitted team remains inherited', t => {
+  const f = fixture(t);
+  config(f, { version: 1, execution: { enabled: true }, launch: { default: { team: { enabled: false } } } });
+  init(f);
+  assert.equal(json(run(f, 'claim', '--owner', 'dsh/no-team'), 2).reason, 'session_team_mismatch');
+  const value = json(run(f, 'claim', '--owner', 'dsh/no-team', '--team-enabled', 'false'));
+  assert.deepEqual(value.request.team, { enabled: false });
+});
+
+test('session claim must attest the selected executor before receiving task ownership', t => {
+  const f = fixture(t); config(f, { version: 1, execution: { enabled: true }, tiers: { P2: 'review' },
+    models: { review: { executor: 'claude', provider: 'own', model: 'known', reasoning: 'high' } } }); init(f);
+  for (const extra of [[], ['--executor', 'codex']]) {
+    assert.equal(json(run(f, 'claim', '--provider', 'own', '--model', 'known', '--reasoning', 'high', ...extra), 2).reason, 'session_model_mismatch');
+    assert.equal(fs.existsSync(path.join(f.root, '_plan/autopilot', taskId, 'window.json')), false);
+  }
+  const result = json(run(f, 'claim', '--executor', 'claude', '--provider', 'own', '--model', 'known', '--reasoning', 'high'));
+  assert.equal(result.request.route.executor, 'claude');
 });

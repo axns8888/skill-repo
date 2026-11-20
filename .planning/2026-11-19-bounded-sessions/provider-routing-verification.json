@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-20T11:23:38.4605340+08:00",
+  "tests": 169,
+  "pass": 169,
+  "fail": 0,
+  "test_logs": [
+    ".cache/provider-routing-tests.log",
+    ".cache/provider-routing-remaining-tests.log"
+  ],
+  "source_verified": true,
+  "installed_matches": true,
+  "backup": "C:\\Users\\nikos\\.agents\\skill-repo\\backups\\2026-11-20T03-14-22-037Z-d9bdc691\\previous\\axns-devflow-ext-autopilot",
+  "dsh_proof": "provider-routing-proof.json",
+  "installed_dsh_proof": "provider-routing-installed-proof.json",
+  "claude_live_inference_verified": false,
+  "dsh_automatic_handoff_implemented": false
+}

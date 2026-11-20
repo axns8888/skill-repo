@@ -3,12 +3,14 @@
 // Read-only advice. A platform adapter must reserve windows and perform authorized actions.
 const fs = require('node:fs');
 const humanAcceptance = require('./acceptance.cjs');
+const launchPolicy = require('./launch-policy.cjs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const STAGES = ['P0', 'P1', 'P2', 'P3', 'P4', 'P5'];
 const STATES = ['ready', 'running', 'completed', 'failed'];
 function fail(message) { throw new Error(message); }
+function transient(code, message) { const error = new Error(message); error.code = code; throw error; }
 function object(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${label} 必须为对象`);
   return value;
@@ -75,7 +77,7 @@ function observer() {
       let value;
       try { value = entry.directory ? JSON.stringify(fs.readdirSync(file).sort()) : fs.readFileSync(file, 'utf8'); }
       catch (e) { if (e.code !== 'ENOENT') throw e; value = entry.directory ? 'null' : null; }
-      if (value !== entry.value) fail(`读取期间状态改变，请重新判定：${file}`);
+      if (value !== entry.value) transient('AXNS_OBSERVATION_CHANGED', `读取期间状态改变，请重新判定：${file}`);
     }
   }
   return { text, names, json, verify };
@@ -93,8 +95,8 @@ function agents(text) {
     config: unquote(text.match(/^autopilot_config:[ \t]*(.+?)\s*$/m)?.[1] || ''),
     timeout: positive(Number(text.match(/^lock_timeout_minutes:[ \t]*(\d+)[ \t]*$/m)?.[1] || 120), 'lock_timeout_minutes') };
 }
-function config(raw) {
-  keys(raw, ['version', 'slots', 'capabilities', 'tiers', 'models', 'stage_markers', 'stage_cap_minutes', 'max_attempts', 'execution'], 'config');
+function config(raw, catalog = null) {
+  keys(raw, ['version', 'slots', 'capabilities', 'tiers', 'models', 'model_config_file', 'launch', 'stage_markers', 'stage_cap_minutes', 'max_attempts', 'execution'], 'config');
   if (raw.version !== 1) fail('config.version 必须为 1');
   const capabilities = raw.capabilities ?? {};
   keys(capabilities, ['advance', 'switch_model', 'open_window', 'finish_task'], 'capabilities');
@@ -112,13 +114,10 @@ function config(raw) {
       caps[name].only_registered = true;
     }
   }
-  const models = object(raw.models ?? {}, 'models');
-  for (const [tier, route] of Object.entries(models)) {
-    keys(route, ['provider', 'model', 'reasoning'], `models.${tier}`);
-    for (const key of ['provider', 'model']) if (typeof route[key] !== 'string' || !route[key].trim() || /[<>]/.test(route[key])) fail(`models.${tier}.${key} 必须为实际路由`);
-    if (route.reasoning !== undefined && (typeof route.reasoning !== 'string' || !route.reasoning.trim())) fail(`models.${tier}.reasoning 无效`);
-  }
-  const tiers = object(raw.tiers ?? {}, 'tiers');
+  if (catalog && (raw.models !== undefined || raw.tiers !== undefined)) fail('model_config_file 与内联 models/tiers 不可同时配置；模型选择集中到独立文件');
+  const models = object(catalog?.models ?? raw.models ?? {}, 'models');
+  for (const [tier, route] of Object.entries(models)) launchPolicy.model(route, `models.${tier}`);
+  const tiers = object(catalog?.tiers ?? raw.tiers ?? {}, 'tiers');
   for (const [stage, tier] of Object.entries(tiers)) {
     if (![...STAGES, 'conductor'].includes(stage) || typeof tier !== 'string' || !tier.trim()) fail(`tiers.${stage} 无效`);
     if (Object.keys(models).length && !Object.hasOwn(models, tier)) fail(`tiers.${stage} 指向不存在的档位：${tier}`);
@@ -129,7 +128,7 @@ function config(raw) {
     paths.forEach(relativePath);
   }
   const execution = raw.execution ?? {};
-  keys(execution, ['enabled', 'adapter', 'command', 'timeout_seconds'], 'execution');
+  keys(execution, ['enabled', 'adapter', 'command', 'timeout_seconds', 'require_units'], 'execution');
   const adapter = execution.adapter ?? 'session';
   if (!['session', 'command'].includes(adapter)) fail('execution.adapter 必须为 session 或 command');
   let command = null;
@@ -141,8 +140,13 @@ function config(raw) {
   }
   if (adapter === 'command' && !command) fail('command 适配器需要 execution.command');
   return { execution: { enabled: boolean(execution.enabled, false, 'execution.enabled'), adapter, command,
+    require_units: boolean(execution.require_units, false, 'execution.require_units'),
     timeout_seconds: positive(execution.timeout_seconds ?? 30, 'execution.timeout_seconds') },
-    slots: positive(raw.slots ?? 2, 'slots'), caps, models, tiers, markers,
+    slots: positive(raw.slots ?? 2, 'slots'), caps, models, tiers,
+    launch: launchPolicy.config(raw.launch ?? {}, models, id, catalog?.scenarios), markers,
+    ...(catalog ? { scenarios: catalog.scenarios, stage_scenarios: catalog.stage_scenarios, catalog_default: catalog.catalog_default,
+      ...(catalog.dsh_children ? { dsh_children: catalog.dsh_children } : {}),
+      model_catalog: { file: catalog.file, sha256: catalog.sha256, preset: catalog.preset } } : {}),
     stage_cap_minutes: positive(raw.stage_cap_minutes ?? 30, 'stage_cap_minutes'), max_attempts: positive(raw.max_attempts ?? 3, 'max_attempts') };
 }
 function timestamp(value, label, now) {
@@ -218,7 +222,30 @@ function context(project, lockToken = null) {
   const read = observer(); const settings = agents(read.text(safe(root, 'AGENTS.md')));
   if (!settings.enabled) return { root, enabled: false, read };
   if (!settings.config) fail('AGENTS.md 必须显式指定 autopilot_config');
-  const cfgPath = safe(root, settings.config); const cfg = config(read.json(cfgPath));
+  const cfgPath = safe(root, settings.config), raw = read.json(cfgPath);
+  let catalog = null;
+  let modelFile = raw?.model_config_file;
+  // Project tables are defaults only when no explicit or legacy inline routes exist.
+  if (modelFile === undefined && raw && raw.models === undefined && raw.tiers === undefined) {
+    const candidates = ['_plan/model-routing.json', 'model-routing.json'].filter(name => {
+      const file = safe(root, name);
+      if (fs.existsSync(file) && fs.statSync(file).size > 128 * 1024) fail('模型配置文件超过128 KiB');
+      return read.text(file) !== null;
+    });
+    if (candidates.length > 1) fail('发现两份模型表；请明确设置 model_config_file');
+    modelFile = candidates[0];
+  }
+  if (modelFile !== undefined) {
+    const name = modelFile;
+    if (typeof name !== 'string' || !name.trim() || name.length > 4096 || /[\r\n\0]/.test(name)) fail('model_config_file 需要明确文件路径');
+    const file = path.isAbsolute(name) ? path.normalize(name) : safe(root, name);
+    const loader = require('./model-config.cjs');
+    if (fs.existsSync(file) && fs.statSync(file).size > loader.MAX_BYTES) fail('模型配置文件超过128 KiB');
+    const source = read.text(file);
+    const doc = loader.parse(source);
+    catalog = { ...loader.compile(doc), file, sha256: createHash('sha256').update(source).digest('hex') };
+  }
+  const cfg = config(raw, catalog);
   const acceptancePath = safe(root, humanAcceptance.CONFIG);
   const acceptancePolicy = humanAcceptance.parse(read.text(acceptancePath));
   const runtime = safe(root, '_plan/autopilot');
@@ -232,7 +259,7 @@ function context(project, lockToken = null) {
       const owner = JSON.parse(fs.readFileSync(path.join(lock, 'owner.json'), 'utf8'));
       if (owner.token === lockToken) return;
     }
-    fail('协调锁被占用：' + lock + '；保留现场，稍后重新判定');
+    transient('AXNS_COORDINATION_BUSY', '协调锁被占用：' + lock + '；保留现场，稍后重新判定');
   }
   unlocked();
   if (settings.worktree && !common) fail('worktree 模式需要 Git 仓库');
@@ -280,6 +307,10 @@ function context(project, lockToken = null) {
       if (stage.task_id !== taskId || !STAGES.includes(stage.stage) || !STATES.includes(stage.state) ||
           typeof stage.owner !== 'string' || !stage.owner.trim()) fail(`stage.json 身份、阶段、state 或 owner 无效：${taskId}`);
       timestamp(stage.updated_at, `${taskId}.updated_at`, now);
+      if (stage.next_unit !== undefined) {
+        require('./units.cjs').validate(stage.next_unit);
+        if (!STAGES.slice(0, 5).includes(stage.next_unit_stage)) fail('next_unit_stage 无效');
+      }
       if (stage.attempts !== undefined && (!Number.isSafeInteger(stage.attempts) || stage.attempts < 0)) fail(`stage.attempts 无效：${taskId}`);
     }
     const window = read.json(safe(root, `_plan/autopilot/${taskId}/window.json`));
@@ -288,6 +319,17 @@ function context(project, lockToken = null) {
           typeof window.dispatch_id !== 'string' || !window.dispatch_id.trim() || !STAGES.includes(window.stage)) fail(`window.json 无效：${taskId}`);
       timestamp(window.opened_at, `${taskId}.opened_at`, now);
       timestamp(window.heartbeat_at, `${taskId}.heartbeat_at`, now);
+      if (window.request?.work_unit) {
+        const units = require('./units.cjs'); units.validate(window.request.work_unit);
+        if (window.acknowledged_at) {
+          timestamp(window.acknowledged_at, `${taskId}.acknowledged_at`, now);
+          if (typeof window.session_id !== 'string' || !window.session_id.trim()) fail('接管记录缺少 session_id');
+        }
+        units.integer(window.steps ?? 0, 'window.steps');
+        if (window.remaining_tokens != null) units.integer(window.remaining_tokens, 'window.remaining_tokens');
+        if (window.rotation_reasons !== undefined && (!Array.isArray(window.rotation_reasons) ||
+            window.rotation_reasons.some(v => !['step_budget', 'time_budget', 'context_reserve'].includes(v)))) fail('window.rotation_reasons 无效');
+      }
     }
     const markerHits = [];
     for (const [name, files] of Object.entries(cfg.markers)) {
@@ -318,7 +360,9 @@ function decide(d, ctx, busy) {
   if (d.wait_exceeded) return hold('wait_timeout', true);
   if (window) {
     const age = (ctx.now - Date.parse(window.heartbeat_at)) / 60000;
-    return hold(age >= cfg.stage_cap_minutes ? 'window_stalled' : 'window_active', age >= cfg.stage_cap_minutes);
+    const budget = window.request?.work_unit ? require('./units.cjs').progress(window, ctx.now) : null;
+    return hold(age >= cfg.stage_cap_minutes ? 'window_stalled' : budget?.rotation_required ? 'window_rotation_due' : 'window_active',
+      age >= cfg.stage_cap_minutes || !!budget?.rotation_required, budget ? { budget, takeover_confirmed: !!window.acknowledged_at } : {});
   }
   if (task.status === 'blocked') return hold('blocked_by_claim');
   if (task.status === 'completed') return hold('already_completed');
@@ -329,6 +373,16 @@ function decide(d, ctx, busy) {
   if ((stage.attempts ?? 0) >= cfg.max_attempts) return hold('attempt_limit', true);
   if (stage.state === 'failed') return hold('stage_failed', true);
   if (stage.state === 'running') return hold('window_state_missing', true);
+  if (stage.state === 'ready' && stage.next_unit && stage.last_dispatch_id) {
+    if (!/^[a-f0-9]{64}$/.test(stage.last_dispatch_id)) fail('交接 dispatch_id 无效');
+    const receipt = ctx.read.json(safe(ctx.root, `_plan/autopilot/${task.task_id}/receipts/${stage.last_dispatch_id}.json`));
+    if (!receipt || receipt.task_id !== task.task_id || receipt.dispatch_id !== stage.last_dispatch_id ||
+        receipt.owner !== stage.owner || !['yield', 'complete'].includes(receipt.outcome)) return hold('handoff_receipt_invalid', true);
+    if (receipt.head !== d.head) return hold('handoff_head_changed', true);
+    if (receipt.worktree_snapshot !== d.worktreeSnapshot) return hold('handoff_worktree_changed', true);
+    if (!receipt.evidence || !ctx.read.text(safe(d.taskRoot, `_plan/process/${task.task_id}/${relativePath(receipt.evidence)}`))?.trim())
+      return hold('handoff_evidence_missing', true);
+  }
   if (stage.state === 'completed') {
     if (stage.stage !== 'P0' && (!stage.evidence || typeof stage.evidence !== 'string' ||
         !ctx.read.text(safe(d.taskRoot, `_plan/process/${task.task_id}/${stage.evidence}`))?.trim())) return hold('stage_evidence_missing', true);
@@ -362,17 +416,18 @@ function decide(d, ctx, busy) {
   if (!cfg.caps.advance.enabled) return hold('advance_disabled');
   if (!cfg.caps.open_window.enabled) return hold('open_window_disabled');
   if (busy >= (ctx.settings.worktree ? cfg.slots : 1)) return hold('slots_full');
-  const tier = cfg.caps.switch_model.enabled ? cfg.tiers[next] ?? null : null;
-  const model = tier ? cfg.models[tier] ?? null : null;
+  if (cfg.execution.require_units && (!stage.next_unit || stage.next_unit_stage !== next))
+    return hold('work_unit_required', true, { next_stage: next });
+  const selected = launchPolicy.resolve(cfg, task.task_id, next, stage.next_unit_stage === next ? stage.next_unit?.spec : null);
   return { ...base, action: 'advance', reason: recombine ? 'integration_advanced' : stage.state === 'ready' ? 'stage_ready' : 'next_stage', needs_human: false,
-    next_stage: next, tier, model, model_available: !!model, route_source: model ? 'configured' : 'inherited' };
+    next_stage: next, ...selected };
 }
 function verify(ctx) {
   ctx.read.verify();
   if (!ctx.enabled) return;
   ctx.unlocked();
   for (const d of ctx.detailed) if (!d.cleanup_resume && ((d.head && git(d.taskRoot, ['rev-parse', 'HEAD']) !== d.head) ||
-      projectState(d.taskRoot, ctx.root, !!ctx.common) !== d.worktreeSnapshot)) fail('读取期间 HEAD 或工作区内容改变，请重新判定');
+      projectState(d.taskRoot, ctx.root, !!ctx.common) !== d.worktreeSnapshot)) transient('AXNS_OBSERVATION_CHANGED', '读取期间 HEAD 或工作区内容改变，请重新判定');
 }
 function evaluate(ctx, command = 'decide') {
   if (!ctx.enabled) return { code: 0, result: { enabled: false, primary_root: ctx.root, decisions: [], reason: 'autopilot_disabled' } };
@@ -398,4 +453,4 @@ function evaluate(ctx, command = 'decide') {
   return { code: !actions && attention ? 2 : 0, result: { enabled: true, human_acceptance: ctx.acceptancePolicy, slots: ctx.settings.worktree ? ctx.cfg.slots : 1,
     action_count: decisions.filter(v => v.action !== 'hold').length, needs_human_count: human, recovery_count: decisions.filter(v => v.recovery_required).length, blocking_human_count: blockingHuman, decisions } };
 }
-module.exports = { STAGES, fail, object, keys, id, safe, relativePath, git, locate, context, verify, evaluate, worktreeState, projectState };
+module.exports = { STAGES, fail, transient, object, keys, id, safe, relativePath, git, locate, context, verify, evaluate, worktreeState, projectState };

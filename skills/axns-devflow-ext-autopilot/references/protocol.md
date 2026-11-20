@@ -134,3 +134,15 @@ node "<worktree扩展>/scripts/worktree.cjs" finish --project "<主检出目录>
 P4 工作者使用 complete --accepted-head <最终候选> 声明真实技术验收，runner 校验已提交材料和干净状态后写 acceptance；只有真实人工确认才能附 --human-accepted-by。claim/tick 在无活动窗口时优先收尾，也可用 runner finish；内部在共享锁下委托 worktree helper。存在 finishing 归档时从记录恢复清理，不要求工作区仍存在，不重复生成任务。完成归档后保留 runtime 回执供审计。
 
 recovery_required 不是用户介入请求。控制会话先检查失败证据和真实进程状态，用既有 retry/recover/claim/finish 协议恢复；不得把未知会话当停止或清零失败计数。预算耗尽需给出根因与新的有限修复方案，不能无限重试；只有无法在授权内解决时升级。precheck 对待恢复任务也允许唤醒，以免普通失败永久无人处理。
+
+## 同阶段短工单接续
+
+`execution.require_units=true` 要求 `stage.next_unit`（`file`、`sha256`、`spec`）及对应 `next_unit_stage`。工单 schema 见 config.md；它描述本轮范围，不取代 worktree 的任务 scope/shared_claims 仲裁。未提供短工单时返回 `work_unit_required`，保留原阶段和证据。`prepare` 只登记下一合法阶段的工单引用，不写业务文件；下一工单文件须在阶段完成快照前创建，避免新增文件使已验收证据失效。
+
+`request.work_unit` 固定本轮工单内容，派发前核对文件摘要；`previous_dispatch_id`、`previous_owner`、`previous_session_id` 保留前次交接链。`yield` 写非空证据及下一工单快照、幂等回执，然后将当前阶段置 ready 并删除旧 window；保留 attempts，正常换窗不计失败。派发前继续核对交接回执中的 HEAD、工作区快照与非空证据；交接后新增改动返回 `handoff_head_changed` / `handoff_worktree_changed`，不能用 prepare 刷新快照放行。重复 yield 只读原回执，不修改新的活动窗口；中断到半写状态则保留现场，不凭回执自动启动新写入者。
+
+新会话 `takeover` 必须提供真实 session-id、cwd，并核对原请求 HEAD、工作区快照、持权及旧交接回执。短工单不得复用本任务历史回执中的会话，避免交替复用旧窗口积累长上下文。短工单确认前 heartbeat/complete 被拒绝；fail/interrupt 仍可收拢启动失败。`running` 启动回执与 takeover 确认分别保存；command 查询不能将已确认的 session-id 换成其他会话。权威 absent 释放未启动占位时保留原短工单及前次交接链，只累计 attempts。短工单的 reserved/started/start_absent 事件落主目录 runtime events，避免调度自身事件改变交接快照。
+
+`heartbeat --steps N [--remaining-tokens N]` 使用累计步骤，不能倒退；缺少 token 观测明确为 unknown。时间预算从 window.opened_at 起算，包含等待启动和接管前的读取，takeover 不重置。预算达到后回 `yield_required`、`work_permitted:false`，已触发轮换不会因下次省略 token 数被清除；落盘/交接或直接记录已经通过的阶段结果仍然允许。只读判定报告 `window_rotation_due/recovery_required:true`，precheck 可唤醒控制者核实恢复，仍保留原持权，不因预算到达或心跳过期启动第二写入者。时间/步骤门禁为合作式控制，不能硬中断正在执行的请求，不证明自然语言完成条件或总 token 节省。
+
+上下文阻断或 yield 半写后，控制者核实原执行者停止，可使用 `resume-yield --confirmed-stopped`。新交接记录非完成性质的 recovery 标记，保留阶段与 attempts；已有 yield 回执则校验原成果及下一工单后原样收敛，不覆盖或生成第二回执。新协调者可用只读 `brief --id` 读取至多 12 KiB 的身份、工单索引和恢复提示，无须接收原对话全文。具体步骤见 execution.md。

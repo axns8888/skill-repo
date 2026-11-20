@@ -1,0 +1,512 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-20T08:00:48.641Z",
+  "snapshot_only": true,
+  "model_file": "D:\\Coding\\Axns8888\\skill-repo\\model-routing.json",
+  "active_preset": "codex_only",
+  "models": [
+    {
+      "id": "codex_main",
+      "label": "Codex 主模型",
+      "description": "渠道名按用户指定为 Codex；模型和推理强度沿用此前已核验值。Orca 桥的 Codex 渠道绑定须与本名称一致。",
+      "enabled": true,
+      "executor": "codex",
+      "provider": "Codex",
+      "model": "gpt-6.1-terra",
+      "reasoning": "high"
+    },
+    {
+      "id": "claude_main",
+      "label": "Claude 主模型（待填写）",
+      "description": "用户指定渠道为 Claude Code；填写自己已配置的准确模型名，再将 enabled 改为 true。",
+      "enabled": false,
+      "executor": "claude",
+      "provider": "Claude Code",
+      "model": "",
+      "reasoning": "high"
+    },
+    {
+      "id": "deepseek_main",
+      "label": "DSH / DeepSeek 主模型",
+      "description": "DeepSeek API Key 渠道。配置合成已核验；本机真实启动发现缺少 DEEPSEEK_API_KEY，配置凭据后才能推理。账号登录渠道应另设 provider 为 deepseek-account。",
+      "enabled": true,
+      "executor": "dsh",
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
+      "reasoning": "high"
+    }
+  ],
+  "root_route": {
+    "executor": "codex",
+    "provider": "Codex",
+    "model": "gpt-6.1-terra",
+    "reasoning": "high"
+  },
+  "children": {
+    "patches": [
+      {
+        "id": "devflow-scene-implementation",
+        "name": "@deepseek-ai/dsh-tool-subagent",
+        "config": {
+          "provider": "spawn",
+          "toolName": "devflow_implementation",
+          "modelSelection": false,
+          "agentOptions": {
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      {
+        "id": "devflow-scene-testing",
+        "name": "@deepseek-ai/dsh-tool-subagent",
+        "config": {
+          "provider": "spawn",
+          "toolName": "devflow_testing",
+          "modelSelection": false,
+          "agentOptions": {
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      {
+        "id": "devflow-scene-review",
+        "name": "@deepseek-ai/dsh-tool-subagent",
+        "config": {
+          "provider": "spawn",
+          "toolName": "devflow_review",
+          "modelSelection": false,
+          "agentOptions": {
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      {
+        "id": "devflow-scene-documentation",
+        "name": "@deepseek-ai/dsh-tool-subagent",
+        "config": {
+          "provider": "spawn",
+          "toolName": "devflow_documentation",
+          "modelSelection": false,
+          "agentOptions": {
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "reasoningEffort": "high"
+          }
+        }
+      },
+      {
+        "id": "devflow-scene-research",
+        "name": "@deepseek-ai/dsh-tool-subagent",
+        "config": {
+          "provider": "spawn",
+          "toolName": "devflow_research",
+          "modelSelection": false,
+          "agentOptions": {
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "reasoningEffort": "high"
+          }
+        }
+      }
+    ],
+    "scenes": [
+      {
+        "scenario": "implementation",
+        "tier": "deepseek_main",
+        "route": {
+          "executor": "dsh",
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "reasoning": "high"
+        },
+        "native_reasoning": false,
+        "tool": "devflow_implementation",
+        "effective_reasoning": "high",
+        "evidence": "configured_route_requires_live_preflight"
+      },
+      {
+        "scenario": "testing",
+        "tier": "deepseek_main",
+        "route": {
+          "executor": "dsh",
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "reasoning": "high"
+        },
+        "native_reasoning": false,
+        "tool": "devflow_testing",
+        "effective_reasoning": "high",
+        "evidence": "configured_route_requires_live_preflight"
+      },
+      {
+        "scenario": "review",
+        "tier": "deepseek_main",
+        "route": {
+          "executor": "dsh",
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "reasoning": "high"
+        },
+        "native_reasoning": false,
+        "tool": "devflow_review",
+        "effective_reasoning": "high",
+        "evidence": "configured_route_requires_live_preflight"
+      },
+      {
+        "scenario": "documentation",
+        "tier": "deepseek_main",
+        "route": {
+          "executor": "dsh",
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "reasoning": "high"
+        },
+        "native_reasoning": false,
+        "tool": "devflow_documentation",
+        "effective_reasoning": "high",
+        "evidence": "configured_route_requires_live_preflight"
+      },
+      {
+        "scenario": "research",
+        "tier": "deepseek_main",
+        "route": {
+          "executor": "dsh",
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "reasoning": "high"
+        },
+        "native_reasoning": false,
+        "tool": "devflow_research",
+        "effective_reasoning": "high",
+        "evidence": "configured_route_requires_live_preflight"
+      }
+    ],
+    "status": "配置可生成；渠道仍需运行验证"
+  },
+  "optional_backends": {
+    "codex": {
+      "installed": false,
+      "reason": "当前检查的DSH入口及本机profiles中未解析到；尚未验证可调用"
+    },
+    "claude": {
+      "installed": false,
+      "reason": "当前检查的DSH入口及本机profiles中未解析到；尚未验证可调用"
+    }
+  },
+  "evidence": {
+    "version": 1,
+    "checked_at": "2026-11-20T08:00:15.786500+00:00",
+    "summary": {
+      "unique_passed_tests": 223,
+      "failed_tests_remaining": 0,
+      "test_files_covered": 17,
+      "scope": "全仓17个测试文件按组验证；程序测试的模型行为为夹具。真实DSH启动另验，不包含真实业务推理。"
+    },
+    "checks": {
+      "policy_context_scene_report": 45,
+      "direct_dsh_process_chain": 6,
+      "existing_orca_dsh_chain": 30,
+      "other_regression_unique": 142,
+      "worktree_cases_completed": 28,
+      "installed_config_compositions": 3,
+      "installed_runtime_plugin_boot": "passed; stopped before inference",
+      "skill_frontmatter": "passed with installed YAML parser",
+      "source_lock": "passed",
+      "local_install": "Codex / DSH aliases match source",
+      "browser": "desktop + 390px mobile; recommendation and execution-state interaction verified; no page overflow"
+    },
+    "limits": [
+      "纯DSH自动路径创建后台headless新会话，当前不自动替换DSH Desktop可见标签。",
+      "实际Codex/Claude Code可选产品后端未安装启用或进行真实推理；Claude准确模型名仍待用户填写。",
+      "产品子级逐任务推理强度不受统一参数控制；显式接受原生强度时仍标记未验证。",
+      "当前上下文是有来源的估算；下一动作成本和全执行树状态由调用方报告，不保证永不超限。",
+      "DeepSeek模型/鉴权失败按用户要求排除程序验收；真实业务接续和token节约比例仍未测量。"
+    ],
+    "install": {
+      "installed_at": "2026-11-20T07:51:20.985Z",
+      "source_head": "e8d827f13838414276d8e97c941573ed3c53dd66",
+      "source_dirty": true,
+      "last_backup_run": "C:\\Users\\nikos\\.agents\\skill-repo\\backups\\2026-11-20T07-51-19-208Z-a7e1a23a",
+      "receipt": "C:/Users/nikos/.agents/skill-repo/install.json"
+    },
+    "notes": [
+      "初轮测试中的等待/清理/断言时机问题已由最终专项复验覆盖；不累计重复运行。",
+      "完整回归顺序执行到worktree后，将剩余16个隔离用例分4组完成；已完成的12个不重跑。",
+      "真实DSH启动曾在仓库环境两次超时，最终在隔离临时目录成功；保留该过程，不当作模型调用成功。",
+      "skill-creator Python快检缺少PyYAML，使用已安装DSH YAML解析器按同一frontmatter规则验证；未修改全局Python依赖。"
+    ],
+    "runtime_proof": "dsh-runtime-installed-proof.json",
+    "composition_proof": "model-scenarios-installed-proof.json",
+    "test_names": [
+      "CLI discovery/preview work offline and erroneous arguments do not echo secrets",
+      "CLI refuses unavailable presets without changing the file or retaining a helper lock",
+      "CLI switches presets and assigns scenarios with explicitly controlled DSH teams",
+      "CLI validates duplicate flags and requires an explicit team before a member limit",
+      "DSH accepts explicit DSH routes and refuses other executors before composing an overlay",
+      "DSH composition verifies scene route snapshots and rejects altered telemetry",
+      "DSH disabled team blocks all built-in delegation surfaces even with an existing team",
+      "DSH member scene routes are immutable in a claimed root request",
+      "DSH native subagents enable spawn/control without adding Team caps or disabling fork/workflow",
+      "DSH refuses incomplete profiles and mismatched composed model/team settings",
+      "DSH requires an explicit entry and invalid executors cannot reserve a worker",
+      "DSH routes use explicit entry options and command quoting preserves spaces and apostrophes",
+      "DSH starts two fresh sessions and automatically hands off the same P2 task",
+      "DSH team enables the native team services with bounded members and a known opaque model",
+      "Git completion includes task evidence and invalidates when code changes",
+      "Git single-task mode limits slots to one and excludes runtime from completion snapshots",
+      "HTML/login pages and incomplete JSON are not reported as success",
+      "HTTP 200 business rejection returns nonzero CLI status and no raw response",
+      "HTTP failures retain error categories while suppressing raw secret-bearing bodies",
+      "Orca adapter renders an explicit disabled schedule and never invokes a platform",
+      "P0 accepts documented existing authorization and hands off a usable P1 order",
+      "P0 confirmation, stage ceiling and capability switches are independent",
+      "TLS verification cannot be disabled through the inherited environment",
+      "Windows status publication retries transient rename refusal without losing either file",
+      "a DSH session event for another cwd never takes task ownership",
+      "a confirmed interruption can be retried only with its own receipt",
+      "a fresh unit can switch Codex to Claude and retain the original task and stage",
+      "a large independent task goes to a fresh child when the coordinator still fits",
+      "a lost Orca terminal receipt is recovered by dispatch without another DSH start",
+      "a lost launch reply is recovered by exact dispatch lookup without another launch",
+      "a newly selected model capacity overrides the previous request window",
+      "a pure DSH session claims native mode without an Orca bridge and refuses an unconfirmed mode",
+      "a quiescent context overflow automatically resumes through a fresh bounded unit",
+      "a scene-based unit is validated and the actual session request snapshots its route and preset",
+      "a stopped DSH process without a quiescent final does not release ownership",
+      "active and stale windows both prevent duplicate dispatch; failed attempts stop",
+      "active or unknown descendants and in-flight tools prevent handoff",
+      "active synchronization lock is never stolen",
+      "architecture advice explains native effort and platform tradeoffs",
+      "assesses current total plus next input, output and handoff costs without a fixed message cap",
+      "autopilot reads typed worktree identities and preserves their exact advisory task ID",
+      "axns-devflow: copied skill can initialize independently of the repository",
+      "axns-devflow: dry-run never creates a new root or changes an existing project",
+      "axns-devflow: missing and invalid arguments fail without side effects",
+      "axns-devflow: new project has the complete structure, usable resources and valid links",
+      "axns-devflow: path conflicts fail before creating any workflow files",
+      "axns-devflow: reruns preserve user changes and unrelated work, and restore missing files",
+      "axns-devflow: upgrading an older workflow adds engineering resources without replacing current rules",
+      "bad names, options and weights fail without creating configs",
+      "blocked tasks wait, timeout is calculated, and missing claims cannot dispatch",
+      "blocking human gate uses primary policy, current separate receipt and holds only its task",
+      "bounded absent launch retains the unit and previous handoff until a fresh session takes over",
+      "bounded units require explicit takeover and continue within P2 without consuming retries",
+      "bounded worktree continuation keeps the original task workspace and enforces its scope",
+      "changed DSH launch files cannot start a child and the intent cannot be repeated",
+      "changed task HEAD invalidates previously completed evidence",
+      "check catches untracked, staged, committed, renamed paths and commit prefix violations",
+      "child scenarios only require the models actually selected by their own preset",
+      "claim validates proposed changes, preserves old claims on conflict, and rejects metadata edits",
+      "combination merge keeps integration changes out of scope checks while preserving pre-commit checks",
+      "command bridge acknowledgement must match an explicit executor even with identical provider and model",
+      "command bridges must acknowledge the requested team configuration before reporting running",
+      "commit validates the entire task from a subdirectory and finish merges, deletes and retries idempotently",
+      "completion receipt can be replayed before handoff and stale callbacks do not affect the next worker",
+      "config defaults work; schema rejects unsafe opt-outs, typos and string booleans",
+      "configuration cannot relabel a mutating or unknown operation as read-only",
+      "configured disabled team is explicit while omitted team remains inherited",
+      "configured provider requires an explicit native binding before reservation",
+      "configured session route must match the actual supplied model",
+      "confirmed absent starts increment attempts and stop automatically at the limit",
+      "confirmed stopped recovery converges both yield crash points and rejects changed results",
+      "context decisions combine native telemetry, future cost and task state",
+      "controller rejects missing strict units and parses finite limits",
+      "controller waits through a real callback lock within its finite cycle budget",
+      "coordinating lock prevents concurrent claims; retry observes the winner",
+      "copied standalone recovery script has no extension dependency",
+      "corrupt state and unsafe pointers/config paths fail without emitting advice",
+      "cross-process claims reserve at most one worker",
+      "cumulative usage, negative costs, untyped state and integer overflow are refused",
+      "current meter pressure replaces cumulative UI usage and keeps missing capacity unknown",
+      "default P4 completion requires candidate attestation, then claim merges, archives and deletes",
+      "delegation requires authorization, separate scopes and a saved checkpoint",
+      "detached or moved worktrees are diagnosed and refused without retaining the coordination lock",
+      "direct DSH cannot release ownership after a process exits without a quiescent final",
+      "direct DSH context overflow recovers to a new root and retains the task stage",
+      "direct DSH refuses a non-DSH root route and validates explicit entry arguments",
+      "direct DSH repeats query without restarting an accepted dispatch",
+      "direct DSH starts two isolated root processes and hands off without any Orca calls",
+      "direct finish enforces primary human policy and preserves task on missing receipt or invalid policy",
+      "disabled extension is read-only and refuses registration",
+      "disabled projects do not need config or read task files",
+      "disabling new execution still allows an existing worker to report and hand off",
+      "doctor is read-only while disabled and while a coordination lock or partial records exist",
+      "done native turn without callback retains ownership and never creates a replacement",
+      "escalation pauses tasks, retains claims and requires a decision to resume",
+      "execution failures consume a finite retry budget without resetting attempts",
+      "execution requires explicit opt-in; read-only advice remains usable",
+      "executor bindings are independent, explicit, and cannot silently replace one another",
+      "existing automatic handoff preserves native subagent mode in each new DSH launch",
+      "explicit DSH team policy cannot silently pass through the native Codex bridge",
+      "explicit finish disable and blocking human acceptance keep the task intact",
+      "external product backends require explicit native effort acceptance and report the effective distinction",
+      "failed tasks hold only themselves; dependencies and shared-state corruption still prevent unsafe work",
+      "file and CLI select native DSH mode and preserve original bytes on an unsupported member cap",
+      "file separators and comments do not consume effective source quotas",
+      "finish preserves a dirty integration checkout and requires recombination after integration advances",
+      "finish preserves dirty or unmerged work; completed tasks archive evidence and release claims",
+      "finish requires current technical attestation, committed evidence, clean tree and integration",
+      "finite controller loop stops at a cycle limit and keeps live task ownership",
+      "foreign skill links reject the whole update before changing central skills",
+      "fresh DSH launcher verifies an overlay, logs large output, and reports a real session event",
+      "generator invokes the renamed code skill from a custom installation directory",
+      "generator refuses ambiguous projects and inconsistent config names",
+      "generator validates only the selected task and requires its installed sibling",
+      "helper locks preserve live or unidentifiable owners and reclaim only an OS-confirmed dead local helper",
+      "human policy defaults off, validates strictly and changes dispatch identity independently",
+      "independent dispatch waits for unknown existing execution to be inspected",
+      "init creates independently readable per-project configs",
+      "init preserves edits unless force is explicit, and supports no-intro",
+      "initialized submodules are refused before removal, even when user config hides their changes",
+      "installed edits are detected and protected; explicit replacement retains them in backup",
+      "integration moving after P4 hands off schedules a fresh P4 instead of asking the user",
+      "interrupted response is a failure and never causes a second request",
+      "invalid overrides cannot silently inherit or enable uncontrolled delegation",
+      "invalid paths, dependency cycles, and reused identities are rejected",
+      "known model and effort reach native launch and survive exact recovery",
+      "large DSH event lines stay on disk and cannot inflate controller replies",
+      "late platform start response preserves a newer window after the worker already handed off",
+      "launch budget leaves the next ready unit for a later controller invocation",
+      "legacy pointer, missing ignore rules, stale lock, and bad CLI cannot start a task",
+      "link creation failure rolls back replaced skill and restores previous standalone loader directory",
+      "load and disk operations send the documented action and validate response shapes",
+      "local migration backs up old contents, removes obsolete files and shares exact skills across loaders",
+      "locked worktree removal is an expected refusal and NUL listing preserves the lock reason",
+      "lost Claude launch recovers only its recorded executor and never starts again",
+      "markers are observations; ready runs current stage and running cannot skip work",
+      "missing loader links and runtime version drift fail the consistency check",
+      "native controller runs two fresh sessions in the same stage and stops at stage cap",
+      "native mode rejects false capability claims and conflicting or missing composed services",
+      "native session executes P2 then P3, records real callbacks and stops at stage cap",
+      "no-ff no-commit stops a possible fast-forward for validation, and copied helper runs standalone",
+      "non-Git completion fingerprints source and evidence while excluding runtime metadata",
+      "non-Git verification detects changes observed during an assessment",
+      "non-transient directory rename errors fail immediately",
+      "nonblocking human acceptance permits finish and archives pending without fabricated approval",
+      "offline report safely embeds configuration and uses the production decision function",
+      "one platform conversation can take a new task after handoff with a fresh owner and dispatch",
+      "ordinary stage failure wakes recovery without presenting it as a human decision",
+      "owner cannot be rebound when a previous task has retained receipts outside active tasks",
+      "parent pressure cannot be hidden by spawning another child",
+      "partial branch deletion failure retains claims and resumes from the durable archive",
+      "pending dependencies block; completed archive releases the dependent task",
+      "persistent rename refusal rolls back earlier skill updates and preserves the receipt",
+      "physical line counts handle empty files, terminal newlines and CRLF",
+      "platform stop without worker evidence and malformed responses preserve the reservation",
+      "presets provide stage defaults while unit and task scenarios can override them",
+      "preview needs no credentials and sends no request",
+      "project type registry overrides defaults and invalid typed IDs cannot create workspaces",
+      "prunable unregistered worktrees are reported and cannot be silently reused",
+      "real HTTP request uses signed POST form and exposes only projected diagnostic fields",
+      "redirects are not followed and signed credentials never reach the target",
+      "registration isolates branches and shares canonical pointers across windows",
+      "relative files work, missing files fail, and inline routes cannot compete with a separate file",
+      "remote HTTP, credential URLs, security entrances and unsafe URL parts are rejected",
+      "repeated context overflow stops at the configured recovery limit and keeps ownership",
+      "repeated sync preserves links and creates no replacement backups",
+      "replayed completion preserves controller acceptance metadata until handoff",
+      "response size limits stop excessive output",
+      "resume never deletes a task branch that acquired a new commit after partial cleanup",
+      "retry preserves failure history and rejects active windows, wrong receipts and missing evidence",
+      "runner resumes partial cleanup without the deleted task directory and retains claims until success",
+      "runtime hard guard respects measured capacity and declared reserves",
+      "runtime plugin uses actual DSH tool schemas, samples events and refuses another over-capacity step",
+      "runtime symlinks cannot redirect state outside the project",
+      "scene tool name collisions and unknown model identities are rejected",
+      "scene tools use fixed authorized routes and fresh spawn without allowing model supplied overrides",
+      "scope conflicts refuse registration and roll back newly created worktrees and branches",
+      "screenshot script uses Chromium after unavailable Chrome and Edge",
+      "selection precedence and disabled model switching preserve independent team controls",
+      "session claim must attest the explicitly configured team policy before ownership",
+      "session claim must attest the selected executor before receiving task ownership",
+      "shared claims block contenders without reserving scope; cross-kind overlaps are refused",
+      "short-unit heartbeat exposes step, time and context boundaries without stealing ownership",
+      "signature matches an independently computed fixed fixture",
+      "single-task finish is explicitly unsupported and coordination locks block advice",
+      "slot budget counts stalled windows while independent tasks continue",
+      "source checkout cannot be used as an installation destination",
+      "source snapshot detects changes while normalizing Windows text line endings",
+      "standalone recovery reads bounded excerpts without autopilot or whole plan and logs",
+      "standalone recovery rejects traversal, missing records and linked task directories",
+      "startup consumes the unit time budget and wakes recovery without granting another writer",
+      "status reports shared ownership timeout from primary records even in another worktree",
+      "stopped context-overflow worker continues the same stage with a bounded read-only brief",
+      "stopped recovery preserves attempts and can drain an unacknowledged worker when new execution is disabled",
+      "takeover checks Git HEAD, and disabled execution still permits a cooperative yield",
+      "takeover context reserve remains a rotation boundary after telemetry becomes unknown",
+      "task and unit choices override the stage, remain snapshotted, and change next session",
+      "team off disables existing native product delegation tools as well as ordinary subagent tools",
+      "temporary directory rename refusal is retried without losing backup: EACCES",
+      "temporary directory rename refusal is retried without losing backup: EBUSY",
+      "temporary directory rename refusal is retried without losing backup: EPERM",
+      "text conflicts remain in task worktree and block checks without changing integration",
+      "the file rejects typos, invalid stages, secret fields, missing routes and oversized input",
+      "the next DSH unit waits until the previous process has actually exited",
+      "the project reads a shared external file and detects edits made after observation",
+      "the pure DSH controller refuses a project still configured to invoke Orca",
+      "the standalone file lists described scenarios and shows unconfigured presets without enabling them",
+      "timeout sends exactly one request without a retry",
+      "typed task ID survives session-adapter claim and evidence handoff callbacks",
+      "typed task IDs merge a bounded batch, survive recovery and allocate past archives and Git remnants",
+      "uncommitted edits invalidate completed evidence without forcing a commit",
+      "unexpected I/O failure retains the lock owner and doctor exposes partial state",
+      "unit validation and prepare preserve active ownership, evidence gates and immutable requests",
+      "unknown bounded command launch is queried and requires the real new session to acknowledge",
+      "unknown context is not invented; independent observed budget pressure still permits safe recovery",
+      "unknown lookup and terminal fallback never lead to another start",
+      "unknown platform launch is reserved, query resumes it without starting a second session",
+      "unsaved work must be checkpointed before handing off even when execution is stopped",
+      "workspace mismatch is a known refusal, not a successful launch or automatic retry",
+      "worktree execution runs host check before claim and completion, preserving scope enforcement",
+      "worktree invocations read canonical config and runtime, and task-local evidence",
+      "wrong owner, stale dispatch, missing evidence and failed phases cannot advance",
+      "yield detects workspace changes before the next dispatch without replacing its snapshot"
+    ]
+  },
+  "project_examples": {
+    "dsh": {
+      "version": 1,
+      "model_config_file": "D:\\Coding\\Axns8888\\skill-repo\\model-routing.json",
+      "execution": {
+        "enabled": true,
+        "adapter": "command",
+        "require_units": true,
+        "command": {
+          "file": "D:\\App\\FlyEnv-Data\\env\\node\\node.exe",
+          "args": [
+            "D:\\Coding\\Axns8888\\skill-repo\\skills\\axns-devflow-ext-autopilot\\scripts\\adapters\\dsh-bridge.cjs",
+            "--dsh-bin",
+            "D:/App/FlyEnv-Data/env/node/node_modules/@deepseek-ai/dsh/lib/bin.js"
+          ]
+        }
+      }
+    },
+    "orca": {
+      "version": 1,
+      "model_config_file": "D:\\Coding\\Axns8888\\skill-repo\\model-routing.json",
+      "execution": {
+        "enabled": true,
+        "adapter": "command",
+        "require_units": true,
+        "command": {
+          "file": "D:\\App\\FlyEnv-Data\\env\\node\\node.exe",
+          "args": [
+            "D:\\Coding\\Axns8888\\skill-repo\\skills\\axns-devflow-ext-autopilot\\scripts\\adapters\\orca-bridge.cjs",
+            "--binding",
+            "codex=Codex",
+            "--binding",
+            "claude=Claude Code",
+            "--dsh-bin",
+            "D:/App/FlyEnv-Data/env/node/node_modules/@deepseek-ai/dsh/lib/bin.js"
+          ]
+        }
+      }
+    }
+  }
+}

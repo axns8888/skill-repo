@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "scope": "可复核的确定性实施样例；不冒充模型技能调用评测",
+  "cases": [
+    {
+      "id": "new-project",
+      "prompt": "新建项目，保留Orca作为执行层。计划用GPT-6.2-Astra，一般执行用GPT-6.2-sol，简单执行用DeepSeek-V4.1-flash。",
+      "expected": [
+        "planning",
+        "implementation",
+        "simple_execution"
+      ]
+    },
+    {
+      "id": "existing-project",
+      "prompt": "现有项目保持模型选择，增加独立配置页面与自定义场景。",
+      "expected": [
+        "existing preset preserved",
+        "project scene extension",
+        "save/reload and revision conflicts"
+      ]
+    },
+    {
+      "id": "browser-save",
+      "prompt": "在页面修改推理强度并新建项目场景，保存后刷新仍能读取。",
+      "expected": [
+        "execute_sol.reasoning=medium",
+        "ui_custom persisted"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "verified_at": "2026-11-20T02:32:14.441Z",
+  "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-route-MtzOxr",
+  "task_id": "20261120-orca-route",
+  "session_id": "codex_84a17789_ce6e_47f7_957b_81f06b49f8ff",
+  "dispatch_id": "51e778482d46304cece39440817c95d2f0990935413a59ce392167250ea9e77e",
+  "requested": {
+    "provider": "custom",
+    "model": "gpt-6.1-terra",
+    "reasoning": "high"
+  },
+  "observed_in_local_engine": {
+    "provider": "custom",
+    "model": "gpt-6.1-terra",
+    "reasoning": "high"
+  },
+  "observation_source": "exact isolated native rollout session_meta/turn_context",
+  "billing_model": "unobserved",
+  "stage": "completed",
+  "outcome": "complete",
+  "attempts": 0,
+  "active_window": false,
+  "output": {
+    "bytes": 18,
+    "sha256": "f0c172cac91f4b1cf34aab44bd96e63dce13a22a89b9cf36c93a165f1fb850e0"
+  },
+  "final_decision": "stage_cap",
+  "controller_observation": "initial watch exited on callback lock contention; worker completed safely; explicit continuation reached stage_cap; transient lock wait fixed and tested separately"
+}

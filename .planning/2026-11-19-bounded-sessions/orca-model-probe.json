@@ -1,0 +1,28 @@
+{
+  "id": "f07d3beb-e6a6-4eef-a5d2-2056cffcac2e",
+  "ok": true,
+  "result": {
+    "outcome": {
+      "kind": "structured",
+      "sessionId": "codex_2a26136f_2b52_4dbf_83a0_c1f564817885",
+      "handle": "structured-agent-session-codex_2a26136f_2b52_4dbf_83a0_c1f564817885",
+      "tabId": "structured-agent-session-codex_2a26136f_2b52_4dbf_83a0_c1f564817885"
+    },
+    "worktreeId": "9ec258dc-313e-482a-8c4b-1b9c923d1331::C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v3-20261120-eJWU22",
+    "receipt": {
+      "mode": "structured",
+      "preferred": "structured",
+      "reason": "user_default",
+      "detail": "Started a structured chat session, the default for new agent tabs in your settings."
+    },
+    "prompt": {
+      "delivery": "submit",
+      "outcome": "journaled",
+      "messageId": "1795140662187-fa7b141d3d364192985010f4325ea231"
+    },
+    "operationId": "1795140662178-be01833f3780469fa8a575c4b1fa8f9c"
+  },
+  "_meta": {
+    "runtimeId": "7e1e9a29-f963-40c1-9b96-059520ca2576"
+  }
+}

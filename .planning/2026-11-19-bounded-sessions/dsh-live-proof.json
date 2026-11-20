@@ -1,0 +1,62 @@
+{
+  "checked_at": "2026-11-20T04:37:03.102Z",
+  "status": "blocked_credentials",
+  "cases": [
+    {
+      "task_id": "20261120-dsh-live-chain",
+      "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-dsh-live-nHtAWN",
+      "dispatch_id": "09a3b49d933f35cac42db63d59afb4db28b12fb688a3b700af75cef6ddd5c18d",
+      "session_id": "session-ed5c0596-2d2f-482d-852d-8a3903477841",
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-official",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "preset": {
+        "preset": "deepseek_only",
+        "scenario": "implementation"
+      },
+      "request_bytes": 13129,
+      "session_event_observed": true,
+      "takeover_confirmed": true,
+      "process_state": "stopped",
+      "exit_code": 1,
+      "failure_code": "MISSING_CREDENTIAL",
+      "business_completion": false,
+      "ownership_retained": true,
+      "terminal_handle": "term_2ca00b34-1c06-4b5e-9e8e-cc8208fc3087",
+      "process_record": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-dsh-live-nHtAWN\\_plan\\autopilot\\20261120-dsh-live-chain\\orca\\09a3b49d933f35cac42db63d59afb4db28b12fb688a3b700af75cef6ddd5c18d.dsh\\process.json"
+    },
+    {
+      "task_id": "20261120-dsh-live-chain-account",
+      "project": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-dsh-live-account-0MUVEJ",
+      "dispatch_id": "9760c991d5f52aabd5511e54984fd2074977c1cff0171c83925f0708ce202b91",
+      "session_id": "session-8a85a74d-1a79-4222-8ab2-6ee15565a083",
+      "route": {
+        "executor": "dsh",
+        "provider": "deepseek-account",
+        "model": "deepseek-flash",
+        "reasoning": "high"
+      },
+      "preset": {
+        "preset": "deepseek_only",
+        "scenario": "implementation"
+      },
+      "request_bytes": 13408,
+      "session_event_observed": true,
+      "takeover_confirmed": true,
+      "process_state": "stopped",
+      "exit_code": 1,
+      "failure_code": "ACCOUNT_SIGN_IN_REQUIRED",
+      "business_completion": false,
+      "ownership_retained": true,
+      "terminal_handle": "term_dccf4b44-4e3c-45c8-a95a-fe0406e9a0bf",
+      "process_record": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-dsh-live-account-0MUVEJ\\_plan\\autopilot\\20261120-dsh-live-chain-account\\orca\\9760c991d5f52aabd5511e54984fd2074977c1cff0171c83925f0708ce202b91.dsh\\process.json"
+    }
+  ],
+  "code_integration": "implemented; automated regression recorded separately",
+  "real_two_session_handoff": false,
+  "existing_business_project_recovered": false,
+  "secrets_exported": false
+}

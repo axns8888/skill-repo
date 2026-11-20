@@ -1,0 +1,11 @@
+{
+  "root": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-v2-20261120-UGXNFt",
+  "id": "20261120-orca-live-chain-v2",
+  "created_at": "2026-11-20T01:36:48.381Z",
+  "scripts": "D:\\Coding\\Axns8888\\skill-repo\\skills\\axns-devflow-ext-autopilot\\scripts",
+  "previous_probe": {
+    "root": "C:\\Users\\nikos\\AppData\\Local\\Temp\\axns-orca-live-20261120-CuBK60",
+    "id": "20261120-orca-live-chain",
+    "outcome": "held_without_handoff"
+  }
+}
