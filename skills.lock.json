@@ -60,10 +60,10 @@
       }
     },
     "axns-devflow": {
-      "sha256": "d3dbc7eb623f5a8d21971f179aaace54d692bf387e844886eb5a33f3b190c01e",
+      "sha256": "48ac36212237bfec1e495f8776a239aaade7ab72699afa8e391b857553e78b12",
       "files": {
-        "README.md": "60e6aa9a456fa9adf11a7766c35d5390f929fdd117c66202d7b14128ca65c9c0",
-        "SKILL.md": "a8440c2e9b23518c4b3267fedb9effd509125e6833a6d4a7ca1f80d88a06e1b0",
+        "README.md": "bb19a09f461a07b861bb7653315f153fee6158e89702d525caec54569dd4ab5f",
+        "SKILL.md": "6daf645a204f646b1857d424fffd15c58558ff23614a70222e3d8e1cbeba55ff",
         "agents/openai.yaml": "d7bece94f1a35dc19af7503eeb5f377ee05021e5d15662135896157f716bcf30",
         "assets/architecture-baseline.md": "179ffd20c12a1d23a01608826d138cdf9ce6631d096ffdce5310fbc9d7cfdfac",
         "assets/coding-baseline.md": "3e381b04a9a3499b6c522f8bc8d05d862ddf0642c6a132658ec3d83be1d9cdf2",
@@ -94,7 +94,7 @@
         "references/acceptance.md": "77a6a898615d078332f82cb42366c6eb50634224b06cf78c2e4142a3849cfd76",
         "references/context-handoff.md": "7e682f6bd98e793c3f35189e22429f003fa7f6d74035c2ea87a584b59ccf49cd",
         "references/engineering-standards.md": "15f9c729c69a279c3ecb673ab61849ffa11b803e83ea008dfc8d8627ef1bf2df",
-        "references/model-routing.md": "e9d74ff63445bef065849ab89c56f62dc1fb38116574db8e7fa94a5fbbd52f00",
+        "references/model-routing.md": "f3c3ca6b5148051f618a09974863708daad691f8c969e7040ca3f2948ebc439f",
         "references/project-layout.md": "abc0ce2a606d220c0dc785d1aa5f2467356da6c9d2b9548312ff34232b712938",
         "references/prompt-kit.md": "2086ab25f0f18a771a46e87e24ac625c994177a55297d01174793d4dbc65bd71",
         "references/quality-gates.md": "61954ef727b02ea1796e357a61d6d0522275dca2c815504ca4036a990d32259a",
