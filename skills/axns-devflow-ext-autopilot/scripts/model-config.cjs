@@ -2,11 +2,11 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, createHash } = require('node:crypto');
 const catalog = require('./lib/model-config.cjs');
 const { acquire } = require('./lib/process-lock.cjs');
 const FLAGS = {
-  show: ['file'], preview: ['file', 'preset', 'scenario'], use: ['file', 'preset'],
+  show: ['file', 'scenario'], preview: ['file', 'preset', 'scenario'], use: ['file', 'preset'],
   assign: ['file', 'preset', 'scenario', 'model', 'team', 'max-members', 'team-mode'],
 };
 function options(argv) {
@@ -14,11 +14,14 @@ function options(argv) {
   if (!Object.hasOwn(FLAGS, command)) throw Error('命令：show | preview --scenario <场景> | use --preset <预设> | assign --scenario <场景> --model <模型>；可指定 --file <独立文件>');
   const result = { command, file: path.resolve('model-routing.json') }, seen = new Set();
   while (argv.length) {
-    const flag = argv.shift(), name = flag.slice(2), value = argv.shift();
+    const flag = argv.shift(), name = flag.slice(2);
+    if (flag === '--summary' && command === 'show' && !seen.has(name)) { result.summary = true; seen.add(name); continue; }
+    const value = argv.shift();
     if (!flag.startsWith('--') || !FLAGS[command].includes(name) || !value || value.startsWith('--') || seen.has(name)) throw Error('无效或重复参数：' + flag);
     seen.add(name); result[name] = value;
   }
   if (['preview', 'assign'].includes(command) && !result.scenario) throw Error('需要 --scenario');
+  if (command === 'show' && result.scenario && !result.summary) throw Error('show --scenario 需要 --summary');
   if (command === 'use' && !result.preset) throw Error('需要 --preset');
   if (command === 'assign' && !result.model) throw Error('需要 --model');
   if (result.team && !['inherit', 'off', 'on'].includes(result.team)) throw Error('--team 需要 inherit/off/on');
@@ -29,11 +32,26 @@ function options(argv) {
 }
 function read(file) {
   if (fs.statSync(file).size > catalog.MAX_BYTES) throw Error('模型文件超过128 KiB');
-  const source = fs.readFileSync(file, 'utf8');
-  return { source, doc: catalog.parse(source) };
+  const bytes = fs.readFileSync(file), source = bytes.toString('utf8');
+  return { source, bytes, doc: catalog.parse(source) };
 }
 function execute(opts) {
-  if (opts.command === 'show') return catalog.inspect(read(opts.file).doc);
+  if (opts.command === 'show') {
+    const { doc, bytes } = read(opts.file);
+    if (!opts.summary) return catalog.inspect(doc);
+    const preset = doc.active_preset;
+    if (opts.scenario && !Object.hasOwn(doc.scenarios, opts.scenario)) throw Error('未知场景：' + opts.scenario);
+    let compiled, reason;
+    try { compiled = catalog.compile(doc); } catch (error) { reason = error.message; }
+    const entries = opts.scenario ? [opts.scenario] : Object.keys(doc.scenarios);
+    const scenarios = entries.map(id => {
+      const selected = compiled?.scenarios[id], route = compiled?.models[selected?.tier];
+      return { id, label: doc.scenarios[id].label, ...(route && { tier: selected.tier, model: route.model,
+        executor: route.executor, provider: route.provider, reasoning: route.reasoning }) };
+    });
+    return { file: opts.file, sha256: createHash('sha256').update(bytes).digest('hex'), active_preset: preset,
+      ready: !!compiled, reason, scenarios, availability: 'configured_only_not_probed' };
+  }
   if (opts.command === 'preview') {
     const { doc } = read(opts.file);
     return catalog.preview(doc, opts.preset ?? doc.active_preset, opts.scenario);

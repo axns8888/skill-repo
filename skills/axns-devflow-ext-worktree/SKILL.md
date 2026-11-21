@@ -5,7 +5,7 @@ description: >-
   包含 worktree 时，用于多任务窗口的独立分支/工作区、共享登记、scope 与共享文件修改权校验、
   依赖协调、验收合入和安全清理；未启用时保持宿主单任务流程。
 metadata:
-  version: "1.0.0-rc.1"
+  version: "1.0.0-rc.2"
 ---
 
 # Worktree 任务隔离扩展
@@ -13,6 +13,8 @@ metadata:
 宿主为 axns-devflow；先读取宿主 SKILL.md 和项目约定。宿主不可用时明确缺失，不重新发明一套宿主流程。扩展不决定项目技术栈。用户授权完成 worktree 任务后，默认连续完成本任务范围内的提交、验证、本地合入、归档及任务 worktree/分支删除，无需逐步再问；用户明确要求保留、仅评审或等待确认时遵从该要求。远程推送、发布、删除远程分支不包含在本地收尾中。
 
 ## 入口
+
+扩展开关允许任务隔离，不要求为只读查询、无冲突的项目级维护另开业务 worktree。摘要优先用 `status --summary [--id TASK]`，旧完整 JSON 保持不变。维护模型表或仅保全现场时，按[项目维护与快照](references/maintenance.md)操作，不使用业务任务持权或 finish 代办。
 
 1. 项目 AGENTS.md 必须明确声明 `extensions` 包含 `worktree`；没有声明时停止扩展动作，回宿主单任务模式。项目需指定本地 `integration_branch`。
 2. 阅读 [协议与命令](references/protocol.md)，定位主检出目录的共享登记；使用宿主 `prompts/window/P0-open.md` 至 P5 的唯一提示词，不复制第二套。

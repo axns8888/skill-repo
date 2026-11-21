@@ -87,11 +87,14 @@ async function stopped(f, dispatch) {
 }
 async function runChain(f) {
   const events = []; const code = await controller.run({ project: f.root, id, watch: true, interval: 250, cycles: 160, launches: 4 }, event => { events.push(event); launchPending(f); });
-  const debug = () => fs.readdirSync(path.join(f.runtimeDir, 'dsh')).filter(n => n.endsWith('.dsh')).map(n => {
+  const debug = () => (fs.existsSync(path.join(f.runtimeDir, 'dsh')) ? fs.readdirSync(path.join(f.runtimeDir, 'dsh')) : []).filter(n => n.endsWith('.dsh')).map(n => {
     const dir = path.join(f.runtimeDir, 'dsh', n), read = name => fs.existsSync(path.join(dir, name)) ? fs.readFileSync(path.join(dir, name), 'utf8').slice(-1800) : null;
     return { process: read('process.json'), stderr: read('stderr.log'), worker: read('worker.log') };
   });
-  assert.equal(code, 0, JSON.stringify({ events, diagnostics: code ? debug() : null })); assert.equal(events.at(-1).reason, 'stage_cap');
+  const terminal = events.at(-1);
+  if (code !== 0 || terminal?.reason !== 'stage_cap') {
+    assert.fail(JSON.stringify({ code, expected: 'stage_cap', terminal, events: events.slice(-12), diagnostics: debug() }));
+  }
   return events;
 }
 

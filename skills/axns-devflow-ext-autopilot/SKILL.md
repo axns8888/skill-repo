@@ -2,7 +2,7 @@
 name: axns-devflow-ext-autopilot
 description: axns-devflow 的可选自驱调度扩展。在项目 AGENTS.md 的 extensions 包含 autopilot 时，读取已登记任务、阶段完成证据和窗口占用，生成阶段推进、模型路由及已验收任务结案建议；显式开启执行后支持阶段领取、互斥派发、证据回调与中断恢复。用于任务排队、巡检及 DSH/Orca 自动化接入，定时唤醒由平台负责。
 metadata:
-  version: "1.0.0-rc.1"
+  version: "1.0.0-rc.2"
 ---
 
 # 自驱调度扩展
@@ -16,9 +16,11 @@ metadata:
 3. 运行只读脚本，始终同时检查退出码和 JSON：
 
    ```powershell
-   node "<扩展目录>/scripts/autopilot.cjs" status --project "<项目或任务 worktree>"
-   node "<扩展目录>/scripts/autopilot.cjs" decide --project "<项目或任务 worktree>"
+   node "<扩展目录>/scripts/autopilot.cjs" status --project "<项目或任务 worktree>" --summary
+   node "<扩展目录>/scripts/autopilot.cjs" decide --project "<项目或任务 worktree>" --summary
    ```
+
+   只看某个任务加 `--id TASK`；省略 `--summary` 保持完整 JSON。查询状态不触发调度、重新选模或构建；接续优先用 runner `brief --id TASK`。
 
 4. 需要实际执行时读 [执行与恢复](references/execution.md)；DSH/Orca 接入另读 [平台接入](references/platforms.md)。只有 execution.enabled 为 true 才接受新派发；原生自动化会话使用 runner.cjs claim，外部启动桥使用 tick。claim/tick 优先完成可收尾任务；返回 finished 时该轮已结案，返回 request 时只执行该工单阶段并回调交接。
 5. 只读判定退出码 0 时，仅执行当前授权和平台能力允许的建议；1 表示读取或配置失败，不动作；2 表示没有可执行动作且有任务需要处理。任务自身异常只 hold 当前任务（blocks_batch: false），独立任务仍可执行并退出 0；配置、共享登记或协调锁损坏直接退出 1，不派发。显式人工验收等待维持非错误等待。`hold` 是等待原因，不代表测试失败。

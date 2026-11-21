@@ -53,6 +53,100 @@ function commit(root, id, message = 'implementation') { git(root, 'add', '.'); g
 function events(f) { return fs.readFileSync(path.join(f.root, '_plan/registry.jsonl'), 'utf8').trim().split('\n').map(JSON.parse); }
 function pointers(f) { return ok(run(f.root, 'status')).tasks; }
 
+test('narrow status preserves full status and looks up a single task without expanding scope', t => {
+  const f = fixture(t);
+  const task = ok(register(f, a, ['src/a.txt'], ['shared.lock']));
+  const full = ok(run(f.root, 'status'));
+  const all = ok(run(f.root, 'status', null, '--summary'));
+  const one = ok(run(f.root, 'status', a, '--summary'));
+  assert.equal(all.tasks[0].task_id, task.task_id);
+  assert.equal(one.task.worktree, task.worktree);
+  assert.equal(one.task.status, full.tasks[0].status);
+  assert.ok(full.tasks[0].scope.includes('src/a.txt'));
+  assert.equal(one.task.scope, undefined);
+  assert.equal(ok(run(f.root, 'status', b, '--summary')).reason, 'task_not_found');
+});
+
+test('guarded model-table maintenance is root-owned and rejects conflicting claims and stale inputs', t => {
+  const f = fixture(t);
+  const relative = '_plan/model-routing.json';
+  const source = fs.readFileSync(path.join(repo, 'skills/axns-devflow/assets/model-routing.json'), 'utf8');
+  put(f.temp, 'model-table.json', source);
+  const head = git(f.root, 'rev-parse', 'HEAD');
+  const command = (dir, expected = 'missing', expectedHead = head) => run(dir, 'maintain-models', null,
+    '--manifest', path.join(f.temp, 'model-table.json'), '--expected-config', expected, '--expected-head', expectedHead);
+  const task = ok(register(f, a, ['src/a.txt']));
+  fail(command(task.worktree), /主检出/);
+  fail(command(f.root, 'missing', '0'.repeat(head.length)), /HEAD/);
+  put(f.root, 'src/b.txt', 'unrelated');
+  fail(command(f.root), /干净/);
+  put(f.root, 'src/b.txt', 'beta\n');
+  const changed = ok(command(f.root));
+  assert.equal(changed.status, 'updated');
+  assert.equal(git(f.root, 'rev-parse', 'HEAD'), head);
+  assert.equal(fs.readFileSync(path.join(f.root, relative), 'utf8'), source);
+  assert.equal(fs.existsSync(path.join(task.worktree, relative)), false);
+  assert.deepEqual(ok(run(f.root, 'status')).tasks[0].scope, ['src/a.txt']);
+  git(f.root, 'add', relative); git(f.root, 'commit', '-m', 'project maintenance');
+  let next = git(f.root, 'rev-parse', 'HEAD');
+  assert.equal(ok(command(f.root, changed.sha256, next)).status, 'unchanged');
+  fail(command(f.root, 'missing', next), /内容版本/);
+  const update = JSON.parse(source); update.presets[update.active_preset].label = 'Project approved';
+  put(f.temp, 'model-table.json', JSON.stringify(update));
+  const edited = ok(command(f.root, changed.sha256, next));
+  assert.equal(edited.status, 'updated');
+  assert.notEqual(edited.sha256, changed.sha256);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(f.root, relative))).presets[update.active_preset].label, 'Project approved');
+  git(f.root, 'add', relative); git(f.root, 'commit', '-m', 'update project maintenance');
+  next = git(f.root, 'rev-parse', 'HEAD');
+  ok(register(f, b, ['src/b.txt'], [relative]));
+  fail(command(f.root, edited.sha256, next), /活动持权冲突/);
+});
+
+test('snapshot restores committed, staged, unstaged and explicitly selected local work without accepting it', t => {
+  const f = fixture(t);
+  const main = git(f.root, 'rev-parse', 'HEAD');
+  const task = ok(register(f, a, ['src/a.txt']));
+  const dir = task.worktree;
+  const record = `_plan/process/${a}/plan.md`;
+  put(dir, record, 'remaining: Admin build failed\n');
+  git(dir, 'add', record); git(dir, 'commit', '-m', `${a}: candidate`);
+  put(dir, 'src/a.txt', 'staged\n'); git(dir, 'add', 'src/a.txt');
+  put(dir, 'src/a.txt', 'unstaged\n');
+  put(dir, 'wanted.cache', Buffer.from([0, 255, 17]));
+  put(dir, 'unwanted.local', 'do not copy');
+  const dest = path.join(f.temp, 'preserved');
+  put(f.temp, 'include.json', JSON.stringify({ include: ['wanted.cache', `_plan/process/${a}/parallel.json`] }));
+  const args = ['--out', dest, '--manifest', path.join(f.temp, 'include.json')];
+  fail(run(f.root, 'snapshot', a, ...args), /confirmed-stopped/);
+  put(f.root, `_plan/autopilot/${a}/window.json`, '{}');
+  fail(run(f.root, 'snapshot', a, ...args, '--confirmed-stopped'), /派发窗口/);
+  fs.unlinkSync(path.join(f.root, `_plan/autopilot/${a}/window.json`));
+  const result = ok(run(f.root, 'snapshot', a, ...args, '--confirmed-stopped'));
+  const report = JSON.parse(fs.readFileSync(result.evidence, 'utf8'));
+  assert.equal(report.status, 'preserved');
+  assert.equal(report.accepted_by_this_action, false);
+  assert.equal(report.closed_by_this_action, false);
+  assert.deepEqual(report.omitted_untracked, ['unwanted.local']);
+  assert.deepEqual(fs.readFileSync(path.join(dest, 'local', 'wanted.cache')), Buffer.from([0, 255, 17]));
+  assert.equal(git(f.root, 'rev-parse', 'main'), main);
+  assert.equal(pointers(f)[0].status, 'claimed');
+  assert.ok(events(f).every(e => e.event !== 'task.completed'));
+  const restored = path.join(f.temp, 'restore checkout'); fs.mkdirSync(restored);
+  git(restored, 'init'); git(restored, 'config', 'core.autocrlf', 'false');
+  git(restored, 'fetch', path.join(dest, 'candidate.bundle'), report.ref);
+  git(restored, 'checkout', '--detach', 'FETCH_HEAD');
+  git(restored, 'apply', '--index', path.join(dest, 'index.patch'));
+  git(restored, 'apply', path.join(dest, 'worktree.patch'));
+  assert.equal(git(restored, 'rev-parse', 'HEAD'), report.head);
+  assert.equal(git(restored, 'show', ':src/a.txt'), 'staged');
+  assert.equal(fs.readFileSync(path.join(restored, 'src/a.txt'), 'utf8'), 'unstaged\n');
+  assert.match(fs.readFileSync(path.join(restored, record), 'utf8'), /Admin build failed/);
+  for (const { file } of report.local) put(restored, file, fs.readFileSync(path.join(dest, 'local', file)));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(restored, `_plan/process/${a}/parallel.json`), 'utf8')).task_id, a);
+  assert.deepEqual(fs.readFileSync(path.join(restored, 'wanted.cache')), Buffer.from([0, 255, 17]));
+});
+
 test('typed task IDs merge a bounded batch, survive recovery and allocate past archives and Git remnants', t => {
   const f = fixture(t);
   const now = new Date();

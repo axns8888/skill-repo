@@ -32,6 +32,18 @@ const template = JSON.stringify({ version: 1, active_preset: 'codex_only',
 });
 const id = '20261120-model-scenarios';
 function doc() { return catalog.parse(template); }
+
+test('model summary returns selected configured route and content version, not the full catalog', t => {
+  const f = fixture(t);
+  const full = cli.execute(cli.options(['show', '--file', f.file]));
+  const narrow = cli.execute(cli.options(['show', '--file', f.file, '--summary', '--scenario', 'planning']));
+  assert.equal(narrow.active_preset, full.active_preset);
+  assert.match(narrow.sha256, /^[a-f0-9]{64}$/);
+  assert.equal(narrow.scenarios.length, 1);
+  assert.equal(narrow.scenarios[0].model, full.scenarios.find(x => x.id === 'planning').selection.route.model);
+  assert.equal(narrow.models, undefined);
+  assert.equal(narrow.availability, 'configured_only_not_probed');
+});
 function fixture(t) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'model-config-'));
   const root = path.join(temp, 'project with spaces'); fs.mkdirSync(root);

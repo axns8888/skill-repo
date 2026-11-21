@@ -2,6 +2,8 @@
 
 ## 启用及共享位置
 
+角色与分支分开：协调身份取决于授权与共享记录，集成目标取项目 `integration_branch`，不是固定 master/main。状态、非业务配置维护和仅保全时优先走[窄输出与维护入口](maintenance.md)。
+
 只读取**主检出目录** AGENTS.md 的显式配置，详见扩展 README。`git worktree list --porcelain -z` 第一项定位主检出，`git rev-parse --git-common-dir` 定位共享 Git 目录。支持从任一任务 worktree 找回同一控制目录，不支持 bare 仓库。
 
 ```text

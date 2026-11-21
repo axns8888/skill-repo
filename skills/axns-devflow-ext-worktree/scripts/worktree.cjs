@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const humanAcceptance = require('./lib/acceptance.cjs');
 const path = require('node:path');
 const os = require('node:os');
-const { randomUUID } = require('node:crypto');
+const { randomUUID, createHash } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
 class Rejected extends Error {}
@@ -30,7 +30,7 @@ function safe(root, target) {
   let current = root;
   for (const part of relative.split(path.sep).filter(Boolean)) {
     current = path.join(current, part);
-    if (fs.existsSync(current) && fs.lstatSync(current).isSymbolicLink()) reject(`路径含链接：${current}`);
+    if (fs.lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink()) reject(`路径含链接：${current}`);
   }
   return target;
 }
@@ -47,17 +47,24 @@ function validId(id) {
 }
 function options(argv) {
   const opts = { command: argv.shift() };
-  const names = new Set(['--project', '--id', '--type', '--title', '--manifest', '--reason', '--accepted-head', '--human-accepted-by', '--message']);
+  const names = new Set(['--project', '--id', '--type', '--title', '--manifest', '--reason', '--accepted-head', '--human-accepted-by', '--message', '--out', '--expected-head', '--expected-config']);
   while (argv.length) {
     const key = argv.shift();
+    if (['--summary', '--confirmed-stopped'].includes(key) && !opts[key.slice(2)]) { opts[key.slice(2)] = true; continue; }
     if (!names.has(key) || !argv[0] || argv[0].startsWith('--') || opts[key.slice(2)] !== undefined) reject(`无效参数：${key}`);
     opts[key.slice(2)] = argv.shift();
   }
-  if (!['status', 'doctor', 'register', 'claim', 'check', 'escalate', 'commit', 'finish'].includes(opts.command)) reject('命令：status | doctor | register | claim | check | escalate | commit | finish');
+  if (!['status', 'doctor', 'register', 'claim', 'check', 'escalate', 'commit', 'finish', 'snapshot', 'maintain-models'].includes(opts.command)) reject('未知命令；运行 --help');
   if (!opts.project) reject('必须显式指定 --project <项目或任务 worktree>');
   if (opts.command === 'register' && !opts.id) {
     if (!/^[A-Z]$/.test(opts.type || '') || !/^[a-z0-9]+(?:-[a-z0-9]+){0,15}$/.test(opts.title || '') || opts.title.length > 60) reject('自动编号需要 --type A --title 小写短标题');
-  } else if (!['status', 'doctor'].includes(opts.command)) validId(opts.id);
+  } else if (!['status', 'doctor', 'maintain-models'].includes(opts.command)) validId(opts.id);
+  if (opts.summary && opts.command !== 'status') reject('--summary 仅用于 status');
+  if (opts.summary && opts.id) validId(opts.id);
+  if ((opts.out || opts['confirmed-stopped']) && opts.command !== 'snapshot') reject('--out/--confirmed-stopped 仅用于 snapshot');
+  if ((opts['expected-head'] || opts['expected-config']) && opts.command !== 'maintain-models') reject('--expected-head/--expected-config 仅用于 maintain-models');
+  if (opts.command === 'snapshot' && (!opts.out || !opts['confirmed-stopped'])) reject('snapshot 需要 --out <仓库外新目录> --confirmed-stopped');
+  if (opts.command === 'maintain-models' && (opts.id || !opts.manifest || !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(opts['expected-head'] ?? '') || !/^(?:missing|[a-f0-9]{64})$/.test(opts['expected-config'] ?? ''))) reject('maintain-models 需要 --manifest <候选模型表> --expected-head <完整HEAD> --expected-config <SHA256|missing>，不接受 --id');
   if ((opts.type || opts.title) && (opts.command !== 'register' || opts.id)) reject('--type/--title 仅用于 register 自动编号，不能与 --id 混用');
   if (opts.command === 'register' && !opts.manifest) reject('register 需要 --manifest <JSON>');
   if (opts.command === 'escalate' && !opts.reason?.trim()) reject('escalate 需要 --reason <事实及证据位置>');
@@ -159,6 +166,27 @@ function records(ctx, archived = false) {
     if (item.task_id !== x.slice(0, -8)) reject(`指针身份不符：${x}`);
     return item;
   });
+}
+function status(ctx, opts) {
+  const common = { enabled: ctx.enabled, primary_root: ctx.root, integration_branch: ctx.branch, lock_timeout_minutes: ctx.timeout };
+  const overdue = x => !!x.waiting_since && Date.now() - Date.parse(x.waiting_since) > ctx.timeout * 60000;
+  if (!opts.summary) return { ...common, tasks: records(ctx).map(x => ({ ...x, wait_exceeded: overdue(x) })), archived: records(ctx, true) };
+  const narrow = x => ({ task_id: x.task_id, status: x.status, worktree: x.worktree, holds_claims: x.holds_claims,
+    owner: x.owner, blocked_by: [...new Set((x.blocked_by ?? []).map(b => b.task_id))], wait_exceeded: overdue(x),
+    record_dir: path.join(x.worktree, '_plan/process', x.task_id) });
+  if (opts.id) {
+    for (const archived of [false, true]) {
+      const file = pointer(ctx, opts.id, archived);
+      if (!fs.existsSync(file)) continue;
+      const x = read(file);
+      if (x.task_id !== opts.id) reject('指针身份不符');
+      return { ...common, task: narrow(x), archived };
+    }
+    return { ...common, task: null, reason: 'task_not_found' };
+  }
+  const archivedDir = safe(ctx.root, path.join(ctx.root, '_plan/archive'));
+  return { ...common, tasks: records(ctx).map(narrow), archived_count: fs.existsSync(archivedDir)
+    ? fs.readdirSync(archivedDir).filter(x => x.endsWith('.pointer')).length : 0 };
 }
 function task(ctx, id) {
   const file = pointer(ctx, id);
@@ -482,20 +510,152 @@ function finish(ctx, opts) {
   fs.unlinkSync(active);
   return done;
 }
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+function readOnlyFailure(action) {
+  try { return action(); }
+  catch (error) { if (error instanceof Rejected) throw error; reject(error.message); }
+}
+function maintainModels(ctx, opts) {
+  if (!samePath(ctx.root, fs.realpathSync(git(ctx.cwd, ['rev-parse', '--show-toplevel'])))) reject('从项目主检出目录维护；不要经业务 worktree 写入');
+  const [models, catalog, { acquire }] = readOnlyFailure(() => [require('../../axns-devflow/scripts/lib/model-project.cjs'),
+    require('../../axns-devflow-ext-autopilot/scripts/lib/model-config.cjs'), require('../../axns-devflow-ext-autopilot/scripts/lib/process-lock.cjs')]);
+  const checkBaseline = () => {
+    if (git(ctx.root, ['rev-parse', 'HEAD']) !== opts['expected-head']) reject('主检出 HEAD 已变化；重新核实');
+    if (git(ctx.root, ['symbolic-ref', '--quiet', 'HEAD'], true).status !== 0 ||
+        git(ctx.root, ['status', '--porcelain=v1', '--untracked-files=all', '--ignore-submodules=none'])) reject('主检出必须在分支上且干净；保留已有改动');
+  };
+  const prepared = readOnlyFailure(() => {
+    checkBaseline();
+    const found = models.discover(ctx.root);
+    if (found.shared) reject('生效表由外部所有者管理；此命令不写入共享表');
+    const target = safe(ctx.root, found.file);
+    const relative = path.relative(ctx.root, target).split(path.sep).join('/');
+    if (found.registered) safe(ctx.root, found.registered);
+    if (['.git', '.worktrees', '_plan/active', '_plan/archive', '_plan/process', '_plan/autopilot', '_plan/registry.jsonl', '_plan/.active_plan', 'AGENTS.md']
+      .some(name => overlaps(name, relative)) || [found.registered, path.resolve(opts.manifest)].some(file => file && samePath(target, file))) reject('候选或生效路径与控制文件重叠');
+    if (git(ctx.root, ['check-ignore', '-q', '--', relative], true).status !== 1) reject('模型表必须是可独立版本控制的项目文件');
+    if (/^[Sa-z] /m.test(git(ctx.root, ['--literal-pathspecs', 'ls-files', '-v', '--', relative]))) reject('模型表存在隐藏索引标志；先核实版本控制状态');
+    const holders = records(ctx).filter(x => x.holds_claims && [...x.scope, ...x.shared_claims].some(p => overlaps(p, relative)));
+    if (holders.length) reject(`模型表与活动持权冲突：${holders.map(x => x.task_id).join(', ')}`);
+    const stat = fs.statSync(opts.manifest);
+    if (!stat.isFile() || stat.size > catalog.MAX_BYTES) reject('候选模型表须为普通文件且不超过 128 KiB');
+    const content = fs.readFileSync(opts.manifest);
+    const candidate = catalog.parse(content.toString('utf8').replace(/^\uFEFF/, ''));
+    if (models.REQUIRED.some(id => !Object.hasOwn(candidate.scenarios, id))) reject('候选缺少必备模型场景');
+    catalog.compile(candidate);
+    const expected = opts['expected-config'];
+    const current = () => fs.existsSync(target) ? digest(fs.readFileSync(target)) : 'missing';
+    if (current() !== expected) reject('生效表内容版本已变化；重新核实');
+    return { found, target, relative, content, current, active: candidate.active_preset };
+  });
+  const { found, target, relative, content, current } = prepared;
+  if (current() === digest(content)) return { status: 'unchanged', file: target, head: opts['expected-head'], sha256: digest(content) };
+  const release = readOnlyFailure(() => {
+    mkdir(ctx.root, path.dirname(relative));
+    return acquire(safe(ctx.root, target + '.lock'));
+  });
+  const temporary = target + '.' + randomUUID() + '.tmp';
+  try {
+    // The model writer creates its own lock entry; ignore exactly that entry, not other root changes.
+    const lockName = `${relative}.lock/owner.json`;
+    const changes = git(ctx.root, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--ignore-submodules=none']).split('\0').filter(Boolean);
+    if (changes.some(entry => entry !== `?? ${lockName}`) || git(ctx.root, ['rev-parse', 'HEAD']) !== opts['expected-head'] ||
+        !samePath(models.discover(ctx.root).file, target) || current() !== opts['expected-config']) reject('配置路径、版本或主检出发生变化；未覆盖');
+    fs.writeFileSync(temporary, content, { flag: 'wx' });
+    if (current() !== opts['expected-config']) reject('配置在维护时变化；未覆盖');
+    if (opts['expected-config'] === 'missing') fs.linkSync(temporary, target);
+    else fs.renameSync(temporary, target);
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    release();
+  }
+  return { status: 'updated', file: target, source: found.source, head: opts['expected-head'], sha256: digest(content),
+    active_preset: prepared.active, applies_to: 'new_sessions_only', next: 'review_and_commit_separately' };
+}
+function bytesFromGit(cwd, args) {
+  const result = spawnSync('git', args, { cwd, maxBuffer: 32 * 1024 * 1024 });
+  if (result.error) throw result.error;
+  if (result.status !== 0) reject(`git ${args[0]}: ${result.stderr.toString('utf8').trim()}`);
+  return result.stdout;
+}
+function fileDigest(file) {
+  const hasher = createHash('sha256'), block = Buffer.allocUnsafe(1024 * 1024), fd = fs.openSync(file, 'r');
+  try { for (let n; (n = fs.readSync(fd, block, 0, block.length, null)) > 0;) hasher.update(block.subarray(0, n)); }
+  finally { fs.closeSync(fd); }
+  return hasher.digest('hex');
+}
+function snapshot(ctx, opts) {
+  return readOnlyFailure(() => {
+    const data = task(ctx, opts.id);
+    requireWorktree(ctx, data);
+    const cwd = data.worktree;
+    if (fs.existsSync(safe(ctx.root, path.join(ctx.root, '_plan/autopilot', opts.id, 'window.json')))) reject('仍有登记的派发窗口；先按原协议交权/恢复');
+    if (git(cwd, ['rev-parse', '--is-shallow-repository']) === 'true') reject('浅克隆无法保证独立恢复完整候选历史，需要单独保全');
+    if (git(cwd, ['ls-files', '--unmerged']) || ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer']
+      .some(name => fs.existsSync(git(cwd, ['rev-parse', '--path-format=absolute', '--git-path', name])))) reject('有未完成的 Git 操作；此快照不能保存其内部状态');
+    if (/^[Sa-z] /m.test(git(cwd, ['ls-files', '-v']))) reject('工作区包含 skip-worktree 或 assume-unchanged 条目，需要单独保全');
+    const output = path.resolve(opts.out), dest = path.join(fs.realpathSync(path.dirname(output)), path.basename(output));
+    if ([ctx.common, ...worktrees(ctx.root).map(w => fs.existsSync(w.path) ? fs.realpathSync(w.path) : w.path)].some(root => {
+      const rel = path.relative(root, dest); return rel === '' || (rel !== '..' && !rel.startsWith('..' + path.sep) && !path.isAbsolute(rel));
+    })) reject('快照目录必须在 Git 管理目录和全部项目 worktree 之外');
+    const manifest = opts.manifest ? read(opts.manifest) : { include: [] };
+    const files = manifest?.include;
+    if (!Array.isArray(files) || Object.keys(manifest).some(key => key !== 'include') || files.some(file => typeof file !== 'string' ||
+      file.split('/').some(segment => !segment || /[. ]$/.test(segment) || segment.toLowerCase() === '.git') || /[:\\\0-\x1f]/.test(file)) ||
+      new Set(files.map(file => file.toLowerCase())).size !== files.length) reject('快照清单格式：{"include":["相对路径/普通文件"]}');
+    const ref = `refs/heads/${data.branch}`;
+    const head = git(cwd, ['rev-parse', 'HEAD']);
+    const stage = () => bytesFromGit(cwd, ['diff', '--cached', '--binary', '--full-index', '--no-ext-diff', '--no-textconv', '--ignore-submodules=none', 'HEAD', '--']);
+    const unstaged = () => bytesFromGit(cwd, ['diff', '--binary', '--full-index', '--no-ext-diff', '--no-textconv', '--ignore-submodules=none', '--']);
+    const gitlinks = () => [git(cwd, ['ls-files', '--stage']), git(cwd, ['ls-tree', '-r', 'HEAD'])].some(text => /^160000 /m.test(text));
+    if (gitlinks()) reject('包含子模块的工作区需要单独保全子模块，不能使用此快照');
+    const untracked = () => bytesFromGit(cwd, ['ls-files', '--others', '--exclude-standard', '-z']).toString('utf8').split('\0').filter(Boolean);
+    const index = stage(), work = unstaged(), localFiles = untracked();
+    for (const file of files) {
+      const original = safe(cwd, path.join(cwd, file));
+      if (!fs.lstatSync(original).isFile() || git(cwd, ['--literal-pathspecs', 'ls-files', '--', file])) reject(`本地文件清单只接受未跟踪普通文件：${file}`);
+    }
+    fs.mkdirSync(dest, { mode: 0o700 });
+    const bundle = path.join(dest, 'candidate.bundle');
+    git(cwd, ['bundle', 'create', bundle, ref]);
+    const listed = git(cwd, ['bundle', 'list-heads', bundle]);
+    if (listed !== `${head} ${ref}`) reject('快照分支在保存期间变化；无需使用未完成的输出');
+    git(cwd, ['bundle', 'verify', bundle]);
+    fs.writeFileSync(path.join(dest, 'index.patch'), index, { flag: 'wx', mode: 0o600 });
+    fs.writeFileSync(path.join(dest, 'worktree.patch'), work, { flag: 'wx', mode: 0o600 });
+    const local = files.map(file => {
+      const original = safe(cwd, path.join(cwd, file));
+      const target = path.join(dest, 'local', file);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(original, target, fs.constants.COPYFILE_EXCL);
+      const sha256 = fileDigest(target);
+      if (sha256 !== fileDigest(original)) reject(`本地文件保存期间变化：${file}`);
+      return { file, sha256 };
+    });
+    if (git(cwd, ['rev-parse', 'HEAD']) !== head || git(cwd, ['rev-parse', ref]) !== head ||
+        !index.equals(stage()) || !work.equals(unstaged()) || JSON.stringify(localFiles) !== JSON.stringify(untracked()) ||
+        local.some(({ file, sha256 }) => fileDigest(safe(cwd, path.join(cwd, file))) !== sha256)) reject('现场在保存期间变化；没有生成完成清单');
+    const report = { version: 1, status: 'preserved', task_id: data.task_id, original_status: data.status, ref, head,
+      integration_branch: data.integration_branch, record_dir: `_plan/process/${data.task_id}`,
+      artifacts: { 'candidate.bundle': fileDigest(bundle), 'index.patch': digest(index), 'worktree.patch': digest(work) },
+      local, omitted_untracked: localFiles.filter(file => !files.includes(file)), ignored_files: 'only_explicit_includes',
+      integrated_by_this_action: false, accepted_by_this_action: false, closed_by_this_action: false };
+    const evidence = path.join(dest, 'snapshot.json');
+    write(evidence, report);
+    return { status: report.status, task_id: report.task_id, head, evidence,
+      omitted_untracked_count: report.omitted_untracked.length, next: 'verify_restore_before_retiring_original' };
+  });
+}
 module.exports = { context, finish };
 if (require.main === module) {
   try {
     if (process.argv.includes('--help')) {
-      console.log('node worktree.cjs <status|doctor|register|claim|check|escalate|commit|finish> --project <目录> [--id YYMMDD-A01-task | register --type A --title task] [--manifest JSON] [--message 提交摘要] [--reason 事实/裁决依据] [--accepted-head HASH] [--human-accepted-by 确认记录]');
+      console.log('node worktree.cjs <status|doctor|register|claim|check|escalate|commit|finish|snapshot|maintain-models> --project <目录> …\nstatus [--summary [--id TASK]]\nsnapshot --id TASK --out DIR --confirmed-stopped [--manifest JSON]\nmaintain-models --manifest JSON --expected-head HASH --expected-config SHA256|missing');
     } else {
       const opts = options(process.argv.slice(2)); const ctx = context(opts);
       let result;
       if (opts.command === 'doctor') result = doctor(ctx);
-      else if (opts.command === 'status') {
-        result = locked(ctx, () => ({ enabled: ctx.enabled, primary_root: ctx.root, integration_branch: ctx.branch,
-          lock_timeout_minutes: ctx.timeout, tasks: records(ctx).map(x => ({ ...x,
-            wait_exceeded: !!x.waiting_since && Date.now() - Date.parse(x.waiting_since) > ctx.timeout * 60000 })), archived: records(ctx, true) }));
-      } else result = locked(ctx, () => ({ register, claim, check, escalate, commit, finish })[opts.command](ctx, opts));
+      else result = locked(ctx, () => ({ status, register, claim, check, escalate, commit, finish, snapshot, 'maintain-models': maintainModels })[opts.command](ctx, opts));
       console.log(JSON.stringify(result, null, 2));
       if (result.status === 'blocked') process.exitCode = 2;
     }

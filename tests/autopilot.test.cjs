@@ -44,6 +44,24 @@ function output(result, code = 0) { assert.equal(result.status, code, result.std
 function decision(f, code = 0) { return output(run(f.root), code).decisions[0]; }
 function bad(f, pattern) { const r = run(f.root); assert.equal(r.status, 1, r.stdout); assert.match(r.stderr, pattern); assert.equal(r.stdout, ''); }
 
+test('narrow advisory views preserve decisions and do not expose an entire window or overwrite state', t => {
+  const f = fixture(t);
+  stage(f); window(f);
+  const full = output(run(f.root, 'status')).tasks[0];
+  const narrow = output(run(f.root, 'status', '--summary', '--id', a)).tasks[0];
+  assert.equal(narrow.dispatch_id, full.window.dispatch_id);
+  assert.equal(narrow.stage, full.stage.stage);
+  assert.ok(narrow.record_dir.endsWith(a));
+  assert.equal(narrow.window, undefined);
+  const normal = run(f.root), brief = run(f.root, 'decide', '--summary', '--id', a);
+  const expected = output(normal, normal.status).decisions[0];
+  const actual = output(brief, normal.status).decisions[0];
+  assert.equal(actual.action, expected.action);
+  assert.equal(actual.reason, expected.reason);
+  assert.equal(output(run(f.root, 'status', '--summary', '--id', b)).tasks.length, 0);
+  assert.equal(output(run(f.root, 'status')).tasks[0].window.dispatch_id, full.window.dispatch_id);
+});
+
 test('autopilot reads typed worktree identities and preserves their exact advisory task ID', t => {
   const f = fixture(t, true);
   const typed = '261117-M01-platform-config';
