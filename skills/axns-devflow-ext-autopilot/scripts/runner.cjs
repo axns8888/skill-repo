@@ -85,7 +85,7 @@ async function entry(argv) {
   for (let attempt = 0; ; attempt++) {
     try { return main([...argv]); }
     catch (error) {
-      if (!callback || attempt >= 19 || !['AXNS_COORDINATION_BUSY', 'AXNS_OBSERVATION_CHANGED'].includes(error.code)) throw error;
+      if (!callback || attempt >= 199 || !['AXNS_COORDINATION_BUSY', 'AXNS_OBSERVATION_CHANGED'].includes(error.code)) throw error;
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }

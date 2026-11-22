@@ -164,9 +164,10 @@ test('changed DSH launch files cannot start a child and the intent cannot be rep
   const f = fixture(t); controller.step(f.root, id); const w = get(f.windowFile);
   const journalFile = path.join(f.runtimeDir, 'orca', w.dispatch_id + '.json'), journal = get(journalFile), manifest = get(journal.dsh_manifest);
   fs.appendFileSync(manifest.patch_file, ' '); launchPending(f); await Promise.all([...f.workers.values()]);
-  assert.equal(fs.existsSync(journal.dsh_process), false);
+  assert.equal(get(journal.dsh_process).state, 'stopped');
+  assert.match(get(journal.dsh_process).startup_error, /启动文件已变化/);
   const response = native.handle({ version: 1, operation: 'start', request: w.request }, native.options(f.config.execution.command.args.slice(1)));
-  assert.equal(response.state, 'unknown'); assert.equal(get(f.state).launches, 1);
+  assert.equal(response.state, 'stopped'); assert.equal(get(f.state).launches, 1);
   assert.match(fs.readFileSync(path.join(path.dirname(journal.dsh_manifest), 'worker.log'), 'utf8'), /启动文件已变化/);
 });
 test('a DSH session event for another cwd never takes task ownership', async t => {

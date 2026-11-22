@@ -17,6 +17,10 @@
    ├─ guides/                   # 跨任务阶段指南、质量门禁及记录模板
    ├─ ledger/                   # 任务台账、结案摘要与验收归档索引
    ├─ process/                  # 进行中任务的计划、证据、复核与待验收项
+   ├─ project/                  # 项目自有的技能使用、工具协作与补充约束
+   │  ├─ README.md
+   │  ├─ skill-usage.md
+   │  └─ coordination.md
    ├─ prompts/                  # 当前项目开发约定与可复制阶段提示词
    │  ├─ project.md             # 项目目标、规范索引、模块与命令
    │  ├─ architecture.md        # 实际源码树、领域与依赖
@@ -27,6 +31,8 @@
 ```
 
 每个子目录附带有用途和维护边界的 README.md，保证空内容阶段也能随 Git 保留。最低结构不限定业务源码、测试、构建工具或发布目录；沿用项目技术栈的组织方式。
+
+`_plan/project/` 由目标项目维护，用于记录项目如何采用技能、各工具/平台如何配合及其他项目级补充约束。它补充 `_plan/prompts/project.md` 的基线，不复制总计划、模型/执行配置或 `AGENTS.md`。初始化提供待核实模板，不代表某技能、工具或扩展已安装、可用或启用；项目内的启用状态以项目明确配置为准。技能按项目事实生成的说明须标识草稿/已审阅状态、依据及待确认项。
 
 ## 一次初始化
 
@@ -53,6 +59,7 @@ node "<技能目录>/scripts/init-workflow.cjs" --project-root "<项目路径>" 
 | _plan/prompts/architecture.md、coding.md、ui.md | 技能自带架构、命名/注释及 UI 基线；实现前具体化到本项目，无界面注明不适用 |
 | _plan/guides/engineering-standards.md | 工程规范建立、实施和复核规则 |
 | _plan/prompts/project.md | 当前技能的项目基线模板；只替换项目名称，其余待据实填写 |
+| _plan/project/README.md、skill-usage.md、coordination.md | 项目自行维护的技能使用和工具协作说明；未知项待核实，按需扩展，不复制已有配置事实 |
 | _plan/prompts/window/P0-open.md 至 P5-escalate.md | 共用窗口提示词；P5 仅 worktree 扩展启用时使用 |
 | _plan/prompts/acceptance.json | 独立人工验收开关，默认关闭；不复制到 autopilot 配置 |
 | _plan/guides/acceptance.md | 人工验收策略、独立状态和扩展回执说明 |

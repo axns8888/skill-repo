@@ -95,4 +95,4 @@ DSH 原生子智能体可选择 `team: {"enabled": true, "mode": "subagent"}`，
 不依赖 Orca 的自动根会话接续、个人文件 dsh 场景字段、上下文运行期插件及交互选型报告，统一见 [执行方式选型](execution-modes.md)。主预设仍决定根执行端；dsh.child_preset 单独决定成员路由。配置或模型选择不改变已持权会话，迁移不得重复派发。
 
 
-项目模型表：明确 model_config_file 时按引用读取；未指定且没有内联 models/tiers 时自动读取唯一的 `_plan/model-routing.json` 或根目录 `model-routing.json`，两份同时存在则拒绝猜测。执行开关和既有路由迁移仍需显式配置。可用 model-page.cjs --project-root <项目> 在独立页面保存模型与场景配置。
+项目模型表：明确 model_config_file 时按引用读取；未指定且没有内联 models/tiers 时自动读取唯一的 `_plan/model-routing.json` 或根目录 `model-routing.json`，两份同时存在则拒绝猜测。执行开关和既有路由迁移仍需显式配置。进入项目目录后运行 `node <扩展目录>/scripts/model-page.cjs`，配置页以当前目录识别项目并在独立页面保存模型与场景配置。

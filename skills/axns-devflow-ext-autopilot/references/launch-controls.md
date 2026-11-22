@@ -186,4 +186,4 @@ session 接入 claim 使用实际已应用的 `--provider/--model/--reasoning`�
 
 ## 可保存的项目配置页面
 
-运行 `node scripts/model-page.cjs --project-root <项目>` 打开本地页面。可保存模型、渠道、强度、场景、预设、阶段与DSH团队配置。必备 planning / implementation / simple_execution；项目场景可自定义。执行层默认沿用Orca，编辑器不启动任务。匹配、模板复制、共享配置范围及读取顺序见宿主 [项目模型配置](../../axns-devflow/references/model-routing.md)。--file仅改变编辑目标，不替换运行时引用。
+先进入目标项目目录，再运行 `node <扩展目录>/scripts/model-page.cjs` 打开本地页面。页面以当前目录识别项目，不通过 `--project-root` 注入路径。可保存模型、渠道、强度、场景、预设、阶段与DSH团队配置。必备 planning / implementation / simple_execution；项目场景可自定义。执行层默认沿用Orca，编辑器不启动任务。匹配、模板复制、共享配置范围及读取顺序见宿主 [项目模型配置](../../axns-devflow/references/model-routing.md)。--file仅改变编辑目标，不替换运行时引用。

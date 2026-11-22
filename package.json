@@ -11,14 +11,14 @@
     "models:use": "node skills/axns-devflow-ext-autopilot/scripts/model-config.cjs use --file model-routing.json",
     "models:preview": "node skills/axns-devflow-ext-autopilot/scripts/model-config.cjs preview --file model-routing.json",
     "models:assign": "node skills/axns-devflow-ext-autopilot/scripts/model-config.cjs assign --file model-routing.json",
-    "test": "node --test tests/*.test.cjs",
+    "test": "node --test --test-concurrency=4 tests/*.test.cjs",
     "skills:lock": "node scripts/skills-local.cjs lock",
     "skills:sync": "node scripts/skills-local.cjs sync",
     "skills:check": "node scripts/skills-local.cjs check",
     "validate": "node scripts/skills-local.cjs verify && npm test",
     "release:check": "node scripts/skills-local.cjs verify --release && npm test",
     "execution:guide": "node skills/axns-devflow-ext-autopilot/scripts/execution-guide.cjs --models model-routing.json --out _doc/DSH与Orca执行方式评估.html",
-    "models:page": "node skills/axns-devflow-ext-autopilot/scripts/model-page.cjs --project-root .",
+    "models:page": "node skills/axns-devflow-ext-autopilot/scripts/model-page.cjs",
     "models:project": "node skills/axns-devflow/scripts/project-models.cjs"
   }
 }

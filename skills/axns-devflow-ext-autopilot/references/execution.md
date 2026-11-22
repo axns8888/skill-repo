@@ -33,7 +33,7 @@
 1. 控制者核实任务已有授权与当前阶段，再 init。例如现有任务等待实施时 init --id <task-id> --stage P2 --owner controller/setup。禁止用 init 覆盖失败或补造完成。
 2. 自动化平台唤醒一个 Agent；Agent 从主检出目录执行 claim；返回 finished 表示已自动收尾，结束本轮即可；返回 request 时工单给出 task_id、stage、owner、dispatch_id、cwd、route、prompt、callbacks。callbacks 为可执行文件与字面参数数组，按所在 shell 正确转义，禁止 eval 拼接。
 3. 切到 request.cwd，在适用指令、工单 inputs 和必要计划片段内执行 request.prompt；复用已登记的目标、授权和路由。开始写入前以及工单预算/长步骤的检查点调用 heartbeat；不用把每条读写命令包装成新工单或逐次回传日志。
-4. `execution.require_units=true` 时 init 和每次后续阶段派发都要求短工单。工单在 `_plan/process/<task-id>/` 下以 JSON 保存并固定摘要；P2 多工单通过 yield 串行接续。旧执行者先停止业务写入并 yield；新短工单 session 再执行 takeover，核实 cwd/HEAD/工作区快照、真实平台 session_id 和交接回执；确认前不可写。heartbeat 回报累计 --steps，token 可观测时加 --remaining-tokens；预算到达时返回 yield_required/work_permitted=false，先保存下一工单并 yield。平台无法强杀执行中调用，故此门禁在步骤间合作式生效。协调窗口也应按宿主交接规则自行轮换。
+4. 仅当项目明确设置 `execution.require_units=true` 时，init 和每次后续阶段派发才要求短工单；默认允许同一授权执行者在上下文可承载的有限目标内连续工作，不按读写步骤制造换窗。启用短工单时，工单在 `_plan/process/<task-id>/` 下以 JSON 保存并固定摘要；P2 多工单通过 yield 串行接续。旧执行者先停止业务写入并 yield；新短工单 session 再执行 takeover，核实 cwd/HEAD/工作区快照、真实平台 session_id 和交接回执；确认前不可写。heartbeat 回报累计 --steps，token 可观测时加 --remaining-tokens；预算到达时返回 yield_required/work_permitted=false，先保存下一工单并 yield。平台无法强杀执行中调用，故此门禁在步骤间合作式生效。协调窗口按宿主交接规则处理，不要求固定换窗频率。
 5. 真实成果与证据写入任务工作区 _plan/process/<task-id>/。--evidence 相对此目录，例如 self-check.md；文件必须非空。complete 表示该阶段门禁确已通过；失败或阻断调用 fail。P0 完成还要传 --user-confirmed，表示已核实适用的执行授权；在证据中引用原指令或可追溯位置，已有授权即可，无须另问一次。用户要求本次回报后等待时，须等该确认，不能沿用更早授权。P4 不自动生成技术或人工验收结论。
 6. 使用原工单的 complete/fail callbacks，把证据路径占位符替换为真实文件名。--handoff 表示执行权已交接，之后结束本轮；后续项目写入会使完成身份失效。下次唤醒才领取下一阶段。默认 P2 → P3 → P4，worktree 的 P4 完成后由下一轮自动收尾；显式较低阶段上限仍停止。
 

@@ -453,4 +453,4 @@ function evaluate(ctx, command = 'decide') {
   return { code: !actions && attention ? 2 : 0, result: { enabled: true, human_acceptance: ctx.acceptancePolicy, slots: ctx.settings.worktree ? ctx.cfg.slots : 1,
     action_count: decisions.filter(v => v.action !== 'hold').length, needs_human_count: human, recovery_count: decisions.filter(v => v.recovery_required).length, blocking_human_count: blockingHuman, decisions } };
 }
-module.exports = { STAGES, fail, transient, object, keys, id, safe, relativePath, git, locate, context, verify, evaluate, worktreeState, projectState };
+module.exports = { STAGES, fail, transient, object, keys, id, safe, relativePath, git, locate, context, verify, evaluate, worktreeState, projectState, agents, config };

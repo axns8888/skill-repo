@@ -4,10 +4,10 @@ Devflow 保留 Orca 作为主要执行承载层。模型表决定场景使用的
 
 ## 配置页面
 
-同时安装 axns-devflow 与 axns-devflow-ext-autopilot 后，运行扩展目录的脚本：
+同时安装 axns-devflow 与 axns-devflow-ext-autopilot 后，先在目标项目目录打开终端，再运行扩展目录中的脚本：
 
 ```powershell
-node <axns-devflow-ext-autopilot>/scripts/model-page.cjs --project-root <项目目录>
+node <axns-devflow-ext-autopilot>/scripts/model-page.cjs
 ```
 
 打开命令输出的本地页面。支持编辑模型参数、按场景分配模型、控制 DSH 协作、切换或复制应用方式、增加项目场景、修改阶段关联，并保存到实际文件。保留 JSON 直接编辑、导入导出及 model-config.cjs 的 show/preview/use/assign 命令。

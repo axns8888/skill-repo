@@ -2,12 +2,12 @@
 name: axns-devflow-ext-autopilot
 description: axns-devflow 的可选自驱调度扩展。在项目 AGENTS.md 的 extensions 包含 autopilot 时，读取已登记任务、阶段完成证据和窗口占用，生成阶段推进、模型路由及已验收任务结案建议；显式开启执行后支持阶段领取、互斥派发、证据回调与中断恢复。用于任务排队、巡检及 DSH/Orca 自动化接入，定时唤醒由平台负责。
 metadata:
-  version: "1.0.0-rc.2"
+  version: "1.0.0-rc.5"
 ---
 
 # 自驱调度扩展
 
-宿主为 `axns-devflow`，可叠加 `axns-devflow-ext-worktree`。先读宿主与项目约定；宿主缺失时报告依赖。本扩展沿用宿主的一份计划、证据与验收流程，新增的仅是临时调度元数据。
+宿主为 `axns-devflow`，可叠加 `axns-devflow-ext-worktree`。先读宿主与项目约定；宿主缺失时报告依赖。本扩展沿用主协调者指定的一份权威计划、任务证据与验收流程，新增的仅是临时调度元数据。协调者持有全局目标/依赖/整合责任；执行者只在已登记 task-id、授权和当前 scope 内工作，不重复登记、重选模型或调查无关全项目背景。集成分支必须来自已核实配置，并在派发基线中固定。
 
 ## 入口
 
@@ -34,7 +34,7 @@ metadata:
 - **建议与执行分离。** autopilot.cjs 始终只读；runner.cjs 在显式开启后维护占位、阶段、心跳、回执和证据事件。平台负责会话和定时唤醒。Orca 定时适配器仅生成禁用状态的安装计划；command 适配器可使用随附直接 DSH 或本机 Orca 桥或接入方提供的桥。真实联调范围之外不宣称已无人值守运行。
 - **不扩张授权。** 只调度已登记、已授权的任务；scope、依赖、交付范围及授权变化交由宿主处理。已授权 worktree 任务默认包含范围内提交、技术验收后的本地合入、归档和本任务资源删除；沿用明确的用户限制。启用配置不授予派生代理或外部发布的权限。平台创建子代理仍须符合会话授权。
 - **先完成再推进。** 文件存在不代表阶段完成。只有显式 `completed`、有效证据和当前受测提交身份才可进入下一阶段。默认最高 P4；P0 可沿用已有执行授权，不要求再次开窗确认；用户明确要求回报后等待时保留该边界。
-- **窗口属于任务。** 一个任务同一时刻只允许一个活动窗口；需要换模型时先完成交接并关闭旧窗口。兼容模式不强制每阶段重开窗口；短工单模式要求每工单使用新会话，不复用已结案窗口执行新任务。
+- **窗口属于任务。** 一个任务同一时刻只允许一个活动写入窗口。默认不按步骤或模型强制换窗；同一执行者可在已授权的有限目标内连续推进，阶段证据与检查点仍按门禁记录。仅当项目明确启用 `execution.require_units=true` 时，才采用逐短工单新会话的额外隔离约束；模型切换先交接并关闭旧窗口。已结案窗口不得复用其旧回调或持权执行新任务。
 - **占用不能靠猜。** 丢失或过期心跳不会自动释放窗口。开窗去重由 runner 在共享锁内原子预留；外部启动桥须能按 dispatch_id 查询，重复读取建议不等于执行幂等。
 - **验收必须有事实。** 默认开启 `finish_task` 能力，实际执行仍要求 execution.enabled=true；已有显式 false 保持关闭。仅 worktree 模式支持机械结案，要求技术验收通过、完整候选 HEAD、已提交验收材料、干净工作区，且已合入或可快进合入。人工验收独立读取主检出目录 `_plan/prompts/acceptance.json`，默认关闭；开启且非阻塞时保留待确认状态，不阻止结案；显式阻塞时要求该候选的独立 human_acceptance 真实回执。脚本不能判断验收真伪，由执行窗口用真实检查及 --accepted-head 声明技术通过，不推测或伪造人工确认。
 - **复用平台清单。** DSH/Orca 原生自动化负责唤醒，原生清单组织本阶段步骤并关联 task-id；按宿主 [工具协作](../axns-devflow/references/tool-integration.md) 衔接 PyCharm，不复制第二份计划、不同时开启两个平台执行同一任务。
@@ -62,4 +62,4 @@ DSH 已具备原生子智能体时，优先按 [DSH 原生调度与上下文交�
 
 需要由 Orca 承载连续自动换窗时，使用随附 `scripts/adapters/orca-bridge.cjs` 与 `scripts/orca-controller.cjs --watch`：本地有限控制器从落盘状态驱动每工单新会话，不积累模型协调上下文。须显式启用 command/require_units 并预先登记原工作区、任务和短工单。支持本机 Codex/Claude structured 会话，以及配置 --dsh-bin 后由 Orca 命令终端承载的 DSH 一次性 headless 进程。DSH 监督器核实真实身份并 takeover，前进程退出后才接续；未知启动只查询。模型、团队、异常恢复及实际账号验证边界见 [模型与交接](references/launch-controls.md#dsh-自动短工单交接) 和 [平台接入](references/platforms.md#本机-orca-连续短工单随附桥与控制器)。
 
-需要按项目、任务或短工单选择已知模型，以及控制 DSH 团队时，读 [新会话模型与团队控制](references/launch-controls.md)。个人与项目模型表可单独维护，必备场景为 planning、implementation、simple_execution；优先保留用户选择的 Orca 执行层。用 `scripts/model-page.cjs --project-root <项目>` 打开可保存的独立配置页，支持模型参数、场景、预设和团队设置；项目发现/创建规则见宿主的 [项目模型配置](../axns-devflow/references/model-routing.md)。仓库根目录 model-routing.json 保留个人设置；项目通过 model_config_file 引用，使用 model-config.cjs 的 show/preview/use/assign 检查和切换，不在安装目录维护个人配置。DSH 的 `dsh-session.cjs` 在独立 headless 进程中应用临时 overlay；默认只生成并验证启动清单，显式 --run 才启动。它不充当 runner command 桥，也不自动恢复原业务；配置合成、启动选择与实际模型调用证据分别记录。团队开关不授予未授权的委派；已授权团队仍保留一个任务主执行者，分开写范围、短工单预算与结果整合责任。
+需要按项目、任务或短工单选择已知模型，以及控制 DSH 团队时，读 [新会话模型与团队控制](references/launch-controls.md)。个人与项目模型表可单独维护，必备场景为 planning、implementation、simple_execution；优先保留用户选择的 Orca 执行层。进入目标项目目录后运行 `node <axns-devflow-ext-autopilot>/scripts/model-page.cjs` 打开可保存的独立配置页，支持模型参数、场景、预设和团队设置；页面以当前目录识别项目，不使用 `--project-root`。项目发现/创建规则见宿主的 [项目模型配置](../axns-devflow/references/model-routing.md)。仓库根目录 model-routing.json 保留个人设置；项目通过 model_config_file 引用，使用 model-config.cjs 的 show/preview/use/assign 检查和切换，不在安装目录维护个人配置。DSH 的 `dsh-session.cjs` 在独立 headless 进程中应用临时 overlay；默认只生成并验证启动清单，显式 --run 才启动。它不充当 runner command 桥，也不自动恢复原业务；配置合成、启动选择与实际模型调用证据分别记录。团队开关不授予未授权的委派；已授权团队仍保留一个任务主执行者，分开写范围、短工单预算与结果整合责任。

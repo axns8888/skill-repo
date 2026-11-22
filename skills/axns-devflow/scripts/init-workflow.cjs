@@ -128,6 +128,11 @@ function initialize(opts) {
   }
   console.log(`${opts.dryRun ? '预览' : '完成'}：${created} 个新文件，保留 ${skipped} 个已有文件。项目：${root}`);
   console.log('下一步：核实 _plan/prompts/project.md，选择 _plan/prompts/stages.md 中的阶段指令。');
+  const autopilotPage = path.resolve(__dirname, '../../axns-devflow-ext-autopilot/scripts/model-page.cjs');
+  console.log(fs.existsSync(autopilotPage)
+    ? `项目配置中心：先进入项目目录 "${root}"，再运行 node "${autopilotPage}"`
+    : `项目配置中心：未发现并列安装的 axns-devflow-ext-autopilot；进入项目目录 "${root}" 后，安装该扩展并运行 node "<扩展目录>/scripts/model-page.cjs"。`);
+  console.log('配置页分别维护项目开发模式与模型路由；worktree/autopilot 声明、execution.enabled 和可选模式-预设关联均需显式保存。打开页面不会写文件或启动调度。');
 }
 
 try {

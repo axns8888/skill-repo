@@ -7,28 +7,41 @@ const { StringDecoder } = require('node:string_decoder');
 const core = require('./lib/core.cjs'), runtime = require('./lib/runtime.cjs');
 const continuation = require('./lib/continuation.cjs'), bridge = require('./lib/dsh-bridge.cjs');
 const { acquire } = require('./lib/process-lock.cjs');
+async function readyTask(manifest, request) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const ctx = core.context(manifest.project), d = runtime.task(ctx, request.task_id);
+      runtime.writable(ctx); const w = runtime.matching(d, request.owner, request.dispatch_id);
+      if (JSON.stringify(w.request) !== JSON.stringify(request) || fs.realpathSync(manifest.cwd) !== fs.realpathSync(d.taskRoot))
+        throw Error('DSH请求与原持权窗口不符');
+      core.verify(ctx);
+      return { ctx, d };
+    } catch (error) {
+      if (attempt >= 199 || !['AXNS_COORDINATION_BUSY', 'AXNS_OBSERVATION_CHANGED'].includes(error.code)) throw error;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+}
 async function run(file) {
   const raw = fs.readFileSync(file), manifest = JSON.parse(raw);
   const request = runtime.read(manifest.request_file), journal = runtime.read(manifest.journal);
   if (!request || bridge.hash(JSON.stringify(request)) !== manifest.request_sha256 ||
       journal?.request_sha256 !== manifest.request_sha256 || journal?.dsh_manifest_sha256 !== bridge.hash(raw)) throw Error('DSH启动清单或不可变派发已变化');
-  const ctx = core.context(manifest.project), d = runtime.task(ctx, request.task_id);
-  runtime.writable(ctx); const w = runtime.matching(d, request.owner, request.dispatch_id);
-  if (JSON.stringify(w.request) !== JSON.stringify(request) || fs.realpathSync(manifest.cwd) !== fs.realpathSync(d.taskRoot)) throw Error('DSH请求与原持权窗口不符');
-  for (const name of ['patch', 'prompt']) if (bridge.hash(fs.readFileSync(manifest[name + '_file'])) !== manifest[name + '_sha256']) throw Error('DSH启动文件已变化');
   const env = { ...process.env, DSH_HOME: manifest.dsh_home };
   const dsh = require('./dsh-session.cjs');
-  dsh.verify(dsh.dump({ project: manifest.cwd, 'dsh-bin': manifest.dsh_bin, profile: manifest.profile, env }, manifest.patch_file), manifest.route, manifest.team, { children: request.dsh_children,
-    telemetry: { dshBin: manifest.dsh_bin, directory: manifest.context_directory, canDelegate: !!request.team?.enabled, canStartNewSession: true, rootProcessFile: manifest.process_file } });
-  core.verify(ctx);
-  const release = acquire(path.join(path.dirname(file), 'worker.lock'));
-  let child, output, errors, childClosed = false;
+  let release, child, output, errors, childClosed = false, state = null, processPublished = false;
+  const save = changes => { state = { ...state, ...changes }; runtime.atomic(manifest.process_file, state); };
   try {
+    release = acquire(path.join(path.dirname(file), 'worker.lock'));
     if (fs.existsSync(manifest.process_file)) throw Error('此派发已有进程启动意图，禁止再次启动');
-    let state = { version: 1, dispatch_id: request.dispatch_id, request_sha256: manifest.request_sha256,
+    state = { version: 1, dispatch_id: request.dispatch_id, request_sha256: manifest.request_sha256,
       pid: process.pid, hostname: os.hostname(), state: 'starting', created_at: new Date().toISOString(), takeover_confirmed: false };
-    const save = changes => { state = { ...state, ...changes }; runtime.atomic(manifest.process_file, state); };
     runtime.atomic(manifest.process_file, state, true);
+    processPublished = true;
+    for (const name of ['patch', 'prompt']) if (bridge.hash(fs.readFileSync(manifest[name + '_file'])) !== manifest[name + '_sha256']) throw Error('DSH启动文件已变化');
+    dsh.verify(dsh.dump({ project: manifest.cwd, 'dsh-bin': manifest.dsh_bin, profile: manifest.profile, env }, manifest.patch_file), manifest.route, manifest.team, { children: request.dsh_children,
+      telemetry: { dshBin: manifest.dsh_bin, directory: manifest.context_directory, canDelegate: !!request.team?.enabled, canStartNewSession: true, rootProcessFile: manifest.process_file } });
+    await readyTask(manifest, request);
     output = fs.openSync(path.join(path.dirname(file), 'events.jsonl'), 'wx');
     errors = fs.openSync(path.join(path.dirname(file), 'stderr.log'), 'wx');
     child = spawn(process.execPath, [manifest.dsh_bin, '--profile', manifest.profile, '--patch', manifest.patch_file, '--json', '-'],
@@ -90,12 +103,14 @@ async function run(file) {
       child.stdin?.destroy(); child.kill();
       await Promise.race([closed, new Promise(resolve => { const timer = setTimeout(resolve, 3000); timer.unref(); })]);
     }
+    if (processPublished) save({ state: 'stopped', closed_at: new Date().toISOString(), exit_code: null,
+      final_quiescent: false, startup_error: error.message.slice(0, 1000), business_completion: 'unverified' });
     throw error;
   } finally {
     if (child && !childClosed) child.stdout?.destroy();
     if (output !== undefined) fs.closeSync(output);
     if (errors !== undefined) fs.closeSync(errors);
-    release();
+    release?.();
   }
 }
 if (require.main === module) {

@@ -118,6 +118,8 @@ test('snapshot restores committed, staged, unstaged and explicitly selected loca
   const dest = path.join(f.temp, 'preserved');
   put(f.temp, 'include.json', JSON.stringify({ include: ['wanted.cache', `_plan/process/${a}/parallel.json`] }));
   const args = ['--out', dest, '--manifest', path.join(f.temp, 'include.json')];
+  const sourceHead = git(dir, 'rev-parse', 'HEAD');
+  const sourceChanges = git(dir, 'status', '--porcelain', '--untracked-files=all', '--ignored');
   fail(run(f.root, 'snapshot', a, ...args), /confirmed-stopped/);
   put(f.root, `_plan/autopilot/${a}/window.json`, '{}');
   fail(run(f.root, 'snapshot', a, ...args, '--confirmed-stopped'), /派发窗口/);
@@ -125,10 +127,19 @@ test('snapshot restores committed, staged, unstaged and explicitly selected loca
   const result = ok(run(f.root, 'snapshot', a, ...args, '--confirmed-stopped'));
   const report = JSON.parse(fs.readFileSync(result.evidence, 'utf8'));
   assert.equal(report.status, 'preserved');
+  assert.equal(report.task_id, a); assert.equal(report.original_status, 'claimed');
+  assert.equal(report.integration_branch, 'main'); assert.equal(report.head, sourceHead);
+  assert.equal(report.record_dir, `_plan/process/${a}`);
   assert.equal(report.accepted_by_this_action, false);
   assert.equal(report.closed_by_this_action, false);
+  for (const [file, expected] of Object.entries(report.artifacts)) {
+    const bytes = fs.readFileSync(path.join(dest, file));
+    assert.equal(require('node:crypto').createHash('sha256').update(bytes).digest('hex'), expected, file);
+  }
   assert.deepEqual(report.omitted_untracked, ['unwanted.local']);
   assert.deepEqual(fs.readFileSync(path.join(dest, 'local', 'wanted.cache')), Buffer.from([0, 255, 17]));
+  assert.equal(git(dir, 'rev-parse', 'HEAD'), sourceHead);
+  assert.equal(git(dir, 'status', '--porcelain', '--untracked-files=all', '--ignored'), sourceChanges);
   assert.equal(git(f.root, 'rev-parse', 'main'), main);
   assert.equal(pointers(f)[0].status, 'claimed');
   assert.ok(events(f).every(e => e.event !== 'task.completed'));

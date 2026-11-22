@@ -14,11 +14,24 @@ function fixture(t) {
 function put(root, file, doc) { const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,typeof doc==='string'?doc:JSON.stringify(doc));return target; }
 function enable(root, config={version:1}) { put(root,'AGENTS.md','extensions: [autopilot]\nautopilot_config: _plan/prompts/autopilot.json\n');put(root,'_plan/prompts/autopilot.json',config); }
 async function editor(t, root) {
-  const running=await page.start({'project-root':root,port:0});
+  const running=await page.start({projectRoot:root,port:0});
   t.after(async()=>{running.server.closeAllConnections();await new Promise(resolve=>running.server.close(resolve));});
   const call=async(method='GET',body,extra={})=>{const response=await fetch(running.origin+'/api/config',{method,headers:{'x-devflow-token':running.token,'Content-Type':'application/json',...extra},...(body?{body:JSON.stringify(body)}:{})});return{status:response.status,body:await response.json()};};
   return {...running,call};
 }
+test('command options bind the project root to the current directory and reject injected roots',()=>{
+  const opts=page.options([]);
+  assert.equal(opts.projectRoot,process.cwd());
+  assert.throws(()=>page.options(['--project-root','/tmp/other-project']),/用法/);
+  assert.equal(page.options(['--port','0']).port,0);
+});
+test('page startup discovers the project from the current working directory',async t=>{
+  const running=await page.start({port:0});
+  t.after(async()=>{running.server.closeAllConnections();await new Promise(resolve=>running.server.close(resolve));});
+  const response=await fetch(running.origin+'/api/config',{headers:{'x-devflow-token':running.token}});
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).project,process.cwd());
+});
 test('new project has three mandatory scenes, user model spellings and independent mutable defaults',t=>{
   const root=fixture(t),result=project.initialize(root);assert.equal(result.created,true);assert.equal(result.execution_enabled_by_this_action,false);
   const doc=project.read(result.file);for(const id of project.REQUIRED)assert.ok(doc.scenarios[id]);
@@ -76,8 +89,9 @@ test('two editors cannot overwrite each other and invalid changes preserve exact
   const c=(await running.call()).body;delete c.doc.scenarios.planning;assert.equal((await running.call('PUT',c)).status,400);assert.deepEqual(fs.readFileSync(running.file),before);
 });
 test('unready active presets and unsupported team routes cannot be saved; inactive drafts remain editable',async t=>{
-  const root=fixture(t),running=await editor(t,root),a=(await running.call()).body,before=fs.readFileSync(running.file);
-  a.doc.active_preset='claude_only';assert.equal((await running.call('PUT',a)).status,400);assert.deepEqual(fs.readFileSync(running.file),before);
+  const root=fixture(t),running=await editor(t,root),a=(await running.call()).body;
+  assert.equal(fs.existsSync(running.file),false,'opening the page must not create the model file');
+  a.doc.active_preset='claude_only';assert.equal((await running.call('PUT',a)).status,400);assert.equal(fs.existsSync(running.file),false);
   a.doc.active_preset='project_balanced';a.doc.presets.project_balanced.scenarios.planning.team={enabled:true,mode:'subagent'};assert.equal((await running.call('PUT',a)).status,400);
   delete a.doc.presets.project_balanced.scenarios.planning.team;a.doc.models.new_claude={label:'Later',enabled:false,executor:'claude',provider:'Claude Code',model:''};assert.equal((await running.call('PUT',a)).status,200);
 });
@@ -90,6 +104,71 @@ test('loopback page rejects unauthenticated and cross-origin requests and never 
   const loaded=await running.call();assert.equal(JSON.stringify(loaded.body).includes(running.token),false);
   const response=await fetch(running.origin);assert.equal(response.status,200);assert.match(response.headers.get('Content-Security-Policy'),/frame-ancestors 'none'/);
   const html=await response.text();assert.ok(html.includes(running.token));assert.equal(html.includes('<script src='),false);
+});
+
+test('project configuration page distinguishes installation, declaration, valid config and execution',async t=>{
+  const root=fixture(t),running=await editor(t,root);
+  let status=(await running.call()).body.autopilot;
+  assert.equal(fs.existsSync(path.join(root,'AGENTS.md')),false);
+  assert.equal(fs.existsSync(path.join(root,'_plan/model-routing.json')),false);
+  assert.equal(fs.existsSync(path.join(root,'_plan/autopilot.json')),false);
+  assert.equal(status.declared,false);assert.equal(status.configValid,false);assert.equal(status.executionEnabled,false);
+  assert.equal(status.worktreeAvailable,true);
+  enable(root,{version:1,execution:{enabled:false,adapter:'session'}});
+  status=(await running.call()).body.autopilot;
+  assert.equal(status.declared,true);assert.equal(status.configValid,true);assert.equal(status.executionEnabled,false);
+  assert.equal(status.adapter,'session');assert.equal(status.platformVerified,false);
+  enable(root,{version:1,execution:{enabled:true,adapter:'command'}});
+  status=(await running.call()).body.autopilot;
+  assert.equal(status.declared,true);assert.equal(status.configValid,false);assert.equal(status.executionEnabled,false);
+  assert.match(status.error,/command/);
+});
+
+test('project settings explicitly enable extensions, keep execution off, separate model association and reject stale saves',async t=>{
+  const root=fixture(t),modelFile=put(root,'_plan/model-routing.json',fs.readFileSync(project.TEMPLATE,'utf8'));
+  const running=await editor(t,root),loaded=await running.call(),modelBefore=fs.readFileSync(modelFile);
+  const implicitExecution=await fetch(running.origin+'/api/project-settings',{method:'PUT',headers:{'x-devflow-token':running.token,'Content-Type':'application/json'},body:JSON.stringify({
+    agentsRevision:loaded.body.autopilot.agentsRevision,configRevision:loaded.body.autopilot.configRevision,
+    projectSettingsRevision:loaded.body.projectSettingsRevision,worktreeEnabled:false,autopilotEnabled:false,
+    executionEnabled:true,adapter:'session',modelAssociation:null
+  })});assert.equal(implicitExecution.status,400);assert.equal(fs.existsSync(path.join(root,'AGENTS.md')),false);
+  const response=await fetch(running.origin+'/api/project-settings',{method:'PUT',headers:{'x-devflow-token':running.token,'Content-Type':'application/json'},body:JSON.stringify({
+    agentsRevision:loaded.body.autopilot.agentsRevision,configRevision:loaded.body.autopilot.configRevision,
+    projectSettingsRevision:loaded.body.projectSettingsRevision,worktreeEnabled:false,autopilotEnabled:true,
+    executionEnabled:false,adapter:'session',integrationBranch:'',commandFile:'',commandArgs:[],
+    modelAssociation:{workspace_mode:'single',preset:loaded.body.doc.active_preset},modelAssociationFile:loaded.body.file
+  })});
+  assert.equal(response.status,200);
+  const refreshed=await running.call();assert.equal(refreshed.body.autopilot.declared,true);
+  assert.equal(refreshed.body.autopilot.configValid,true);assert.equal(refreshed.body.autopilot.executionEnabled,false);
+  assert.equal(refreshed.body.autopilot.worktreeEnabled,false);
+  assert.deepEqual(fs.readFileSync(modelFile),modelBefore,'development settings do not mutate model routing');
+  assert.deepEqual(refreshed.body.projectSettings.model_association,{workspace_mode:'single',preset:loaded.body.doc.active_preset});
+  assert.match(fs.readFileSync(path.join(root,'AGENTS.md'),'utf8'),/extensions: \[autopilot\]/);
+  const stale=await fetch(running.origin+'/api/project-settings',{method:'PUT',headers:{'x-devflow-token':running.token,'Content-Type':'application/json'},body:JSON.stringify({
+    agentsRevision:loaded.body.autopilot.agentsRevision,configRevision:loaded.body.autopilot.configRevision,
+    projectSettingsRevision:loaded.body.projectSettingsRevision,worktreeEnabled:false,autopilotEnabled:false,
+    executionEnabled:false,adapter:'session',modelAssociation:null
+  })});assert.equal(stale.status,409);
+});
+test('worktree mode requires an existing configured integration branch and stays independent from model routing',async t=>{
+  const root=fixture(t),{spawnSync}=require('node:child_process');
+  assert.equal(spawnSync('git',['init','-b','release/2026-q4',root],{encoding:'utf8'}).status,0);
+  spawnSync('git',['-C',root,'config','user.name','Test']);spawnSync('git',['-C',root,'config','user.email','test@example.invalid']);
+  fs.writeFileSync(path.join(root,'README.md'),'fixture\n');spawnSync('git',['-C',root,'add','README.md']);
+  assert.equal(spawnSync('git',['-C',root,'commit','-m','fixture'],{encoding:'utf8'}).status,0);
+  const modelFile=put(root,'_plan/model-routing.json',fs.readFileSync(project.TEMPLATE,'utf8')),modelBefore=fs.readFileSync(modelFile);
+  const running=await editor(t,root),loaded=(await running.call()).body;
+  const body={agentsRevision:loaded.autopilot.agentsRevision,configRevision:loaded.autopilot.configRevision,
+    projectSettingsRevision:loaded.projectSettingsRevision,worktreeEnabled:true,autopilotEnabled:false,
+    executionEnabled:false,adapter:'session',integrationBranch:'missing-branch',modelAssociation:null};
+  let response=await fetch(running.origin+'/api/project-settings',{method:'PUT',headers:{'x-devflow-token':running.token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal(response.status,400);assert.equal(fs.existsSync(path.join(root,'AGENTS.md')),false);
+  body.integrationBranch='release/2026-q4';
+  response=await fetch(running.origin+'/api/project-settings',{method:'PUT',headers:{'x-devflow-token':running.token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal(response.status,200);const agents=fs.readFileSync(path.join(root,'AGENTS.md'),'utf8');
+  assert.match(agents,/extensions: \[worktree\]/);assert.match(agents,/integration_branch: release\/2026-q4/);
+  assert.deepEqual(fs.readFileSync(modelFile),modelBefore);
 });
 test('legacy table missing simple scene is repaired in page draft only until explicit save',async t=>{
   const root=fixture(t),doc=project.read(project.TEMPLATE);delete doc.scenarios.simple_execution;for (const preset of Object.values(doc.presets)) delete preset.scenarios?.simple_execution;const file=put(root,'model-routing.json',doc),before=fs.readFileSync(file);
@@ -110,6 +189,6 @@ test('a Codex scenario in a DSH preset drops inherited DSH team without changing
 });
 
 test('oversized editor payload is refused before touching a configuration',async t=>{
-  const root=fixture(t),running=await editor(t,root),before=fs.readFileSync(running.file);
-  const response=await running.call('PUT',{oversized:'x'.repeat(150*1024)});assert.equal(response.status,413);assert.deepEqual(fs.readFileSync(running.file),before);
+  const root=fixture(t),running=await editor(t,root);
+  const response=await running.call('PUT',{oversized:'x'.repeat(150*1024)});assert.equal(response.status,413);assert.equal(fs.existsSync(running.file),false);
 });

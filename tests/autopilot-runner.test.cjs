@@ -70,6 +70,23 @@ function callback(f, name, request, file = 'evidence.md', extra = ['--handoff'],
   return json(run(f, name, ...args(request), '--evidence', file, ...extra), code);
 }
 
+test('callbacks retry a coordination lock that outlives the former retry window', async t => {
+  const f = fixture(t); init(f); const request = claim(f).request;
+  const lock = path.join(f.root, '_plan/autopilot/.lock'); fs.mkdirSync(lock);
+  let stdout = '', stderr = '';
+  const child = spawn(process.execPath, [runner, 'takeover', '--project', f.root, ...args(request),
+    '--session-id', 'session/lock-retry', '--cwd', f.root], { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  child.stdout.setEncoding('utf8'); child.stdout.on('data', chunk => { stdout += chunk; });
+  child.stderr.setEncoding('utf8'); child.stderr.on('data', chunk => { stderr += chunk; });
+  const releaseTimer = setTimeout(() => fs.rmdirSync(lock), 2600);
+  const watchdog = setTimeout(() => child.kill(), 15000);
+  const result = await new Promise(resolve => child.once('close', (code, signal) => resolve({ code, signal })));
+  clearTimeout(releaseTimer); clearTimeout(watchdog);
+  assert.equal(result.code, 0, stderr || stdout || `callback exited with ${result.signal}`);
+  assert.equal(JSON.parse(stdout).action, 'takeover');
+  assert.equal(state(f, 'window.json').acknowledged_at !== undefined, true);
+});
+
 test('execution requires explicit opt-in; read-only advice remains usable', t => {
   const f = fixture(t); config(f, { version: 1 });
   const before = fs.readdirSync(f.root);

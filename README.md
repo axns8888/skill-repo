@@ -8,9 +8,9 @@
 | --- | --- | --- | --- |
 | [axns-skill-evolution](skills/axns-skill-evolution/README.md) | `1.0.0-rc.1` | 收集任意技能的实际问题、用户评审与改进移交 | `_doc/skill进化树/<技能名称>/YYMMDD-标题.md`，批准范围及分层验证证据；可独立使用 |
 | [axns-ops-bt](skills/axns-ops-bt/README.md) | `1.0.0-rc.1` | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
-| [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.3` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
-| [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | `1.0.0-rc.2` | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、修改权校验、项目模型表维护及独立快照 |
-| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | `1.0.0-rc.2` | 项目显式启用后的任务巡检与调度建议 | 只读判定、窄状态、可选执行层、互斥领取与证据回调 |
+| [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.6` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
+| [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | `1.0.0-rc.4` | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、修改权校验、项目模型表维护及独立快照 |
+| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | `1.0.0-rc.5` | 项目显式启用后的任务巡检与调度建议 | 只读判定、配置中心、可选执行层、互斥领取与证据回调 |
 | [axns-ui-img2vue](skills/axns-ui-img2vue/README.md) | `1.0.0-rc.1` | 单图、批量设计图转 Vue 3，或按图修改已有页面 | 页面与组件、多状态整合、素材复用及验证结果；由当前会话模型直接完成 |
 | [axns-copyright-gen](skills/axns-copyright-gen/README.md) | `1.0.0-rc.1` | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/README.md) | `1.0.0-rc.1` | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
@@ -109,7 +109,7 @@ PowerShell 可将 `mkdir -p` 替换为 `New-Item -ItemType Directory -Force "_do
 
 阶段指令见 [通用开发提示词集](skills/axns-devflow/references/prompt-kit.md)。新项目统一建立 `_doc`、`_plan` 最低流程骨架，可用技能自带初始化脚本快速创建；任务记录按规模裁剪，语言、框架、工具和业务源码目录沿用目标项目。快速上手见 [通用流程使用说明](skills/axns-devflow/README.md)。
 
-技术栈、架构、界面、接口与发布策略写入项目的 `_plan/prompts/project.md` 和 `_plan/guides/`，开发时按任务读取。已采用 Python + Vue 3 + Tauri 的项目可选用 [项目规范模板](templates/python-vue3-tauri/README.md)，裁剪后合并到项目；模板不注册为独立技能，安装技能不会自动复制它。
+项目技术栈、架构、界面、接口与发布策略写入各项目的 `_plan/prompts/project.md` 和 `_plan/guides/`；项目自有的技能使用、工具配合及补充约束可维护在 `_plan/project/`，开发时按任务读取。已采用 Python + Vue 3 + Tauri 的项目可选用 [项目规范模板](templates/python-vue3-tauri/README.md)，裁剪后合并到项目；模板不注册为独立技能，安装技能不会自动复制它。
 
 以下为软著技能用法。
 

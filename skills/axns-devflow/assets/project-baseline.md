@@ -7,7 +7,8 @@
 新项目先建立完整最低目录骨架，见 [目录与初始化](../references/project-layout.md)。业务源码和工具目录按实际技术栈确定。
 
 - 项目资料：`_doc/README.md`；子目录 `demos/`、`scripts/`、`使用说明文档/`、`第三方插件文档/`。
-- 开发流程：`_plan/README.md` 与 `_plan/flow.md`；子目录 `future/`、`guides/`、`ledger/`、`process/`、`prompts/`。
+- 开发流程：`_plan/README.md` 与 `_plan/flow.md`；子目录 `future/`、`guides/`、`ledger/`、`process/`、`project/`、`prompts/`。
+- 项目自有技能使用方式、工具协作和补充约束：`_plan/project/README.md` 索引；不在此重复维护，技能或扩展未被项目明确启用时不得推断其生效。
 - 当前基线与可复制指令：`_plan/prompts/project.md`、`_plan/prompts/stages.md`；通用阶段规则与模板：`_plan/guides/`。
 - 任务计划与证据：`_plan/process/`；台账与验收归档索引：`_plan/ledger/`；延期事项：`_plan/future/`。
 - 已有等价载体及映射：〈已核实的唯一入口；新项目使用上述位置〉。最低骨架保留，具体任务记录按规模创建。

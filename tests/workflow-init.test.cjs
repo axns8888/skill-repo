@@ -9,7 +9,7 @@ const repo = path.resolve(__dirname, '..');
 const skills = ['axns-devflow'];
 const directories = [
   '_doc', '_doc/demos', '_doc/scripts', '_doc/使用说明文档', '_doc/第三方插件文档',
-  '_plan', '_plan/future', '_plan/guides', '_plan/ledger', '_plan/process', '_plan/prompts',
+  '_plan', '_plan/future', '_plan/guides', '_plan/ledger', '_plan/process', '_plan/project', '_plan/prompts',
 ];
 
 function fixture(t) {
@@ -52,6 +52,8 @@ for (const name of skills) {
     const projectName = '项目 $& 示例';
     const result = run(skill, '--project-root', root, '--project-name', projectName);
     assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, new RegExp(`先进入项目目录 "${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"，再运行 node .*model-page\\.cjs`));
+    assert.doesNotMatch(result.stdout, /model-page\.cjs"? --project-root/);
     assert.deepEqual(fs.readdirSync(root).sort(), ['_doc', '_plan']);
     for (const dir of directories) {
       assert.ok(fs.statSync(path.join(root, dir)).isDirectory(), dir);
@@ -59,12 +61,22 @@ for (const name of skills) {
     }
     for (const file of ['_plan/flow.md', '_plan/prompts/project.md', '_plan/prompts/stages.md',
       '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
+      '_doc/使用说明文档/里程碑验收与反馈.md',
       '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md',
       '_plan/prompts/architecture.md', '_plan/prompts/coding.md', '_plan/prompts/ui.md',
       '_plan/guides/engineering-standards.md', '_plan/guides/context-handoff.md', '_plan/guides/model-routing.md',
-      '_plan/model-routing.json', '_plan/prompts/task-types.json']) {
+      '_plan/model-routing.json', '_plan/prompts/task-types.json', '_plan/project/README.md',
+      '_plan/project/skill-usage.md', '_plan/project/coordination.md']) {
       assert.ok(fs.statSync(path.join(root, file)).size > 0, file);
     }
+    const projectGuide = fs.readFileSync(path.join(root, '_plan/project/README.md'), 'utf8');
+    const skillUsage = fs.readFileSync(path.join(root, '_plan/project/skill-usage.md'), 'utf8');
+    const coordination = fs.readFileSync(path.join(root, '_plan/project/coordination.md'), 'utf8');
+    assert.match(projectGuide, /项目自行维护/);
+    assert.match(projectGuide, /不代表.*已安装.*可用或启用/);
+    assert.match(skillUsage, /不代表技能已安装、当前会话可调用或项目已启用/);
+    assert.match(coordination, /不另建竞争计划/);
+    assert.match(coordination, /按项目明确启用配置和授权执行/);
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/project.md'), 'utf8').includes(projectName));
     assert.ok(fs.readFileSync(path.join(root, '_plan/prompts/stages.md'), 'utf8').includes(`$${name}`));
     assert.ok(fs.readFileSync(path.join(root, '_plan/flow.md'), 'utf8').includes(`$${name}`));
@@ -79,6 +91,7 @@ for (const name of skills) {
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '_plan/prompts/acceptance.json'), 'utf8')),
       { version: 1, human_acceptance: { enabled: false, blocking: false } });
     assert.match(fs.readFileSync(path.join(root, '_plan/guides/tool-integration.md'), 'utf8'), /原生任务清单|编程器原生 Todo/);
+    assert.match(fs.readFileSync(path.join(root, '_doc/使用说明文档/里程碑验收与反馈.md'), 'utf8'), /不替代.*技术验收.*结案/);
     assertLocalLinks(root);
   });
 
@@ -97,10 +110,12 @@ for (const name of skills) {
       JSON.stringify({ version: 1, human_acceptance: { enabled: true, blocking: true } }));
     fs.writeFileSync(path.join(root, '_plan/prompts/task-types.json'),
       JSON.stringify({ version: 1, types: { C: '项目既有类型', M: '修改' } }));
+    fs.appendFileSync(path.join(root, '_plan/project/coordination.md'), '\n项目自定义协作约定\n');
     const before = snapshot(root);
     assert.equal(run(skill, '--project-root', root, '--project-name', 'another name').status, 0);
     assert.deepEqual(snapshot(root), before);
     fs.unlinkSync(path.join(root, '_plan/flow.md'));
+    fs.unlinkSync(path.join(root, '_plan/project/skill-usage.md'));
     assert.equal(run(skill, '--project-root', root).status, 0);
     assert.deepEqual(snapshot(root), before);
     assert.deepEqual(fs.readFileSync(path.join(root, 'AGENTS.md')), original);
@@ -141,7 +156,7 @@ for (const name of skills) {
     const root = path.join(fixture(t), 'conflict');
     fs.mkdirSync(path.join(root, '_plan/prompts'), { recursive: true });
     fs.writeFileSync(path.join(root, '_plan/prompts/project.md'), 'existing project');
-    fs.writeFileSync(path.join(root, '_plan/guides'), 'a file blocks the directory');
+    fs.writeFileSync(path.join(root, '_plan/project'), 'a file blocks the directory');
     const before = snapshot(root);
     assert.notEqual(run(skill, '--project-root', root).status, 0);
     assert.deepEqual(snapshot(root), before);
