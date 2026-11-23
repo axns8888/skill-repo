@@ -224,9 +224,16 @@ function context(project, lockToken = null) {
   if (!settings.config) fail('AGENTS.md 必须显式指定 autopilot_config');
   const cfgPath = safe(root, settings.config), raw = read.json(cfgPath);
   let catalog = null;
-  let modelFile = raw?.model_config_file;
+  const projectSettings=read.json(safe(root,'.devflow/settings.json'));
+  if(projectSettings!==null){
+    if(projectSettings.version!==1||!Object.hasOwn(projectSettings,'model_association'))fail('项目模型关联配置无效');
+    const association=projectSettings.model_association;
+    if(association!==null&&(!association||!['single','worktree'].includes(association.workspace_mode)||typeof association.preset!=='string'))fail('项目模型关联配置无效');
+  }
+  const useCatalog=projectSettings?.model_association!==null;
+  let modelFile = useCatalog ? raw?.model_config_file : undefined;
   // Project tables are defaults only when no explicit or legacy inline routes exist.
-  if (modelFile === undefined && raw && raw.models === undefined && raw.tiers === undefined) {
+  if (useCatalog && modelFile === undefined && raw && raw.models === undefined && raw.tiers === undefined) {
     const candidates = ['_plan/model-routing.json', 'model-routing.json'].filter(name => {
       const file = safe(root, name);
       if (fs.existsSync(file) && fs.statSync(file).size > 128 * 1024) fail('模型配置文件超过128 KiB');

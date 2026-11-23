@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "execution": {
+    "enabled": true,
+    "adapter": "session",
+    "timeout_seconds": 30,
+    "require_units": false
+  }
+}

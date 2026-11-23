@@ -11,10 +11,14 @@ const core = require('./lib/core.cjs');
 function options(argv) {
   const opts = { projectRoot: process.cwd(), port: 19321 }, seen = new Set();
   while (argv.length) {
-    const key = argv.shift(), value = argv.shift();
-    if (!['--file', '--from', '--port'].includes(key) || seen.has(key) || !value || value.startsWith('--')) throw Error('用法：先进入项目目录，再运行 model-page.cjs [--file <模型表>] [--from <默认表>] [--port 19321]');
+    const key = argv.shift();
+    if (key === '--personal') { if (seen.has(key)) throw Error('重复参数：--personal'); seen.add(key); opts.personal = true; continue; }
+    const value = argv.shift();
+    if (!['--file', '--from', '--port'].includes(key) || seen.has(key) || !value || value.startsWith('--')) throw Error('用法：先进入项目目录，再运行 model-page.cjs [--file <模型表>] [--from <默认表> | --personal] [--port 19321]');
     seen.add(key); opts[key.slice(2)] = value;
   }
+  if (opts.personal && (opts.file || opts.from)) throw Error('--personal不能与--file或--from同时使用');
+  if (opts.personal) opts.from = projects.PERSONAL_TEMPLATE;
   if (opts.file && opts.from) throw Error('--file与--from不可同时使用');
   opts.port = Number(opts.port);
   if (!Number.isInteger(opts.port) || opts.port < 0 || opts.port > 65535) throw Error('--port需要0–65535');
@@ -27,17 +31,17 @@ function load(file) {
   const source = fs.readFileSync(file, 'utf8'), doc = catalog.parse(source);
   return { source, doc, revision: hash(source) };
 }
-function save(file, doc, revision) {
+function save(file, doc, revision, options = {}) {
   projects.safeParents(file);
   if (fs.existsSync(file) && fs.lstatSync(file).isSymbolicLink()) throw Error('请指定实际配置文件，不覆盖符号链接');
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const release = acquire(file + '.lock'); let temporary;
+  const release = options.lockHeld ? () => {} : acquire(file + '.lock'); let temporary;
   try {
     const current = load(file);
     if (revision !== current.revision) throw Object.assign(Error('文件已被其他窗口或命令修改；请导出当前草稿后重新加载'), { status: 409 });
     catalog.validate(doc);
     for (const id of projects.REQUIRED) if (!Object.hasOwn(doc.scenarios, id)) throw Error('必备场景不可缺少：' + id);
-    catalog.compile(doc);
+    if (options.routing !== false) catalog.compile(doc);
     const source = JSON.stringify(doc, null, 2) + '\n';
     if (Buffer.byteLength(source) > catalog.MAX_BYTES) throw Error('模型文件超过128 KiB');
     temporary = file + '.tmp-' + randomUUID(); fs.writeFileSync(temporary, source, { flag: 'wx' });
@@ -47,6 +51,18 @@ function save(file, doc, revision) {
     temporary = null;
     return { revision: hash(source), applies_to: 'new_sessions_only' };
   } finally { if (temporary && fs.existsSync(temporary)) fs.unlinkSync(temporary); release(); }
+}
+const integrationBranchPattern = /^[\w./-]+$/;
+function localBranches(project) {
+  const result = spawnSync('git', ['-C', project, 'for-each-ref', '--sort=refname', '--format=%(refname:strip=2)%09%(HEAD)', 'refs/heads/'], {
+    encoding: 'utf8', timeout: 3000, windowsHide: true,
+  });
+  if (result.status !== 0) return { branches: [], branchListAvailable: false };
+  const branches = result.stdout.split(/\r?\n/).filter(Boolean).map(line => {
+    const [name, head] = line.split('\t');
+    return { name, current: head === '*', selectable: integrationBranchPattern.test(name) };
+  });
+  return { branches, branchListAvailable: true };
 }
 function autopilotStatus(project) {
   const agentsFile = path.join(project, 'AGENTS.md');
@@ -67,14 +83,15 @@ function autopilotStatus(project) {
       executionEnabled = parsed.execution.enabled;
     } catch (cause) { error = cause.message; }
   }
-  const worktreeEnabled = core.agents(agentsText).worktree;
+  const worktreeEnabled = settings.worktree;
   const worktreeAvailable = fs.existsSync(path.resolve(__dirname, '../../axns-devflow-ext-worktree/SKILL.md'));
   const branch = agentsText.match(/^integration_branch:[ \t]*([\w./-]+)[ \t]*$/m)?.[1] || '';
-  const branchExists = branch ? spawnSync('git', ['-C', project, 'show-ref', '--verify', '--quiet', `refs/heads/${branch}`], { encoding: 'utf8' }).status === 0 : false;
+  const branchList = localBranches(project);
+  const branchExists = branchList.branches.some(entry => entry.name === branch);
   return { declared: settings.enabled, configPath: settings.config || null, configValid, executionEnabled,
     adapter: parsedConfig?.execution.adapter ?? null,
     commandFile: parsedConfig?.execution.command?.file ?? '', commandArgs: parsedConfig?.execution.command?.args ?? [],
-    platformVerified: false, error, worktreeEnabled, worktreeAvailable, integrationBranch: branch, branchExists,
+    platformVerified: false, error, worktreeEnabled, worktreeAvailable, integrationBranch: branch, branchExists, ...branchList,
     agentsFile, agentsRevision: hash(agentsText), configFile, configRevision: fs.existsSync(configFile) ? hash(fs.readFileSync(configFile)) : 'missing' };
 }
 function replaceTopLevel(text, key, line) {
@@ -87,7 +104,7 @@ function replaceTopLevel(text, key, line) {
   } else lines[index] = line;
   return lines.join('\n');
 }
-function saveProjectSettings(project, body) {
+function saveProjectSettings(project, body, options = {}) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) throw Error('配置字段无效');
   const current = autopilotStatus(project);
   if (body.agentsRevision !== current.agentsRevision || body.configRevision !== current.configRevision)
@@ -109,10 +126,11 @@ function saveProjectSettings(project, body) {
   if (body.autopilotEnabled) names.push('autopilot');
   if (body.worktreeEnabled) names.push('worktree');
   if (names.length || /^extensions:/m.test(agentsText)) agentsText = replaceTopLevel(agentsText, 'extensions', `extensions: [${names.join(', ')}]`);
-  if (body.worktreeEnabled) {
-    const branch = String(body.integrationBranch || '').trim();
+  const branch = String(body.integrationBranch || '').trim();
+  const validateBranch = body.worktreeEnabled || (branch && branch !== current.integrationBranch);
+  if (validateBranch) {
     if (!/^[\w./-]+$/.test(branch) || spawnSync('git', ['-C', project, 'show-ref', '--verify', '--quiet', `refs/heads/${branch}`]).status !== 0)
-      throw Error('worktree 模式需要选择项目中已存在的本地集成分支');
+      throw Error('请选择项目中已存在的本地集成分支');
     agentsText = replaceTopLevel(agentsText, 'integration_branch', `integration_branch: ${branch}`);
   }
   let configFile = current.configFile;
@@ -147,13 +165,13 @@ function saveProjectSettings(project, body) {
     if (body.modelAssociation !== null) {
       const association = body.modelAssociation;
       if (!association || !['single', 'worktree'].includes(association.workspace_mode) || typeof association.preset !== 'string' ||
-          !Object.hasOwn(load(path.resolve(project, body.modelAssociationFile || '_plan/model-routing.json')).doc.presets, association.preset))
+          !Object.hasOwn((options.doc || load(path.resolve(project, body.modelAssociationFile || '_plan/model-routing.json')).doc).presets, association.preset))
         throw Error('模型关联必须选择工作区模式及有效预设，或选择“无关联”');
-      projectSettings.model_association = association;
+      projectSettings.model_association = { ...association, preset: options.doc?.active_preset ?? association.preset };
     } else projectSettings.model_association = null;
   }
   const projectSettingsSource = JSON.stringify(projectSettings, null, 2) + '\n';
-  const writeProjectSettings = body.modelAssociation !== undefined && (body.modelAssociation !== null || fs.existsSync(projectSettingsFile));
+  const writeProjectSettings = body.modelAssociation !== undefined;
   if (Buffer.byteLength(configSource) > 128 * 1024) throw Error('autopilot 配置超过128 KiB');
   projects.safeParents(configFile); projects.safeParents(agentsFile); projects.safeParents(projectSettingsFile);
   for (const target of [configFile, agentsFile, projectSettingsFile])
@@ -169,10 +187,41 @@ function saveProjectSettings(project, body) {
   if (latest.agentsRevision !== body.agentsRevision || latest.configRevision !== body.configRevision ||
       (fs.existsSync(projectSettingsFile) ? hash(fs.readFileSync(projectSettingsFile)) : 'missing') !== body.projectSettingsRevision)
     throw Object.assign(Error('保存前检测到项目配置变化；未写入，请重新加载'), { status: 409 });
-  if (body.autopilotEnabled || current.configValid) write(configFile, configSource);
-  if (agentsText !== originalAgentsText) write(agentsFile, agentsText);
-  if (writeProjectSettings) write(projectSettingsFile, projectSettingsSource);
+  if (validateBranch && !latest.branches.some(entry => entry.name === branch))
+    throw Object.assign(Error('所选集成分支已变化，请重新加载'), { status: 409 });
+  const writes=[];
+  if (body.autopilotEnabled || current.configValid) writes.push([configFile, configSource]);
+  if (agentsText !== originalAgentsText) writes.push([agentsFile, agentsText]);
+  if (writeProjectSettings) writes.push([projectSettingsFile, projectSettingsSource]);
+  if (options.collect) return { writes, projectSettings };
+  for (const [file, content] of writes) write(file, content);
   return autopilotStatus(project);
+}
+function writeAtomic(file,content){
+  projects.safeParents(file);
+  if(fs.existsSync(file)&&fs.lstatSync(file).isSymbolicLink())throw Error('拒绝覆盖符号链接：'+file);
+  fs.mkdirSync(path.dirname(file),{recursive:true});const temporary=file+'.tmp-'+randomUUID();
+  try{fs.writeFileSync(temporary,content,{flag:'wx'});fs.renameSync(temporary,file);}finally{if(fs.existsSync(temporary))fs.unlinkSync(temporary);}
+}
+function saveWorkspace(project,file,body){
+  const releaseProject=acquire(path.join(project,'.devflow-config-editor-lock'));
+  let releaseModel;
+  try{
+    projects.safeParents(file);fs.mkdirSync(path.dirname(file),{recursive:true});releaseModel=acquire(file+'.lock');
+    if(body.settings!==undefined&&(!body.settings||typeof body.settings!=='object'||Array.isArray(body.settings)))throw Error('项目设置无效');
+    const plan=body.settings?saveProjectSettings(project,{...body.settings,modelAssociationFile:file},{collect:true,doc:body.doc}):{writes:[]};
+    const targets=[file,...plan.writes.map(([name])=>name)],before=new Map();
+    for(const name of targets){if(fs.existsSync(name)&&fs.lstatSync(name).isSymbolicLink())throw Error('拒绝覆盖符号链接：'+name);before.set(name,fs.existsSync(name)?fs.readFileSync(name):null);}
+    const changed=[];
+    try{
+      const result=save(file,body.doc,body.revision,{lockHeld:true,routing:!body.settings||body.settings.modelAssociation!==null});changed.push(file);
+      for(const [name,content] of plan.writes){writeAtomic(name,content);changed.push(name);}
+      return result;
+    }catch(error){
+      for(const name of changed.reverse()){const original=before.get(name);if(original===null){if(fs.existsSync(name))fs.unlinkSync(name);}else writeAtomic(name,original);}
+      throw error;
+    }
+  }finally{if(releaseModel)releaseModel();releaseProject();}
 }
 async function start(opts) {
   const project = path.resolve(opts.projectRoot ?? process.cwd());
@@ -203,6 +252,7 @@ async function start(opts) {
           if (fs.lstatSync(prefsFile).isSymbolicLink()) throw Error('.devflow/settings.json 是符号链接');
           projectSettings = JSON.parse(fs.readFileSync(prefsFile, 'utf8'));
         }
+        if(projectSettings.model_association)projectSettings.model_association={...projectSettings.model_association,preset:doc.active_preset};
         return json(200, { file, project, source: found.source, shared: found.shared, doc, revision: current.revision, added, required: projects.REQUIRED, inspection: catalog.inspect(doc), autopilot: autopilotStatus(project), projectSettings, projectSettingsRevision: fs.existsSync(prefsFile) ? hash(fs.readFileSync(prefsFile)) : 'missing' });
       }
       if (req.method === 'PUT' && req.url === '/api/project-settings') {
@@ -216,7 +266,7 @@ async function start(opts) {
         let size = 0; const chunks = [];
         for await (const chunk of req) { size += chunk.length; if (size > catalog.MAX_BYTES + 8192) return json(413, { error: '请求超过配置大小上限' }); chunks.push(chunk); }
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-        return json(200, save(file, body.doc, body.revision));
+        return json(200, saveWorkspace(project, file, body));
       }
       return json(404, { error: '没有此操作' });
     } catch (error) { json(error.status ?? 400, { error: error.message }); }
@@ -227,4 +277,4 @@ async function start(opts) {
   return { server, origin, token, file };
 }
 if (require.main === module) start(options(process.argv.slice(2))).then(({ origin, file }) => console.log(JSON.stringify({ page: origin, file, execution: 'Orca由项目单独配置；编辑器不启动任务', stop: 'Ctrl+C' }, null, 2))).catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { options, start, save, load, autopilotStatus, saveProjectSettings };
+module.exports = { options, start, save, load, autopilotStatus, saveProjectSettings, saveWorkspace };

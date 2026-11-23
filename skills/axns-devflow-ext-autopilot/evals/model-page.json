@@ -4,7 +4,7 @@
   "cases": [
     {
       "id": "new-project",
-      "prompt": "新建项目，保留Orca作为执行层。计划用GPT-6.2-Astra，一般执行用GPT-6.2-sol，简单执行用DeepSeek-V4.1-flash。",
+      "prompt": "新建项目，保留Orca作为执行层。计划用gpt-6.2-astra，一般执行用gpt-6.2-sol，简单执行用deepseek-v4.1-flash。",
       "expected": [
         "planning",
         "implementation",
@@ -24,7 +24,7 @@
       "id": "browser-save",
       "prompt": "在页面修改推理强度并新建项目场景，保存后刷新仍能读取。",
       "expected": [
-        "execute_sol.reasoning=medium",
+        "codex_main.reasoning=medium",
         "ui_custom persisted"
       ]
     }

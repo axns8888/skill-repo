@@ -10,6 +10,14 @@ DSH 已有可用的子智能体控制时，优先在 DSH 内完成短任务分�
 
 本机已核对 DSH 0.2.2-rc.1：普通原生 `subagent` 每次启动独立 activation，spawn 使用空对话；`send_message` 可引导活跃成员或恢复旧成员；`list_agents` 支持 children/descendants；`interrupt_agent` 只确认接受中断。实验性 Team 使用 spawn_teammate、共享任务板及另一组工具，不与普通 subagent 混用。新主进程可由 DSH 自身 CLI/headless 入口启动，亦可使用随附 dsh-session.cjs；不要求 Orca 工作区/终端登记。
 
+## 配置页中的 Team 与原生 worktree
+
+配置中心分别提供 DSH 协作模式和 DSH worktree 选择。协作模式使用 `team.enabled` / `team.mode`，原生 worktree 使用可选布尔字段 `team.worktree`，两者独立。`worktree=true` 在新会话的临时配置中启用原生 worktrees 服务及 `create_worktree` 工具，`false` 关闭创建工具但保留已有的归档/恢复服务，未指定则沿用 DSH 原生配置。场景可覆盖默认值；切换非 DSH 模型时不继承 DSH 设置。页面保存不会创建 worktree，也不会直接运行模型。
+
+2026-11-23 核对本机 DSH 0.2.2-rc.5：Team 包名为 `@deepseek-ai/dsh-agent-team` / `@deepseek-ai/dsh-tool-agent-team`，团队成员复用 subagent。合成器按实际已安装 profile 的服务识别新旧 Team：新版使用 `defaultEnabled=true` 并启用 spawn/control；旧版保留实验性 Team 配置。新版已移除 `maxMembers` 等旧参数，遇到 `max_members` 明确报错，可在页面重新选择 Team 清除旧人数配置，不虚构人数控制。上文 0.2.2-rc.1 描述为历史版本核对结果。
+
+原生 worktree 插件为 `@deepseek-ai/dsh-experimental-worktree` 与 `@deepseek-ai/dsh-experimental-tool-worktree`。它们与 Devflow 项目级 worktree 隔离扩展分别配置。四种开关组合已通过本机 `--dump-config` 合成与校验，真实模型执行和多成员运行尚未验证。
+
 ## 先看总体上下文，再看是否适合拆分
 
 在接收新目标、读取大批材料、连续实施、压缩提示及阶段边界时评估。每个仍在工作的主/子会话分别判断，不能只检查父会话或把全队累计 token 当作一个窗口的当前上下文。

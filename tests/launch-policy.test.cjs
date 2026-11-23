@@ -191,3 +191,26 @@ test('command bridge acknowledgement must match an explicit executor even with i
     assert.equal(result.state, executor === 'claude' ? 'running' : 'unknown');
   }
 });
+test('DSH worktree toggles the native create tool independently of delegation and verifies composed state',()=>{
+  for(const enabled of [false,true]){
+    const team={enabled, ...(enabled?{mode:'subagent'}:{}),worktree:true};
+    const actual=composed(rows(),dsh.overlay(rows(),null,team));dsh.verify(actual,null,team);
+    assert.equal(actual.find(row=>row.id==='tool-worktree').disabled,undefined);
+    const off={...team,worktree:false},disabled=composed(actual,dsh.overlay(actual,null,off));dsh.verify(disabled,null,off);
+    assert.equal(disabled.find(row=>row.id==='tool-worktree').disabled,true);
+    assert.notEqual(disabled.find(row=>row.id==='worktree').disabled,true);
+    disabled.find(row=>row.id==='tool-worktree').disabled=false;assert.throws(()=>dsh.verify(disabled,null,off),/worktree/);
+  }
+  assert.throws(()=>policy.selection({team:{enabled:false,worktree:'true'}},{}),/worktree/);
+  assert.equal(policy.teamMatches({enabled:false,worktree:false},{enabled:false,worktree:true}),false);
+});
+test('DSH current native Team uses its real switch and keeps subagent tools available without removed config keys',()=>{
+  const source=rows().concat([{id:'agent-team',name:'@deepseek-ai/dsh-agent-team',config:{maxTasks:256}},
+    {id:'tool-agent-team',name:'@deepseek-ai/dsh-tool-agent-team'}]);
+  const team={enabled:true,mode:'team',worktree:true},actual=composed(source,dsh.overlay(source,null,team));
+  dsh.verify(actual,null,team);assert.equal(actual.find(row=>row.id==='agent-team').config.defaultEnabled,true);
+  assert.equal(Object.hasOwn(actual.find(row=>row.id==='agent-team').config,'maxMembers'),false);
+  assert.notEqual(actual.find(row=>row.id==='tool-subagent').disabled,true);
+  assert.throws(()=>dsh.overlay(source,null,{...team,max_members:3}),/不支持 max_members/);
+  actual.find(row=>row.id==='agent-team').config.defaultEnabled=false;assert.throws(()=>dsh.verify(actual,null,team),/默认开关/);
+});

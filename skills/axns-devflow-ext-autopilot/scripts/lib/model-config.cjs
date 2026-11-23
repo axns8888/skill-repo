@@ -6,6 +6,9 @@ const MAX_BYTES = 128 * 1024;
 function text(value, label, limit = 2000) {
   if (typeof value !== 'string' || !value.trim() || value.length > limit || /[\r\n\0]/.test(value)) throw Error(label + ' 需要有界单行文本');
 }
+function capabilities(value, allowed, label) {
+  if (!Array.isArray(value) || value.length > allowed.length || new Set(value).size !== value.length || value.some(item => !allowed.includes(item))) throw Error(label + ' 能力列表无效');
+}
 function dictionary(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(label + ' 需要对象');
   const names = Object.keys(value);
@@ -33,7 +36,10 @@ function validate(doc) {
   }
   dictionary(doc.models, 'models'); dictionary(doc.scenarios, 'scenarios'); dictionary(doc.presets, 'presets');
   for (const [id, entry] of Object.entries(doc.models)) {
-    keys(entry, ['label', 'description', 'enabled', 'executor', 'provider', 'model', 'reasoning'], 'models.' + id);
+    keys(entry, ['label', 'description', 'enabled', 'executor', 'provider', 'model', 'reasoning', 'supports_vision', 'strengths', 'strengths_description'], 'models.' + id);
+    if (entry.strengths !== undefined) capabilities(entry.strengths, ['coding', 'reasoning', 'search', 'writing', 'review'], 'models.' + id + '.strengths');
+    if (entry.strengths_description !== undefined) text(entry.strengths_description, 'models.' + id + '.strengths_description');
+    if (entry.supports_vision !== undefined && typeof entry.supports_vision !== 'boolean') throw Error('models.' + id + '.supports_vision 需要 true/false');
     text(entry.label, 'models.' + id + '.label', 128);
     if (entry.description !== undefined) text(entry.description, 'models.' + id + '.description');
     if (typeof entry.enabled !== 'boolean') throw Error('models.' + id + '.enabled 需要 true/false');
@@ -44,15 +50,17 @@ function validate(doc) {
       (typeof entry[key] !== 'string' || entry[key].length > 256 || /[\r\n\0]/.test(entry[key]))) throw Error('models.' + id + '.' + key + ' 无效');
   }
   for (const [id, scenario] of Object.entries(doc.scenarios)) {
-    keys(scenario, ['label', 'description'], 'scenarios.' + id);
+    keys(scenario, ['label', 'description', 'required_capabilities'], 'scenarios.' + id);
+    if (scenario.required_capabilities !== undefined) capabilities(scenario.required_capabilities, ['coding', 'reasoning', 'vision', 'search', 'writing', 'review'], 'scenarios.' + id + '.required_capabilities');
     text(scenario.label, 'scenarios.' + id + '.label', 128); text(scenario.description, 'scenarios.' + id + '.description');
   }
   keys(doc.stage_scenarios, STAGES, 'stage_scenarios');
   for (const [stage, scenario] of Object.entries(doc.stage_scenarios)) if (!Object.hasOwn(doc.scenarios, scenario))
     throw Error('stage_scenarios.' + stage + ' 引用了不存在的场景');
   for (const [id, preset] of Object.entries(doc.presets)) {
-    keys(preset, ['label', 'description', 'default', 'scenarios'], 'presets.' + id);
+    keys(preset, ['label', 'description', 'use_case', 'default', 'scenarios'], 'presets.' + id);
     text(preset.label, 'presets.' + id + '.label', 128); text(preset.description, 'presets.' + id + '.description');
+    if (preset.use_case !== undefined) text(preset.use_case, 'presets.' + id + '.use_case');
     choice(preset.default, doc.models, 'presets.' + id + '.default');
     if (!preset.default.tier) throw Error('presets.' + id + '.default.tier 必填');
     keys(preset.scenarios ?? {}, Object.keys(doc.scenarios), 'presets.' + id + '.scenarios');
@@ -78,6 +86,7 @@ function parse(source) {
 }
 function scenarioSelection(doc, preset, id) {
   const own = preset.scenarios?.[id] ?? {}, result = { ...preset.default, ...own };
+  if (own.team && own.team.worktree === undefined && preset.default.team?.worktree !== undefined) result.team = { ...own.team, worktree: preset.default.team.worktree };
   if (own.tier && doc.models[own.tier]?.executor !== 'dsh' && !Object.hasOwn(own, 'team')) delete result.team;
   return result;
 }
@@ -87,6 +96,8 @@ function compile(doc, presetId = doc.active_preset, includeChildren = true) {
   const preset = doc.presets[presetId], scenarios = {};
   function ready(selection, label) {
     if (!doc.models[selection.tier]?.enabled) throw Error(label + ' 使用的模型 ' + selection.tier + ' 尚未启用；先填写准确渠道/模型并设置 enabled=true');
+    const requiredExecutor = { codex_only: 'codex', claude_only: 'claude' }[presetId];
+    if (requiredExecutor && doc.models[selection.tier].executor !== requiredExecutor) throw Error(label + ' 与应用方式不匹配，需要 ' + requiredExecutor + ' 执行工具');
     if (selection.team && doc.models[selection.tier].executor !== 'dsh') throw Error(label + ' 的团队策略需要 DSH 模型；选择其他执行端时先移除 team');
     return selection;
   }

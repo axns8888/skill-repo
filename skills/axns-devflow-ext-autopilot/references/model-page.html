@@ -1,80 +1,494 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Devflow · 模型配置</title>
 <style>
-:root{font-family:"Segoe UI Variable","Microsoft YaHei UI",sans-serif;color:#243448;background:#edf2f7;font-size:14px;line-height:1.55;--blue:#165dba;--line:#d3deeb}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #bccddd;background:white;padding:8px 14px;border-radius:6px;color:#243448}button:hover{border-color:var(--blue)}button.primary{background:var(--blue);border-color:var(--blue);color:white}input,select,textarea{border:1px solid #bdcddd;background:white;border-radius:4px;padding:7px 9px;color:#21344b;max-width:100%}input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid #69a9ef;outline-offset:2px}input[type=checkbox]{width:18px;height:18px}header{background:#17334f;color:white;padding:24px max(24px,calc((100vw - 1400px)/2));display:flex;align-items:center;justify-content:space-between;gap:20px}header h1{font-size:25px;margin:0;font-weight:650}header p{margin:5px 0 0;color:#bdcfe0}header .tag{white-space:nowrap;border:1px solid #7090ae;padding:6px 12px;border-radius:30px}main{max-width:1448px;margin:auto;padding:24px}.context{border-left:4px solid var(--blue);background:#fff;padding:14px 18px;overflow-wrap:anywhere}.context small{display:block;color:#526b83}.context p{margin:4px 0}.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0}.bar label{font-weight:600}.bar .spacer{flex:1}.status{color:#295683;padding:8px 0;min-height:38px;white-space:pre-wrap}.status.error{color:#ad2222}.status.ok{color:#116346}.panel{background:white;border:1px solid var(--line);border-radius:9px;margin:0 0 20px;overflow:hidden}.panel-title{display:flex;gap:12px;justify-content:space-between;align-items:baseline;padding:16px 20px;border-bottom:1px solid var(--line);background:#f8fbfe}.panel-title h2{font-size:18px;margin:0}.panel-title span{color:#647b90;font-size:13px}.panel-body{padding:16px 20px}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th{text-align:left;color:#536b82;font-weight:600;white-space:nowrap;background:#f8fbfe}th,td{padding:11px 12px;border-bottom:1px solid #e5edf4;vertical-align:middle}tbody tr:last-child td{border-bottom:0}td input:not([type=checkbox]),td select{width:100%;min-width:110px}td .wide{min-width:185px}td small{display:block;color:#6b7f91;font-size:12px}td strong{display:block;font-size:14px}td .required{font-size:11px;color:var(--blue);margin-left:6px;font-weight:400}td.scene{min-width:245px;max-width:350px}td.scene input{padding:3px 5px;font-weight:600;border-color:transparent}td.scene input:hover{border-color:var(--line)}td.scene textarea{width:100%;min-height:42px;font-size:12px;resize:vertical;border-color:transparent;background:#f9fbfd}td.route{min-width:180px}td.effort{min-width:145px;color:#5a6e81}td.team{min-width:160px}.add{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:16px 20px;background:#f8fbfe;border-top:1px solid var(--line)}.add label{display:flex;flex-direction:column;gap:4px;color:#526b83;font-size:12px}.note{color:#5e7388;font-size:13px;margin:0 0 12px}.defaults{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:15px 20px;border-bottom:1px solid var(--line)}.defaults label{font-weight:600}details summary{cursor:pointer;font-weight:600;padding:16px 20px}details>div{padding:0 20px 20px}.json{width:100%;min-height:300px;font:12px/1.6 Consolas,monospace;tab-size:2}.stage-grid{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}.stage-grid label{display:flex;flex-direction:column;gap:5px}footer{color:#5b738b;font-size:12px;padding:0 0 20px}.hint{border:1px solid #bed3e8;background:#eff7ff;padding:10px 14px;margin:0 0 18px;overflow-wrap:anywhere}.model-name{min-width:180px}.actions{display:flex;gap:10px;flex-wrap:wrap}.badge{color:var(--blue);background:#eaf3ff;padding:2px 7px;border-radius:3px}#sharedWarning{color:#8b4c0f}#sharedWarning:empty{display:none}@media(max-width:700px){header{padding:20px;align-items:start}header .tag{display:none}main{padding:14px}.panel-title{align-items:start;flex-direction:column;gap:3px}.bar .spacer{display:none}.bar select{max-width:100%}.defaults{align-items:start;flex-direction:column}.panel-title,.panel-body,.add,.defaults{padding:14px}td.scene{min-width:210px}.add label{width:100%}.add label input,.add label select{width:100%}.status{font-size:13px}}
+:root{font-family:"Segoe UI Variable","Microsoft YaHei UI",sans-serif;color:#243448;background:#edf2f7;font-size:14px;line-height:1.65;--blue:#165dba;--line:#d8e2ed;--muted:#5b7187;--soft:#f7faff}*{box-sizing:border-box}html{scroll-padding-top:180px}[hidden]{display:none!important}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #b9cadc;background:white;min-height:40px;padding:8px 14px;border-radius:6px;color:#243448;white-space:nowrap}button:hover{border-color:var(--blue);background:#edf5ff}button.primary{background:var(--blue);border-color:var(--blue);color:white}input,select,textarea{border:1px solid #b6c7d8;background:white;border-radius:5px;padding:9px 10px;color:#21344b;max-width:100%;min-width:0;min-height:42px}input:focus,select:focus,textarea:focus,button:focus-visible,summary:focus-visible{outline:2px solid #428bde;outline-offset:2px}input[type=checkbox]{width:19px;height:19px;min-height:19px;accent-color:var(--blue)}input[readonly],select:disabled{background:#f0f4f8;color:#62768b}header{background:#17334f;color:white;padding:10px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}header h1{font-size:21px;margin:0;font-weight:650}header p{margin:0;color:#c5d5e5;font-size:13px}header .tag{font-size:12px;border:1px solid #7090ae;padding:4px 10px;border-radius:4px;white-space:nowrap}main{max-width:1600px;margin:auto;padding:18px 28px 32px}.workspace-context{display:flex;align-items:center;gap:12px;margin-bottom:12px;min-width:0}.workspace-context>span{color:var(--muted);white-space:nowrap}.workspace-context>strong{font:13px/1.6 Consolas,monospace;overflow-wrap:anywhere}.project-info{margin-left:auto;position:relative;flex-shrink:0}.project-info summary{color:var(--blue);cursor:pointer}.project-info[open]{max-width:480px}.project-info p{margin:8px 0;font-size:13px}.mobile-nav.field{display:none}.workspace-nav{position:sticky;top:0;z-index:11;background:#edf2f7;display:flex;gap:4px;border-bottom:1px solid #bdcddd;overflow-x:auto}.workspace-nav button{border:0;border-radius:6px 6px 0 0;background:transparent;padding:12px 20px;color:#536b82;font-weight:600}.workspace-nav button[data-dirty]::after{content:" •";color:#b36b0d}.workspace-nav button[aria-current]{color:var(--blue);background:white;box-shadow:inset 0 -3px var(--blue)}.workspace-toolbar{position:sticky;top:48px;z-index:10;display:flex;align-items:center;gap:12px;padding:14px 0;background:#edf2f7;flex-wrap:wrap;border-bottom:1px solid var(--line)}.model-tools{display:flex;align-items:center;gap:12px}.model-tools label{font-weight:600}.model-tools select{width:230px}.spacer{flex:1}.status{color:#355e85;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}.status.error{color:#ad2222}.status.ok{color:#116346}#status{margin:8px 0 14px;min-height:0}#status:empty{display:none}.panel{background:white;border:1px solid var(--line);border-radius:9px;margin:0 0 18px;overflow:hidden}.panel-title{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid var(--line)}.panel-title h2{font-size:18px;margin:0}.panel-title span,.note{color:var(--muted);font-size:13px}.panel-body{padding:20px 22px}.note{margin:0;overflow-wrap:anywhere}.panel-body:has(>.note:only-child){padding:14px 22px;background:var(--soft)}.settings-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.setting-group{margin:0;border:1px solid var(--line);border-radius:7px;padding:20px;min-width:0}.setting-group legend{font-weight:650;color:#284e72;padding:0 8px}.setting-group .note{margin:16px 0 0}.form-grid{display:grid;gap:18px}.field{display:grid;grid-template-columns:128px minmax(0,1fr);align-items:center;gap:14px;color:#526b83;min-width:0}.field>input,.field>select,.field>textarea{width:100%}.field-top{align-items:start}.field-top>span{padding-top:9px}.toggle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}.toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1px solid var(--line);border-radius:7px;background:var(--soft);cursor:pointer}.toggle strong{font-weight:600}.toggle small{display:block;color:var(--muted);margin-top:4px;font-size:12px}.toggle input{flex-shrink:0}.diagnostics{margin-top:22px;border-top:1px solid var(--line)}summary{cursor:pointer}.diagnostics>summary{padding:16px 0 0;color:var(--muted)}.diagnostics .panel{border:0;margin:12px 0 0}.diagnostics .panel-title{display:none}.diagnostics .panel-body{padding:12px 0}.diagnostics .note{margin:10px 0}.state-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;font-size:13px}.project-paths{overflow-wrap:anywhere;color:var(--muted);font-size:12px}.table-search{padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}.table-search .field{grid-template-columns:72px minmax(0,1fr);width:480px;max-width:100%}.table-search .note{white-space:nowrap}.scroll{overflow-x:auto;overscroll-behavior-x:contain}table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:14px}th{text-align:left;color:#536b82;font-size:13px;font-weight:600;background:var(--soft);white-space:nowrap}th,td{padding:13px 12px;border-bottom:1px solid #e1e9f2;vertical-align:middle}th:first-child,td:first-child{padding-left:22px}th:last-child,td:last-child{padding-right:22px}tbody tr:focus-within{background:#f6faff}td input:not([type=checkbox]),td select{width:100%;min-width:0}td small{display:block;color:var(--muted);font-size:12px;margin-top:5px}.id-cell input{font:12px/1.7 Consolas,monospace}.check-cell{text-align:center}.check-cell label{display:flex;align-items:center;justify-content:center;min-height:42px}.model-table th:nth-child(1){width:6%}.model-table th:nth-child(2){width:20%}.model-table th:nth-child(3){width:17%}.model-table th:nth-child(4){width:13%}.model-table th:nth-child(5){width:28%}.model-table th:nth-child(6){width:16%}.scene-table th:nth-child(1){width:25%}.scene-table th:nth-child(2){width:21%}.scene-table th:nth-child(3){width:32%}.scene-table th:nth-child(4){width:22%}.detail-toggle{padding:7px 10px;min-height:38px;color:var(--blue);font-size:13px}.row-details td{padding:18px 22px;background:#f7faff;vertical-align:top}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px}.detail-grid .wide-field{grid-column:1/-1}.detail-grid textarea{min-height:92px;resize:vertical}.detail-grid .note{grid-column:1/-1}.required,.badge{display:inline-block;color:var(--blue);background:#eaf3ff;padding:2px 8px;border-radius:4px;font-size:12px}.required{margin-top:5px}.add{display:flex;gap:16px 24px;align-items:center;flex-wrap:wrap;padding:20px 22px;background:var(--soft);border-top:1px solid var(--line)}.add label{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:12px;flex:1 1 300px;color:#526b83;font-size:13px;min-width:0}.add label>input{width:100%}.add .note{flex-basis:100%}.defaults{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:20px 22px;border-bottom:1px solid var(--line)}.defaults .field{grid-template-columns:110px minmax(0,1fr);font-size:13px;gap:10px}.defaults>.field:has(select:disabled){display:none}.defaults:has(select:disabled){grid-template-columns:minmax(0,500px)}.preset-fields{display:grid;gap:18px;margin-bottom:24px;padding:20px;background:var(--soft);border:1px solid var(--line);border-radius:7px}.preset-fields textarea{min-height:84px;resize:vertical}.stage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0 24px}.stage-card{border:1px solid var(--line);border-radius:7px;padding:20px}.stage-card strong{display:block;margin-bottom:16px;font-size:16px}.stage-card small{display:block;color:var(--muted);margin-top:14px;padding-left:142px}.template-picker{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.template-picker .field{flex:1;max-width:560px}.json{width:100%;min-height:420px;font:13px/1.6 Consolas,monospace;tab-size:2}.bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:16px}.bar label{display:flex;align-items:center;gap:12px}footer{color:var(--muted);font-size:12px;padding:0 4px}.empty td{text-align:center;color:var(--muted);padding:28px}
+@media(min-width:1440px){.stage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1100px){main{padding:16px 20px 28px}.settings-layout{grid-template-columns:1fr}.defaults{grid-template-columns:1fr}.model-table{min-width:1050px}.scene-table{min-width:820px}.stage-card small{padding-left:0}.workspace-nav button{padding:12px 16px}.field{grid-template-columns:120px minmax(0,1fr)}}
+@media(max-width:600px){header{padding:14px 16px}header h1{font-size:18px}header .tag{display:none}header p{font-size:12px}main{padding:12px}.workspace-context{flex-wrap:wrap;gap:6px;margin-bottom:12px}.workspace-context>strong{font-size:11px;flex:1}.project-info{width:100%;margin:0}.workspace-nav button{padding:11px 14px;font-size:13px}.workspace-toolbar{gap:8px;padding:10px 0}.workspace-toolbar .model-tools{width:100%;gap:8px}.model-tools select{flex:1;min-width:0}.workspace-toolbar .status{width:100%;font-size:12px}.workspace-toolbar button{min-height:40px;padding:8px 10px;font-size:13px}.workspace-toolbar .spacer{display:none}.panel-title{padding:16px;align-items:start;flex-direction:column;gap:4px}.panel-title h2{font-size:17px}.panel-body{padding:16px}.toggle-grid{grid-template-columns:1fr;gap:10px;margin-bottom:18px}.toggle{padding:12px 14px}.settings-layout{gap:16px}.setting-group{padding:16px 12px}.field,.defaults .field{grid-template-columns:100px minmax(0,1fr);gap:10px;font-size:13px}.state-grid,.detail-grid,.stage-grid{grid-template-columns:1fr}.table-search{padding:12px 16px;flex-wrap:wrap;gap:6px}.table-search .field{grid-template-columns:68px minmax(0,1fr)}.defaults{padding:16px;gap:12px}.add{padding:16px;gap:14px}.add label{grid-template-columns:92px minmax(0,1fr)}.stage-card{padding:16px}.preset-fields{padding:16px}.template-picker{padding:16px}.row-details td{padding:16px}.panel-body:has(>.note:only-child){padding:14px 16px}.json{min-height:380px}}
+@media(max-width:600px){
+.workspace-nav{display:none}.mobile-nav.field{display:grid;position:sticky;top:0;z-index:11;background:#edf2f7;padding:8px 0;margin:0;grid-template-columns:78px minmax(0,1fr)}.workspace-toolbar{top:60px}.check-cell{text-align:left}
+.model-table,.scene-table{min-width:0;table-layout:auto;display:block}.model-table thead,.scene-table thead{display:none}tbody{display:block}tbody>tr:not(.row-details):not(.empty){display:block;padding:12px 16px;border-bottom:1px solid var(--line)}tbody>tr>td{border:0;padding:7px 0;display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;align-items:center;text-align:left}tbody>tr>td::before{content:attr(data-label);color:var(--muted);font-size:13px}.check-cell label{justify-content:start}.row-details{display:block}.row-details>td{display:block;padding:16px}.row-details>td::before,.empty>td::before{display:none}.detail-grid .field{grid-template-columns:78px minmax(0,1fr)}.detail-grid{gap:14px}.detail-toggle{justify-self:start}.empty{display:block}.empty>td{display:block}.id-cell input{font-size:13px}td small,td .required{grid-column:2}.detail-grid textarea{min-height:120px}#settingsStatus{order:4}.table-search .note{margin-left:78px}}
+
+.setting-group h3 { margin: 0 0 16px; font-size: 15px; color: #284e72; }
+.settings-field { align-items: start; }
+.settings-field > span, .settings-field > label { padding-top: 10px; }
+.settings-field select, .default-model-field select { width: 100%; }
+.setting-group .settings-field .note { margin: 8px 0 0; }
+#branchStatus:empty { display: none; }
+.radio-options { display: grid; gap: 8px; }
+.radio-choice { display: flex; align-items: flex-start; gap: 9px; min-width: 0; min-height: 44px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; color: #243448; }
+.radio-choice:has(input:checked) { border-color: #86b4e9; background: #eff6ff; }
+.radio-choice:has(input:focus-visible) { outline: 2px solid #428bde; outline-offset: 2px; }
+.radio-choice input[type=radio] { flex-shrink: 0; width: 17px; height: 17px; min-height: 17px; margin: 3px 0 0; accent-color: var(--blue); }
+.radio-choice span { min-width: 0; overflow-wrap: anywhere; }
+.radio-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.association-options { max-height: 350px; overflow: auto; padding: 4px; margin: -4px; }
+.default-model-field { align-items: start; }
+.default-model-field label { padding-top: 9px; }
+.route-id { margin-top: 5px; }
+.route-id code, .preset-summary code, .preset-compare code { overflow-wrap: anywhere; }
+#presetDialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(920px, calc(100% - 32px)); max-height: calc(100% - 40px); color: inherit; }
+#presetDialog::backdrop { background: #152b4a75; }
+.dialog-title { position: sticky; top: 0; z-index: 1; display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: white; }
+.dialog-title h2 { margin: 0 0 2px; font-size: 18px; }
+.preset-compare { padding: 16px 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.preset-card, .preset-summary { min-width: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 7px; overflow-wrap: anywhere; }
+.preset-card:has(.badge) { border-color: #86b4e9; }
+.preset-card h3 { font-size: 15px; margin: 0 0 6px; }
+.preset-card .badge { margin-left: 6px; }
+.preset-card button { margin-top: 10px; }
+.preset-summary { margin-bottom: 16px; background: var(--soft); }
+.preset-summary p, .preset-card p { margin: 5px 0; }
+.preset-summary strong, .preset-card p strong { margin-right: 8px; }
+.preset-route-list { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; }
+@media (max-width: 820px) { .workspace-toolbar .model-tools { flex-wrap: wrap; } }
+@media (max-width: 600px) {
+  .preset-compare { grid-template-columns: 1fr; padding: 12px; }
+  .dialog-title { padding: 12px; }
+  .settings-field { grid-template-columns: 86px minmax(0, 1fr); }
+  .workspace-toolbar .model-tools select { min-width: 130px; }
+}
+.model-actions{display:flex;align-items:center;gap:8px;white-space:nowrap}.model-actions button{flex:none}.model-actions .model-default{display:inline;color:var(--muted);font-size:12px;margin:0}.model-actions .delete-model{padding:7px 10px;min-height:38px;color:#a33636;font-size:13px}.model-actions .delete-model:hover{background:#fff4f4;border-color:#c57575}@media(max-width:600px){.model-actions{grid-column:2;flex-wrap:wrap;white-space:normal}}
+.capability-options{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}.capability-options label{display:inline-flex;align-items:center;gap:7px;color:#243448}.capability-options input{flex:none}.capability-note{color:var(--muted);font-size:12px}.capability-note.pending{color:#946019}
+.editor-fields{border:0;margin:0;padding:0;min-width:0}.editor-fields:disabled{opacity:.7}.routing-notice{margin:0;padding:16px 22px;background:#fff8e9;color:#78531a;border-bottom:1px solid var(--line)}
+.project-settings-stack{display:grid;gap:22px}@media(max-width:800px){.project-settings-stack .settings-layout{grid-template-columns:1fr}}
 </style></head><body>
 <header><div><h1>项目配置中心</h1><p>分别管理开发模式、自动执行与模型路由</p></div><div class="tag">Devflow · Orca 执行优先</div></header>
-<main><div class="context"><small>当前项目</small><strong id="project">正在读取项目…</strong><p id="file"></p><small id="scope"></small><p id="sharedWarning"></p></div>
-<section class="panel" aria-labelledby="autopilotTitle"><div class="panel-title"><h2 id="autopilotTitle">开发模式与执行状态</h2><span>独立于下方模型与场景配置</span></div><div class="panel-body"><p class="note">开发模式（手动或自动调度、单工作区或 worktree）与模型路由是独立配置。切换开发模式不会更换模型；切换模型预设也不会启用调度。两者只有在你明确建立关联时才联动。</p><div id="autopilotStates" class="stage-grid" aria-live="polite"></div><p id="autopilotDetail" class="note"></p><p class="note">“平台入口”仅表示配置中选择的适配器类型；不代表本机账号已登录、平台可达或真实派发已验收。项目声明与执行开关需在对应配置中分别明确启用。</p></div></section>
-<section class="panel"><div class="panel-title"><h2>项目开发配置</h2><span>显式保存；不创建任务、不启动调度</span></div><div class="panel-body"><div class="stage-grid"><label><input id="worktreeEnabled" type="checkbox"> worktree 隔离（仅独立交付需要时启用）</label><label><input id="autopilotEnabled" type="checkbox"> 声明 autopilot 扩展</label><label><input id="executionEnabled" type="checkbox"> 允许自动执行新派发</label></div><div class="stage-grid"><label>集成分支<input id="integrationBranch" placeholder="例如 main"></label><label>执行入口<select id="adapter"><option value="session">当前宿主会话（session）</option><option value="command">命令桥（command）</option></select></label><label>命令桥可执行文件<input id="commandFile" placeholder="仅 command 模式需要"></label><label>命令桥参数（JSON 数组）<input id="commandArgs" placeholder='例如 ["bridge.cjs"]'></label></div><p class="note">单工作区是默认路径；worktree 与 autopilot 可分别启用。新 autopilot 配置默认写入 _plan/autopilot.json；仅在显式保存启用配置时登记该路径。自动执行要求同时声明 autopilot。execution.enabled 只控制自动调度新派发，不改变模型路由。</p><div class="stage-grid"><label>关联的工作区模式<select id="associationMode"><option value="">不建立关联</option><option value="single">单工作区</option><option value="worktree">worktree</option></select></label><label>该模式可采用的模型预设<select id="modelAssociation"><option value="">无关联</option></select></label><span class="note">关联只记录可选路由，不自动切换当前模型；模型预设仍由模型配置区独立维护。</span></div><button id="saveProjectSettings" class="primary">保存项目开发配置</button><span id="settingsStatus" class="status" role="status"></span></div></section>
-<div class="bar"><label for="preset">应用方式</label><select id="preset" aria-label="应用预设"></select><span id="dirty" class="badge">已加载</span><span class="spacer"></span><button id="reload">重新加载</button><button id="export">导出草稿</button><button id="save" class="primary">保存到配置文件</button></div>
+<main><div class="workspace-context"><span>当前项目</span><strong id="project">正在读取项目…</strong><details class="project-info"><summary>配置说明</summary><p>项目设置与模型路由分别保存。保存后用于后续新会话。</p><p id="sharedWarning"></p></details></div>
+<nav class="workspace-nav" aria-label="配置区域"><button data-view="model" aria-current="page">模型配置</button><button data-view="project">项目开发配置</button><button data-view="scene">场景&模型</button><button data-view="stage">阶段与应用方式</button><button data-view="advanced">导入 / JSON</button></nav>
+<label class="mobile-nav field"><span>配置区域</span><select id="viewSelect" aria-label="切换配置区域"><option value="model">模型配置</option><option value="project">项目开发配置</option><option value="scene">场景&模型</option><option value="stage">阶段与应用方式</option><option value="advanced">导入 / JSON</option></select></label>
+<div class="workspace-toolbar"><div class="model-tools" hidden><label for="preset">应用方式</label><select id="preset" aria-label="应用预设"></select><button type="button" id="comparePresets" aria-haspopup="dialog">对比应用方式</button><span id="dirty" class="badge">已加载</span></div><span id="settingsStatus" class="status" role="status" hidden>设置将在显式保存后写入项目。</span><span class="spacer"></span><button id="reload">重新加载</button><button id="export">导出草稿</button><button id="saveProjectSettings" class="primary" hidden>保存项目开发配置</button><button id="save" class="primary">保存模型配置</button></div>
 <div id="status" class="status" role="status" aria-live="polite"></div>
-<p class="hint">默认模板：计划用 GPT-6.2-Astra，一般执行用 GPT-6.2-sol，简单执行用 DeepSeek-V4.1-flash。模型名称由你提供，启用仅表示允许路由，实际模型 ID 与可用权限由渠道决定。保存后用于后续新会话，当前运行任务保持原有派发参数。</p>
-<section class="panel"><div class="panel-title"><h2>场景与模型对照表</h2><span>必备场景始终保留；其他场景按项目调整</span></div><div class="defaults"><label for="defaultModel">未单独指定的任务</label><select id="defaultModel"></select><label for="defaultTeam">默认 DSH 协作</label><select id="defaultTeam"></select></div><div class="scroll"><table><thead><tr><th>开发场景 / 使用边界</th><th>分配模型</th><th>当前路由与推理强度</th><th>DSH 协作</th></tr></thead><tbody id="scenes"></tbody></table></div><form id="addScene" class="add"><label>场景 ID<input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 database_migration"></label><label>场景名称<input name="label" required maxlength="128" placeholder="例如 数据库迁移"></label><label>使用边界<input name="description" required maxlength="2000" placeholder="何时使用这个场景"></label><button>添加项目场景</button></form><div class="panel-body"><label for="sceneTemplate">常见项目场景：</label><select id="sceneTemplate"><option value="database_migration">数据库迁移（计划模型）</option><option value="security_review">安全复核（计划模型）</option><option value="frontend_implementation">前端实现（执行模型）</option><option value="api_integration">接口联调（执行模型）</option><option value="deployment">部署准备（执行模型）</option></select> <button id="addTemplate">加入当前项目</button></div></section>
-<section class="panel"><div class="panel-title"><h2>可调用的模型</h2><span>渠道、模型名称与推理强度分别保存</span></div><div class="panel-body"><p class="note">Codex 与 Claude Code 是渠道名称；执行端选择 codex、claude 或 dsh。推理强度可填写渠道接受的值，留空表示使用原生设置。Orca 的承载方式由项目执行配置指定。</p></div><div class="scroll"><table><thead><tr><th>启用</th><th>名称 / ID</th><th>执行端</th><th>渠道</th><th>实际模型 ID</th><th>推理强度</th></tr></thead><tbody id="models"></tbody></table></div><form id="addModel" class="add"><label>模型 ID<input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 project_claude"></label><label>显示名称<input name="label" required maxlength="128" placeholder="例如 项目 Claude"></label><button>添加模型</button><span class="note">新模型先禁用，填好参数后再启用。</span></form></section>
-<details class="panel"><summary>项目阶段与应用方式</summary><div><p class="note">阶段自动使用这里关联的场景。任务或短工单可以用 launch.scenario 指定自定义场景；优先级沿用 Devflow 的任务与工单覆盖规则。</p><div id="stages" class="stage-grid"></div><form id="addPreset" class="add"><label>新应用方式 ID<input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 project_frontend"></label><label>显示名称<input name="label" required maxlength="128" placeholder="例如 前端项目配置"></label><button>复制当前方式并切换</button></form></div></details>
-<details class="panel" id="advanced"><summary>直接编辑文件内容 / 导入配置</summary><div><p class="note">表格、页面草稿和 JSON 使用同一份数据。JSON 修改后先应用到表格，再保存到文件。可以继续在编辑器中直接修改磁盘上的 JSON；页面保存会检查文件是否被其他窗口改过。</p><textarea id="json" class="json" spellcheck="false" aria-label="配置 JSON"></textarea><div class="bar"><button id="applyJson">应用 JSON 到表格</button><label>导入模型表<input id="import" type="file" accept=".json,application/json"></label></div></div></details>
-<footer>本页只维护模型路由，不开启自动执行或增加智能体委派授权。Orca 是执行承载层，DSH 是可选择的具体执行端；二者可同时出现在同一项目的模型表中。</footer></main>
+<dialog id="presetDialog" aria-labelledby="presetDialogTitle">
+  <div class="dialog-title"><div><h2 id="presetDialogTitle">对比应用方式</h2><p class="note">应用方式是一组模型分配规则。选用后进入草稿，保存模型配置后用于新会话。</p></div><button type="button" id="closePresetDialog" autofocus>关闭</button></div>
+  <div class="preset-compare" id="presetComparison"></div>
+</dialog>
+<section class="panel workspace-panel" id="projectPanel" hidden aria-labelledby="projectSettingsTitle"><div class="panel-title"><h2 id="projectSettingsTitle">项目开发配置</h2><span>开发模式、执行入口与模型关联分别设置</span></div><div class="panel-body">
+<div class="toggle-grid"><label class="toggle" for="worktreeEnabled"><span><strong>项目 worktree 隔离</strong><small>各任务使用独立 Git 工作区，验收后合入集成分支</small></span><input id="worktreeEnabled" type="checkbox"></label><label class="toggle" for="autopilotEnabled"><span><strong>启用 autopilot</strong><small>允许项目使用任务巡检和阶段推进建议</small></span><input id="autopilotEnabled" type="checkbox"></label><label class="toggle" for="executionEnabled"><span><strong>允许自动派发</strong><small>平台唤醒后可派发已登记的任务，需启用 autopilot</small></span><input id="executionEnabled" type="checkbox"></label></div>
+<div class="project-settings-stack">
+  <section class="setting-group" aria-labelledby="executionSettingsTitle">
+    <h3 id="executionSettingsTitle">自动执行入口</h3>
+    <div class="form-grid">
+      <div class="field settings-field" role="radiogroup" aria-labelledby="adapterLabel" aria-describedby="adapterHelp">
+        <span id="adapterLabel">执行适配器</span>
+        <div class="radio-options">
+          <label class="radio-choice"><input type="radio" name="adapter" value="session" checked><span><strong>当前平台会话</strong><small>由已经启动的 Orca 或 DSH 自动化会话领取并执行阶段工单。</small></span></label>
+          <label class="radio-choice"><input type="radio" name="adapter" value="command"><span><strong>命令桥</strong><small>由调度器调用桥接程序，启动并查询执行工单的新会话。</small></span></label>
+          <p class="note" id="adapterHelp">首次配置入口时，请同时启用 autopilot。平台定时唤醒需在平台上配置。</p>
+        </div>
+      </div>
+      <div class="form-grid" id="commandFields" hidden>
+        <label class="field" for="commandFile"><span>可执行文件</span><input id="commandFile" placeholder="例如 node 或桥接程序的完整路径"></label>
+        <label class="field field-top" for="commandArgs"><span>命令参数</span><textarea id="commandArgs" rows="3" spellcheck="false" aria-describedby="commandHelp" placeholder='例如 ["bridge.cjs"]'></textarea></label>
+        <p class="note" id="commandHelp">按顺序填写 JSON 字符串数组。没有参数时填写 <code>[]</code>。</p>
+      </div>
+    </div>
+  </section>
+  <section class="setting-group" aria-labelledby="workspaceSettingsTitle">
+    <h3 id="workspaceSettingsTitle">工作区与模型关联</h3>
+    <div class="settings-layout"><div class="form-grid">
+      <div class="field settings-field"><label for="integrationBranch">集成分支</label><div>
+        <select id="integrationBranch" aria-describedby="branchHelp branchStatus"></select>
+        <p class="note" id="branchHelp">启用项目 worktree 隔离后，验收通过的任务合入这个分支。可以提前选好并保存。</p>
+        <p class="note" id="branchStatus" role="status"></p>
+      </div></div>
+      <div class="field settings-field" role="radiogroup" aria-labelledby="associationModeLabel" aria-describedby="associationHelp">
+        <span id="associationModeLabel">关联工作区模式</span>
+        <div class="radio-options">
+          <label class="radio-choice"><input type="radio" name="associationMode" value="" checked><span><strong>不建立关联</strong><small>沿用执行会话的模型，停用按场景切换；场景配置保留为只读。</small></span></label>
+          <label class="radio-choice"><input type="radio" name="associationMode" value="single"><span><strong>单工作区</strong><small>为直接在当前检出目录开发的模式记录一个模型预设。</small></span></label>
+          <label class="radio-choice"><input type="radio" name="associationMode" value="worktree"><span><strong>worktree</strong><small>为按任务使用独立 Git 工作区的模式记录一个模型预设。</small></span></label>
+          <p class="note" id="associationHelp">关联模型预设与“场景&模型”“阶段与应用方式”共享同一项配置。工作区模式不决定是否自动派发。</p>
+        </div>
+      </div>
+    </div><div>
+      <div class="field settings-field" id="modelAssociationField" hidden>
+        <span id="modelAssociationLabel">关联模型预设</span><div id="modelAssociation" class="radio-options association-options" role="radiogroup" aria-labelledby="modelAssociationLabel"></div>
+      </div>
+    </div></div>
+  </section>
+
+</div><details class="diagnostics"><summary>开发模式与执行状态</summary><section class="panel" aria-labelledby="autopilotTitle"><div class="panel-title"><h2 id="autopilotTitle">开发模式与执行状态</h2><span>独立于下方模型与场景配置</span></div><div class="panel-body"><p class="note">开发模式（手动或自动调度、单工作区或 worktree）与模型路由是独立配置。切换开发模式不会更换模型；切换模型预设也不会启用调度。两者只有在你明确建立关联时才联动。</p><div id="autopilotStates" class="state-grid" aria-live="polite"></div><p id="autopilotDetail" class="note"></p><p class="note">“平台入口”仅表示配置中选择的适配器类型；不代表本机账号已登录、平台可达或真实派发已验收。项目声明与执行开关需在对应配置中分别明确启用。</p></div></section>
+<div class="project-paths"><p id="file"></p><small id="scope"></small></div></details></div></section>
+<section class="panel workspace-panel" id="modelPanel"><div class="panel-title"><h2>模型配置</h2><span>名称、ID 和模型参数可直接编辑</span></div><div class="panel-body"><p class="note">直接填写名称、ID 和模型；“执行工具”是运行模型的 CLI / 开发工具（Codex CLI、Claude Code、DSH），不是供应商；渠道与推理强度在“设置”中编辑。能力和擅长范围在“设置”中维护。</p></div><div class="table-search"><label class="field"><span>搜索模型</span><input id="modelSearch" type="search" placeholder="按名称、配置 ID 或模型ID 搜索"></label><span id="modelCount" class="note"></span></div><div class="scroll"><table class="model-table"><thead><tr><th>启用</th><th>显示名称</th><th>配置 ID</th><th>执行工具</th><th>模型ID</th><th>设置</th></tr></thead><tbody id="models"></tbody></table></div><form id="addModel" class="add"><label><span>模型 ID</span><input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 project_claude"></label><label><span>显示名称</span><input name="label" required maxlength="128" placeholder="例如 项目 Claude"></label><button>添加模型</button><span class="note">默认保留 Codex、Claude 和 DeepSeek；新增模型先禁用，填好参数后再启用。</span></form></section>
+<section class="panel workspace-panel" id="scenePanel" hidden><div class="panel-title"><h2>场景&模型</h2><span>模型分配直接生效于草稿，保存后用于新会话</span></div><p class="routing-notice" id="sceneReadOnly" hidden>当前未关联模型预设，沿用执行会话的模型，场景分配仅供查看。请先在“项目开发配置”中选择关联工作区模式与模型预设。</p><fieldset id="sceneEditor" class="editor-fields"><div class="defaults"><div class="field default-model-field"><label for="defaultModel">默认任务模型</label><div><select id="defaultModel"></select><p class="note route-id" id="defaultModelId"></p></div></div><label class="field" for="defaultTeam"><span>DSH 智能体协作</span><select id="defaultTeam"></select></label><label class="field" for="defaultWorktree"><span>DSH worktree</span><select id="defaultWorktree"></select></label></div><div class="panel-body"><p class="note">DSH 智能体协作与原生 worktree 可以独立控制。分配 DSH 模型后，展开场景行即可设置；项目 worktree 隔离在“项目开发配置”中维护。</p></div><div class="table-search"><label class="field"><span>搜索场景</span><input id="sceneSearch" type="search" placeholder="按场景名称或 ID 搜索"></label><span id="sceneCount" class="note"></span></div><div class="scroll"><table class="scene-table"><thead><tr><th>场景名称</th><th>场景 ID</th><th>分配模型</th><th>使用边界 / DSH 设置</th></tr></thead><tbody id="scenes"></tbody></table></div><form id="addScene" class="add"><label><span>场景 ID</span><input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 database_migration"></label><label><span>场景名称</span><input name="label" required maxlength="128" placeholder="例如 数据库迁移"></label><label><span>使用边界</span><input name="description" required maxlength="2000" placeholder="何时使用这个场景"></label><button>添加项目场景</button></form><div class="panel-body template-picker"><label class="field" for="sceneTemplate"><span>常见项目场景</span><select id="sceneTemplate"><option value="database_migration">数据库迁移（计划模型）</option><option value="security_review">安全复核（计划模型）</option><option value="frontend_implementation">前端实现（执行模型）</option><option value="api_integration">接口联调（执行模型）</option><option value="deployment">部署准备（执行模型）</option></select></label><button id="addTemplate">加入当前项目</button></div></fieldset></section>
+<section class="panel workspace-panel" id="stagePanel" hidden><div class="panel-title"><h2>项目阶段与应用方式</h2><span>设置阶段场景，定制当前应用方式</span></div><div class="panel-body"><div class="preset-summary" id="activePresetSummary"></div><div id="presetFields" class="preset-fields"></div><p class="note">阶段自动使用这里关联的场景。任务或短工单可以用 launch.scenario 指定自定义场景；优先级沿用 Devflow 的任务与工单覆盖规则。</p><div id="stages" class="stage-grid"></div><form id="addPreset" class="add"><label><span>新应用方式 ID</span><input name="id" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="例如 project_frontend"></label><label><span>显示名称</span><input name="label" required maxlength="128" placeholder="例如 前端项目配置"></label><button>复制当前方式并切换</button></form></div></section>
+<section class="panel workspace-panel" id="advanced" hidden><div class="panel-title"><h2>导入 / JSON</h2><span>与表格共用当前草稿</span></div><div class="panel-body"><div><p class="note">表格、页面草稿和 JSON 使用同一份数据。JSON 修改后先应用到表格，再保存到文件。可以继续在编辑器中直接修改磁盘上的 JSON；页面保存会检查文件是否被其他窗口改过。</p><textarea id="json" class="json" spellcheck="false" aria-label="配置 JSON"></textarea><div class="bar"><button id="applyJson">应用 JSON 到表格</button><label><span>导入模型表</span><input id="import" type="file" accept=".json,application/json"></label></div></div></div></section>
+<footer>项目与模型配置统一保存，用于后续新会话。Orca 承载执行，DSH 提供模型会话及原生智能体协作。</footer></main>
 <datalist id="reasonings"><option value="low"><option value="medium"><option value="high"><option value="xhigh"></datalist>
 <script>
 'use strict';
 const TOKEN = __EDITOR_TOKEN__;
-let doc, revision, info, dirty = false, rawDirty = false;
-const $ = id => document.getElementById(id), REQUIRED = ['planning','implementation','simple_execution'];
+let doc, revision, info, dirty = false, rawDirty = false, settingsDirty = false;
+const $ = id => document.getElementById(id), REQUIRED = ['planning','implementation','simple_execution'], BUILTIN_MODELS = ['codex_main','claude_main','deepseek_main'];
 function status(message, kind = '') { $('status').textContent = message; $('status').className = 'status ' + kind; }
-function changed() { dirty = true; $('dirty').textContent = '未保存'; syncJson(); }
+function changed() { dirty = true; $('dirty').textContent = '未保存'; document.querySelector('[data-view="model"]')?.setAttribute('data-dirty','true'); syncJson(); }
 function syncJson() { if (!rawDirty) $('json').value = JSON.stringify(doc, null, 2); }
 function node(tag, text) { const n = document.createElement(tag); if(text !== undefined) n.textContent = text; return n; }
 function select(options, value, onChange, label) { const s = node('select'); if(label) s.setAttribute('aria-label',label); for(const [id,text] of options) { const o=node('option',text);o.value=id;s.append(o); } s.value=value;s.addEventListener('change',()=>onChange(s.value));return s; }
 function input(value, onChange, label) { const n=node('input');n.value=value ?? '';n.setAttribute('aria-label',label);n.addEventListener('input',()=>{onChange(n.value);changed();});return n; }
-const modelOptions = () => Object.entries(doc.models).map(([id,m])=>[id,m.label+(m.enabled?'':'（禁用）')]);
-const sceneOptions = () => Object.entries(doc.scenarios).map(([id,s])=>[id,s.label]);
-const teamOptions = [['inherit','继承默认'],['off','关闭'],['subagent','普通子智能体'],['team','实验性 Team（3人）']];
+const modelText = m => m ? m.label+' · '+(m.model || '未填写模型ID')+(m.enabled?'':'（禁用）') : '未指定';
+const modelOptions = (current) => Object.entries(doc.models).filter(([id,m])=>!['codex_only','claude_only'].includes(doc.active_preset)||m.executor===(doc.active_preset==='codex_only'?'codex':'claude')||id===current).map(([id,m])=>[id,modelText(m)+(id===current&&['codex_only','claude_only'].includes(doc.active_preset)&&m.executor!==(doc.active_preset==='codex_only'?'codex':'claude')?'（与应用方式不匹配）':'')]);
+const capabilityLabels = {coding:'编码能力',reasoning:'分析推理',vision:'图像识别',search:'搜索能力',writing:'文档写作',review:'代码复核'};
+function missingCapabilities(model, scenario){return (scenario.required_capabilities??[]).filter(id=>id==='vision'?!model?.supports_vision:!model?.strengths?.includes(id));}
+function matchText(model,scenario){const required=scenario.required_capabilities??[];if(!required.length)return '未设置能力要求';const missing=missingCapabilities(model,scenario);return missing.length?'待确认：'+missing.map(id=>capabilityLabels[id]).join('、'):'已声明符合要求';}
+function capabilityField(label,control){const group=node('div');group.className='field wide-field field-top';group.append(node('span',label),control);return group;}
+function capabilityControls(item,key,choices,label){const wrap=node('div');wrap.className='capability-options';wrap.setAttribute('role','group');wrap.setAttribute('aria-label',label);for(const id of choices){const box=node('input'),choice=node('label');box.type='checkbox';box.checked=id==='vision'&&key==='strengths'?!!item.supports_vision:(item[key]??[]).includes(id);box.setAttribute('aria-label',label+' '+capabilityLabels[id]);choice.append(box,node('span',capabilityLabels[id]));box.addEventListener('change',()=>{if(id==='vision'&&key==='strengths'){item.supports_vision=box.checked;changed();render();return;}const selected=new Set(item[key]??[]);if(box.checked)selected.add(id);else selected.delete(id);if(selected.size)item[key]=[...selected];else delete item[key];changed();render();});wrap.append(choice);}return wrap;}
+const sceneOptions = () => Object.entries(doc.scenarios).map(([id,s])=>{const preset=doc.presets[doc.active_preset],tier=preset.scenarios?.[id]?.tier??preset.default.tier;return [id,s.label+' · '+(doc.models[tier]?.model||'未填写模型ID')];});
+const teamOptions = [['inherit','继承默认'],['off','关闭'],['subagent','普通子智能体'],['team','Team 智能体团队']];
 function teamValue(team) { return !team?'inherit':!team.enabled?'off':team.mode==='subagent'?'subagent':'team'; }
-function setTeam(selection, value) { if(value==='inherit') delete selection.team; else selection.team=value==='off'?{enabled:false}:value==='subagent'?{enabled:true,mode:'subagent'}:{enabled:true,mode:'team',max_members:3}; }
-function render() {
+function setTeam(selection,value){
+  const worktree=selection.team?.worktree;
+  if(value==='inherit'){delete selection.team;return;}
+  selection.team={...(value==='off'?{enabled:false}:value==='subagent'?{enabled:true,mode:'subagent'}:{enabled:true,mode:'team'}),...(worktree===undefined?{}:{worktree})};
+}
+function setWorktree(selection,value,fallback){
+  selection.team??=structuredClone(fallback??{enabled:false});
+  if(value==='inherit')delete selection.team.worktree;else selection.team.worktree=value==='on';
+}
+const worktreeOptions=[['inherit','沿用 DSH 原生配置'],['off','关闭原生 worktree'],['on','允许原生 worktree']];
+function checkCell(value,label,onChange){const td=node('td'),wrap=node('label'),n=node('input');td.className='check-cell';n.type='checkbox';n.checked=!!value;n.setAttribute('aria-label',label);wrap.title=label;wrap.append(n);td.append(wrap);n.addEventListener('change',()=>{onChange(n.checked);changed();});return td;}
+function modelReferences(id){const refs=[];for(const [pid,p] of Object.entries(doc.presets)){if(p.default.tier===id)refs.push(p.label+' · 默认任务模型');for(const [sid,selection] of Object.entries(p.scenarios??{}))if(selection.tier===id)refs.push(p.label+' · '+(doc.scenarios[sid]?.label??sid));}if(doc.dsh?.native_reasoning_models?.includes(id))refs.push('DSH 原生推理模型');return refs;}
+function deleteModel(id){if(BUILTIN_MODELS.includes(id))throw Error('默认模型不能删除');const refs=modelReferences(id);if(refs.length)throw Error('该模型仍被引用，请先修改以下配置：'+refs.join('、'));delete doc.models[id];openRows.models.delete(id);changed();}
+function renameId(kind,oldId,newId){
+  if(kind==='models'&&BUILTIN_MODELS.includes(oldId))throw Error('默认模型的配置 ID 不可修改');
+  if(oldId===newId)return;
+  if(!/^[a-z][a-z0-9_-]{0,63}$/.test(newId))throw Error('ID 需以小写字母开头，只含小写字母、数字、下划线和短横线，最多 64 字符');
+  if(Object.hasOwn(doc[kind],newId))throw Error('ID 已存在：'+newId);
+  doc[kind]=Object.fromEntries(Object.entries(doc[kind]).map(([id,value])=>[id===oldId?newId:id,value]));
+  if(kind==='models'){
+    for(const p of Object.values(doc.presets)){if(p.default.tier===oldId)p.default.tier=newId;for(const v of Object.values(p.scenarios??{}))if(v.tier===oldId)v.tier=newId;}
+    if(doc.dsh?.native_reasoning_models)doc.dsh.native_reasoning_models=doc.dsh.native_reasoning_models.map(id=>id===oldId?newId:id);
+  }else{
+    for(const [stage,id] of Object.entries(doc.stage_scenarios))if(id===oldId)doc.stage_scenarios[stage]=newId;
+    for(const p of Object.values(doc.presets))if(Object.hasOwn(p.scenarios??{},oldId)){p.scenarios[newId]=p.scenarios[oldId];delete p.scenarios[oldId];}
+    if(doc.dsh?.scenarios)doc.dsh.scenarios=doc.dsh.scenarios.map(id=>id===oldId?newId:id);
+  }
+  changed();
+}
+function idCell(kind,id,fixed=false){const td=node('td'),n=node('input');td.className='id-cell';n.value=id;n.setAttribute('aria-label',id+' 配置 ID');n.readOnly=fixed;if(fixed)n.title='内置配置 ID 固定，其他参数可编辑';else n.addEventListener('change',()=>{try{guardRaw();const next=n.value;renameId(kind,id,next);if(next!==id){if(openRows[kind].delete(id))openRows[kind].add(next);setTimeout(()=>render({from:id,to:next}),0);}}catch(error){n.value=id;status(error.message,'error');}});td.append(n);if(fixed&&kind==='scenarios')td.append(node('small','内置场景 ID'));return td;}
+const openRows = { models: new Set(['codex_main']), scenarios: new Set(['planning']) };
+let currentView = 'model';
+function resizeAreas(root=document){for(const area of root.querySelectorAll('textarea:not(#json)'))if(area.getClientRects().length){area.style.height='auto';area.style.height=Math.max(84,area.scrollHeight+2)+'px';}}
+function field(label, control, wide = false) { const n=node('label');n.className='field'+(wide?' wide-field field-top':'');n.append(node('span',label),control);return n; }
+function detailsRow(kind,id,columns,label,build) {
+  const td=node('td'),button=node('button'),row=node('tr'),body=node('td'),content=node('div');
+  button.className='detail-toggle';button.type='button';button.setAttribute('aria-label',id+' '+label);button.setAttribute('aria-expanded',String(openRows[kind].has(id)));button.textContent=openRows[kind].has(id)?'收起设置':label;
+  row.className='row-details';row.dataset[kind==='models'?'model':'scenario']=id;row.hidden=!openRows[kind].has(id);body.colSpan=columns;content.className='detail-grid';build(content);body.append(content);row.append(body);td.append(button);
+  button.addEventListener('click',()=>{const expanded=row.hidden;row.hidden=!expanded;button.setAttribute('aria-expanded',String(expanded));button.textContent=expanded?'收起设置':label;if(expanded)openRows[kind].add(id);else openRows[kind].delete(id);if(expanded)resizeAreas(row);});
+  return {td,row};
+}
+function filterRows(kind) {
+  const model=kind==='models', query=$(model?'modelSearch':'sceneSearch').value.trim().toLocaleLowerCase(), collection=doc[kind];let count=0;
+  for(const [id,item] of Object.entries(collection)) {
+    const matches=[id,item.label,model?item.model:''].join(' ').toLocaleLowerCase().includes(query);if(matches)count++;
+    for(const row of $(model?'models':'scenes').children)if(row.dataset[model?'model':'scenario']===id)row.hidden=!matches||(row.classList.contains('row-details')&&!openRows[kind].has(id));
+  }
+  $(model?'modelCount':'sceneCount').textContent=count+' / '+Object.keys(collection).length+(model?' 个模型':' 个场景');
+  let empty=$(model?'models':'scenes').querySelector('.empty');if(!empty){empty=node('tr');empty.className='empty';const td=node('td','没有匹配项，请调整搜索内容。');td.colSpan=model?6:4;empty.append(td);$(model?'models':'scenes').append(empty);}empty.hidden=count>0;
+}
+function showView(view) {
+  if(rawDirty&&view!=='advanced'&&view!=='project'){status('JSON 草稿有修改，请先在“导入 / JSON”应用修改。','error');$('viewSelect').value=currentView;return;}
+  currentView=view;$('viewSelect').value=view;
+  for(const id of ['project','model','scene','stage','advanced'])$(id==='advanced'?id:id+'Panel').hidden=id!==view;
+  for(const button of document.querySelectorAll('[data-view]')){if(button.dataset.view===view)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');}
+  const project=view==='project';document.querySelector('.model-tools').hidden=project||view==='model';$('settingsStatus').hidden=!project;$('saveProjectSettings').hidden=!project;$('save').hidden=project;$('export').hidden=project;
+  if(doc)render();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+const presetUseCases = {
+  codex_only: '全部使用 Codex 模型，计划、实现和复核沿用同一套执行环境。',
+  claude_only: '全部使用 Claude Code 模型，计划、实现和复核沿用同一套执行环境。',
+  deepseek_only: '通过 DSH 统一使用 DeepSeek 模型，适合单智能体完成的较简单任务。',
+  mixed: '不同类型的工作各有适用模型，例如让某个模型负责设计与复核，另一个负责实现。',
+  dsh_native: '有可拆分的独立子任务，例如分开梳理几个模块，再由主智能体汇总。',
+  dsh_team: '需要多个智能体在同一 DSH 团队内分工协作的任务，例如并行实现多个模块。',
+  project_balanced: '计划、实现和轻量整理的复杂度不同，希望分别选用合适的模型。',
+};
+function presetUseCase(id, preset) {
+  return preset.use_case ?? presetUseCases[id] ?? '';
+}
+function defaultRouteText(preset) {
+  const model = doc.models[preset.default.tier];
+  return model?.model || '未填写';
+}
+function presetDetails(id, preset, showDescription = true) {
+  const fragment = document.createDocumentFragment();
+  const descriptions = [
+    ['适用场景', presetUseCase(id, preset) || '可在“阶段与应用方式”补充适用任务。'],
+    ['方式说明', preset.description || '请填写这套方式的分工说明。'],
+  ];
+  for (const [label, text] of showDescription ? descriptions : []) {
+    const line = node('p');
+    line.append(node('strong', label), document.createTextNode(text));
+    fragment.append(line);
+  }
+  const toolInfo = {codex_only:'Codex CLI、VS Code、PyCharm 等支持 Codex 的工具；与 Codex 执行环境绑定',claude_only:'Claude Code、VS Code、PyCharm 等支持 Claude Code 的工具；与 Claude Code 执行环境绑定',deepseek_only:'DSH；与 DSH 执行环境绑定',mixed:'Orca、DSH 和命令行；按模型所配置的执行工具运行',dsh_native:'DSH；与 DSH 原生子智能体功能绑定',dsh_team:'DSH；与 DSH Team 功能绑定',project_balanced:'DSH、Orca；按模型所配置的执行工具运行'};
+  if (showDescription) { const tools=node('p'); tools.append(node('strong','开发工具'),document.createTextNode(toolInfo[id] || '取决于所分配模型的执行工具，可通过命令行或兼容的开发工具调用')); fragment.append(tools); }
+  const model = doc.models[preset.default.tier];
+  const route = node('p');
+  route.append(node('strong', '默认任务模型'), document.createTextNode((model?.label ?? '未配置') + ' · '), node('code', defaultRouteText(preset)));
+  if (model && !model.enabled) route.append(document.createTextNode(' · 未启用'));
+  if (model?.executor === 'dsh') {
+    const teamMode = { inherit: '沿用 DSH 配置', off: '关闭', subagent: '普通子智能体', team: 'Team 智能体团队' }[teamValue(preset.default.team)];
+    route.append(document.createTextNode(' · 协作 ' + teamMode));
+    if (preset.default.team?.max_members) {
+      route.append(document.createTextNode('（人数上限仅兼容旧版 DSH Team）'));
+    }
+  }
+  fragment.append(route);
+  const overrides = Object.entries(preset.scenarios ?? {}).filter(([, selection]) => selection.tier || selection.team);
+  if (!overrides.length) {
+    const line = node('p', '所有场景沿用默认分配。');
+    line.className = 'note';
+    fragment.append(line);
+    return fragment;
+  }
+  const list = node('ul');
+  list.className = 'preset-route-list';
+  for (const [scene, selection] of overrides) {
+    const routeModel = doc.models[selection.tier ?? preset.default.tier];
+    const name = doc.scenarios[scene]?.label ?? scene;
+    const modelLabel = routeModel?.label ?? '未配置';
+    list.append(node('li', name + ' → ' + modelLabel + (routeModel && !routeModel.enabled ? '（未启用）' : '')));
+  }
+  const disclosure = node('details');
+  disclosure.append(node('summary', overrides.length + ' 个场景单独配置'), list);
+  fragment.append(disclosure);
+  return fragment;
+}
+function presetTextArea(label, value, onInput) {
+  const area = node('textarea');
+  area.value = value ?? '';
+  area.maxLength = 2000;
+  area.setAttribute('aria-label', label);
+  area.addEventListener('input', () => {
+    onInput(area.value.replace(/[\r\n]+/g, ' '));
+    changed();
+  });
+  return area;
+}
+function renderPresetSummary() {
+  const id = doc.active_preset;
+  $('activePresetSummary').replaceChildren(presetDetails(id, doc.presets[id], false));
+}
+function renderPresetComparison() {
+  $('presetComparison').replaceChildren(...Object.entries(doc.presets).map(([id, preset]) => {
+    const card = node('article');
+    card.className = 'preset-card';
+    const title = node('h3', preset.label);
+    if (id === doc.active_preset) {
+      const tag = node('span', '当前草稿');
+      tag.className = 'badge';
+      title.append(tag);
+    }
+    card.append(title, presetDetails(id, preset));
+    if (id !== doc.active_preset) {
+      const choose = node('button', '选用此方式');
+      choose.type = 'button';
+      choose.setAttribute('aria-label', '选用 ' + preset.label);
+      choose.addEventListener('click', act(() => {
+        choosePreset(id);
+        $('presetDialog').close();
+      }));
+      card.append(choose);
+    }
+    return card;
+  }));
+}
+function choosePreset(id) {
+  guardRaw();
+  if(!routingAssociated())throw Error('请先在项目开发配置中关联模型预设');
+  doc.active_preset = id;
+  changed();
+  render();
+  status('已切换草稿应用方式。保存后用于新会话。');
+}
+function radioValue(name) {
+  return document.querySelector(`input[name="${name}"]:checked`)?.value ?? '';
+}
+function setRadio(name, value) {
+  for (const radio of document.querySelectorAll(`input[name="${name}"]`)) radio.checked = radio.value === value;
+}
+function routingAssociated(){return !!radioValue('associationMode');}
+function syncRoutingControls(){
+  const associated=routingAssociated();
+  $('sceneEditor').disabled=!associated;$('sceneReadOnly').hidden=associated;
+  $('preset').disabled=!associated;$('comparePresets').disabled=!associated;
+  for(const control of $('stagePanel').querySelectorAll('input,select,textarea,button'))control.disabled=!associated;
+}
+function updateProjectFields() {
+  $('modelAssociationField').hidden = !routingAssociated();
+  syncRoutingControls();
+  $('commandFields').hidden = radioValue('adapter') !== 'command';
+  resizeAreas($('projectPanel'));
+}
+function renderAssociation() {
+  const selected = doc.active_preset;
+  $('modelAssociation').replaceChildren(...Object.entries(doc.presets).map(([id, preset]) => {
+    const option = node('label');
+    option.className = 'radio-choice';
+    const radio = node('input');
+    radio.type = 'radio';
+    radio.name = 'modelAssociation';
+    radio.value = id;
+    radio.checked = id === selected;
+    radio.addEventListener('change',act(()=>choosePreset(id)));
+    const copy = node('span');
+    copy.append(node('strong', preset.label), node('small', presetUseCase(id, preset) || preset.description));
+    option.append(radio, copy);
+    return option;
+  }));
+}
+function renderBranches(state) {
+  const select = $('integrationBranch');
+  const eligible = state.branches.some(branch => branch.selectable);
+  const placeholder = new Option(eligible ? '请选择本地分支' : '无可选的本地分支', '');
+  placeholder.disabled = true;
+  select.replaceChildren(placeholder);
+  for (const branch of state.branches) {
+    const label = branch.name + (branch.current ? '（当前分支）' : '') + (branch.selectable ? '' : '（名称不受工作流支持）');
+    const option = new Option(label, branch.name);
+    option.disabled = !branch.selectable;
+    select.append(option);
+  }
+  if (state.integrationBranch && !state.branchExists) {
+    const option = new Option(state.integrationBranch + '（原配置）', state.integrationBranch);
+    option.disabled = true;
+    select.append(option);
+  }
+  select.value = state.integrationBranch;
+  select.disabled = !eligible;
+  $('branchStatus').textContent = !state.branchListAvailable ? '无法读取 Git 分支。请确认在 Git 项目中启动页面，并已安装 Git。'
+    : !eligible ? '项目需要至少一个符合工作流命名要求的本地分支。'
+    : state.integrationBranch && !state.branchExists ? '原集成分支已不存在。启用 worktree 前请选择现有分支。'
+    : '';
+}
+function render(renamed) {
+  const active=document.activeElement;let focusLabel=active?.getAttribute('aria-label');if(renamed&&focusLabel?.startsWith(renamed.from+' '))focusLabel=renamed.to+focusLabel.slice(renamed.from.length);
+  const focusId=active?.id,selectionStart=active?.selectionStart,selectionEnd=active?.selectionEnd;
   const preset=doc.presets[doc.active_preset];
-  $('preset').replaceChildren(...Object.entries(doc.presets).map(([id,p])=>{const o=node('option',p.label);o.value=id;return o;}));$('preset').value=doc.active_preset;
-  const defaults=select(modelOptions(),preset.default.tier,v=>{preset.default.tier=v;if(doc.models[v].executor!=='dsh') delete preset.default.team;changed();render();},'默认模型');defaults.id='defaultModel';$('defaultModel').replaceWith(defaults);
-  const dt=select(teamOptions.filter(([id])=>id!=='inherit'),teamValue(preset.default.team)==='inherit'?'off':teamValue(preset.default.team),v=>{if(v==='off') delete preset.default.team;else setTeam(preset.default,v);changed();render();},'默认DSH协作');dt.id='defaultTeam';dt.disabled=doc.models[preset.default.tier]?.executor!=='dsh';$('defaultTeam').replaceWith(dt);
+  $('preset').replaceChildren(...Object.entries(doc.presets).map(([id,p])=>new Option(p.label,id)));$('preset').value=doc.active_preset;
+  const defaults=select(modelOptions(preset.default.tier),preset.default.tier,v=>{preset.default.tier=v;if(doc.models[v].executor!=='dsh')delete preset.default.team;changed();render();},'默认模型');defaults.id='defaultModel';defaults.setAttribute('aria-describedby','defaultModelId');$('defaultModel').replaceWith(defaults);
+  $('defaultModelId').replaceChildren(document.createTextNode('模型ID '),node('code',defaultRouteText(preset)));
+  const dt=select(teamOptions.filter(([id])=>id!=='inherit'),teamValue(preset.default.team)==='inherit'?'off':teamValue(preset.default.team),v=>{setTeam(preset.default,v);changed();render();},'默认DSH协作');dt.id='defaultTeam';dt.disabled=doc.models[preset.default.tier]?.executor!=='dsh';$('defaultTeam').replaceWith(dt);
+  const dw=select(worktreeOptions,preset.default.team?.worktree===undefined?'inherit':preset.default.team.worktree?'on':'off',v=>{setWorktree(preset.default,v);changed();render();},'默认 DSH worktree');dw.id='defaultWorktree';dw.disabled=dt.disabled;$('defaultWorktree').replaceWith(dw);
   const scenes=$('scenes');scenes.replaceChildren();
   for(const [id,s] of Object.entries(doc.scenarios).sort(([a],[b])=>(REQUIRED.includes(a)?REQUIRED.indexOf(a):100)-(REQUIRED.includes(b)?REQUIRED.indexOf(b):100))) {
-    const selection={...preset.default,...preset.scenarios?.[id]};if(preset.scenarios?.[id]?.tier&&doc.models[selection.tier]?.executor!=='dsh'&&!Object.hasOwn(preset.scenarios[id],'team'))delete selection.team;const m=doc.models[selection.tier],tr=node('tr');tr.dataset.scenario=id;
-    const td=node('td');td.className='scene';td.append(input(s.label,v=>s.label=v,id+' 场景名称'));if(REQUIRED.includes(id)){const badge=node('span','必备');badge.className='required';td.append(badge);}td.append(node('small',id));const desc=node('textarea');desc.value=s.description;desc.setAttribute('aria-label',id+' 使用边界');desc.addEventListener('input',()=>{s.description=desc.value;changed();});td.append(desc);tr.append(td);
-    const route=node('td');route.className='route';route.append(select([['inherit','继承默认模型'],...modelOptions()],preset.scenarios?.[id]?.tier??'inherit',v=>{const own=(preset.scenarios??={})[id]??={};if(v==='inherit') delete own.tier;else own.tier=v;if(doc.models[v]?.executor!=='dsh') delete own.team;changed();render();},id+' 分配模型'));tr.append(route);
-    const effort=node('td');effort.className='effort';effort.append(node('strong',m?.label??'未指定'),node('small',m?.provider??''),node('small','推理：'+(m?.reasoning||'渠道原生设置')));tr.append(effort);
-    const team=node('td');team.className='team';const ts=select(teamOptions,teamValue(preset.scenarios?.[id]?.team),v=>{setTeam((preset.scenarios??={})[id]??={},v);changed();render();},id+' DSH协作');ts.disabled=m?.executor!=='dsh';team.append(ts);if(selection.team?.max_members)team.append(node('small','当前人数：'+selection.team.max_members));tr.append(team);scenes.append(tr);
+    const own=preset.scenarios?.[id],selection={...preset.default,...own},m=doc.models[selection.tier],tr=node('tr');tr.dataset.scenario=id;
+    const td=node('td');td.append(input(s.label,v=>s.label=v,id+' 场景名称'));if(REQUIRED.includes(id)){const badge=node('span','必备场景');badge.className='required';td.append(badge);}tr.append(td,idCell('scenarios',id,REQUIRED.includes(id)));
+    const route=node('td');route.append(select([['inherit','继承默认模型 · '+matchText(doc.models[preset.default.tier],s)],...modelOptions(own?.tier).map(([modelId,label])=>[modelId,label+' · '+matchText(doc.models[modelId],s)])],own?.tier??'inherit',v=>{const choice=(preset.scenarios??={})[id]??={};if(v==='inherit')delete choice.tier;else choice.tier=v;if(doc.models[v==='inherit'?preset.default.tier:v]?.executor!=='dsh')delete choice.team;changed();render();},id+' 分配模型'));route.append(node('small','当前：'+modelText(m)+' · 推理 '+(m?.reasoning||'原生')));const match=node('small',(s.required_capabilities?.length?'要求：'+s.required_capabilities.map(id=>capabilityLabels[id]).join('、')+' · ':'')+matchText(m,s));match.className='capability-note'+(missingCapabilities(m,s).length?' pending':'');route.append(match);tr.append(route);
+    const detail=detailsRow('scenarios',id,4,m?.executor==='dsh'?'说明 / DSH 设置':'编辑使用边界',content=>{
+      const desc=node('textarea');desc.value=s.description??'';desc.rows=3;desc.setAttribute('aria-label',id+' 使用边界');desc.addEventListener('input',()=>{s.description=desc.value;changed();});content.append(field('使用边界',desc,true));content.append(capabilityField('能力要求',capabilityControls(s,'required_capabilities',Object.keys(capabilityLabels),id+' 能力要求')));const requirements=node('p','搜索能力取决于模型与开发工具的组合；待确认只表示模型配置未声明，不阻止分配。');requirements.className='note';content.append(requirements);
+      if(m?.executor==='dsh'){
+        content.append(field('DSH 智能体协作',select(teamOptions,teamValue(own?.team),v=>{setTeam((preset.scenarios??={})[id]??={},v);changed();render();},id+' DSH协作')));
+        content.append(field('DSH worktree',select([['inherit','继承默认 / 原生配置'],...worktreeOptions.slice(1)],own?.team?.worktree===undefined?'inherit':own.team.worktree?'on':'off',v=>{setWorktree((preset.scenarios??={})[id]??={},v,preset.default.team);changed();render();},id+' DSH worktree')));
+        const effectiveTeam=own?.team??preset.default.team,effectiveWorktree=own?.team?.worktree??preset.default.team?.worktree;
+        const mode=teamValue(effectiveTeam);content.append(node('p','当前 DSH：'+({inherit:'原生配置',off:'关闭智能体协作',subagent:'普通子智能体',team:'Team 智能体团队'}[mode])+'；worktree：'+(effectiveWorktree===undefined?'沿用原生配置':effectiveWorktree?'允许':'关闭')));content.lastChild.className='note';
+      }
+    });tr.append(detail.td);scenes.append(tr,detail.row);
   }
   const models=$('models');models.replaceChildren();
   for(const [id,m] of Object.entries(doc.models)) {
-    const tr=node('tr');tr.dataset.model=id;const enabled=node('input');enabled.type='checkbox';enabled.checked=m.enabled;enabled.setAttribute('aria-label',id+' 启用');enabled.addEventListener('change',()=>{m.enabled=enabled.checked;changed();render();});let td=node('td');td.append(enabled);tr.append(td);
-    td=node('td');td.className='model-name';td.append(input(m.label,v=>m.label=v,id+' 显示名称'),node('small',id));tr.append(td);
-    td=node('td');td.append(select([['codex','codex'],['claude','claude'],['dsh','dsh']],m.executor,v=>{m.executor=v;changed();render();},id+' 执行端'));tr.append(td);
-    for(const key of ['provider','model','reasoning']) {td=node('td');const n=input(m[key],v=>{if(key==='reasoning'&&!v)delete m[key];else m[key]=v;},id+' '+key);if(key==='model')n.className='wide';if(key==='reasoning')n.setAttribute('list','reasonings');n.addEventListener('change',render);td.append(n);tr.append(td);}models.append(tr);
+    const tr=node('tr');tr.dataset.model=id;tr.append(checkCell(m.enabled,id+' 启用',v=>{m.enabled=v;render();}));
+    let td=node('td');td.append(input(m.label,v=>m.label=v,id+' 显示名称'));tr.append(td,idCell('models',id,BUILTIN_MODELS.includes(id)));
+    td=node('td');td.append(select([['codex','Codex CLI'],['claude','Claude Code'],['dsh','DSH']],m.executor,v=>{m.executor=v;changed();render();},id+' 执行工具'));tr.append(td);
+    td=node('td');td.append(input(m.model,v=>m.model=v,id+' model'));tr.append(td);
+    const detail=detailsRow('models',id,6,'设置',content=>{
+      content.append(field('渠道',input(m.provider,v=>m.provider=v,id+' provider')));
+      const reasoning=input(m.reasoning,v=>{if(v)m.reasoning=v;else delete m.reasoning;},id+' reasoning');reasoning.setAttribute('list','reasonings');reasoning.placeholder='留空使用渠道原生设置';content.append(field('推理强度',reasoning));
+      const strengths=presetTextArea(id+' 擅长范围描述',m.strengths_description,value=>{if(value.trim())m.strengths_description=value;else delete m.strengths_description;});strengths.placeholder='例如 代码实现、故障分析';content.append(capabilityField('擅长范围描述',strengths));
+      content.append(capabilityField('擅长能力',capabilityControls(m,'strengths',Object.keys(capabilityLabels),id+' 擅长能力')));
+      const note=node('p','配置 ID 用于场景引用，模型ID 由渠道提供。能力、擅长范围和适用边界请在“设置”中维护。');note.className='note';content.append(note);
+    });const actions=node('div');actions.className='model-actions';actions.append(...detail.td.childNodes);detail.td.append(actions);if(!BUILTIN_MODELS.includes(id)){const remove=node('button','删除');remove.type='button';remove.className='delete-model';remove.setAttribute('aria-label',id+' 删除模型');remove.addEventListener('click',act(()=>{guardRaw();const refs=modelReferences(id);if(refs.length)throw Error('该模型仍被引用，请先修改以下配置：'+refs.join('、'));if(!confirm('删除模型“'+m.label+'”？保存模型配置后生效。'))return;deleteModel(id);render();}));actions.append(remove);}else{const badge=node('small','默认');badge.className='model-default';actions.append(badge);}tr.append(detail.td);models.append(tr,detail.row);
   }
-  $('stages').replaceChildren(...['P0','P1','P2','P3','P4','P5','conductor'].map(stage=>{const label=node('label',stage);label.append(select([['','不关联'],...sceneOptions()],doc.stage_scenarios[stage]??'',v=>{if(v)doc.stage_scenarios[stage]=v;else delete doc.stage_scenarios[stage];changed();},stage+' 场景'));return label;}));syncJson();
+  renderPresetSummary();
+  const fields = $('presetFields');
+  const name = input(preset.label, value => {
+    preset.label = value;
+    $('preset').selectedOptions[0].textContent = value;
+  }, '应用方式名称');
+  name.maxLength = 128;
+  const useCase = presetTextArea('适用场景', presetUseCase(doc.active_preset, preset), value => {
+    if (value.trim()) preset.use_case = value;
+    else delete preset.use_case;
+  });
+  useCase.placeholder = '这套方式适合哪些任务或团队？';
+  const description = presetTextArea('应用方式说明', preset.description, value => { preset.description = value; });
+  fields.replaceChildren(field('应用方式名称', name), field('适用场景', useCase, true), field('应用方式说明', description, true));
+  const stageNames={P0:'需求理解',P1:'制定计划',P2:'开发执行',P3:'证据复核',P4:'人工验收',P5:'升级处理',conductor:'协调调度'};
+  $('stages').replaceChildren(...Object.keys(stageNames).map(stage=>{const card=node('div');card.className='stage-card';card.append(node('strong',stage+' · '+stageNames[stage]));card.append(field('使用场景',select([['','不关联'],...sceneOptions()],doc.stage_scenarios[stage]??'',v=>{if(v)doc.stage_scenarios[stage]=v;else delete doc.stage_scenarios[stage];changed();render();},stage+' 场景')));const scenario=doc.stage_scenarios[stage],selection={...preset.default,...preset.scenarios?.[scenario]};card.append(node('small','模型：'+(scenario?doc.models[selection.tier]?.label??'未指定':'未关联场景')));return card;}));
+  for(const [body,labels] of [['models',['启用','显示名称','配置 ID','执行工具','模型ID','设置']],['scenes',['场景名称','场景 ID','分配模型','使用边界']]])for(const row of $(body).children)if(!row.classList.contains('row-details'))[...row.children].forEach((td,index)=>td.dataset.label=labels[index]);
+  renderAssociation();
+  syncRoutingControls();filterRows('models');filterRows('scenarios');syncJson();resizeAreas();
+  if(active&&!active.isConnected){const target=focusId?$(focusId):[...document.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);if(target&&!target.closest('[hidden]')){target.focus({preventScroll:true});if(typeof selectionStart==='number'&&target.setSelectionRange)target.setSelectionRange(selectionStart,selectionEnd);}}
 }
 async function api(method, body) { const response=await fetch('/api/config',{method,headers:{'x-devflow-token':TOKEN,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const result=await response.json();if(!response.ok)throw Error(result.error);return result; }
-async function saveSettings(){const executionEnabled=$('executionEnabled').checked,autopilotEnabled=$('autopilotEnabled').checked;if((executionEnabled||autopilotEnabled)&&!confirm('确认保存项目扩展/执行设置？这不会创建任务或立刻派发，但后续平台唤醒可按配置运行。'))return;let args=[];try{args=JSON.parse($('commandArgs').value||'[]');if(!Array.isArray(args)||args.some(value=>typeof value!=='string'))throw Error();}catch{throw Error('命令桥参数必须是 JSON 字符串数组');}const modelAssociation=$('modelAssociation').value,workspaceMode=$('associationMode').value;if(Boolean(modelAssociation)!==Boolean(workspaceMode))throw Error('请选择关联的工作区模式和模型预设，或将两项都设为无关联');const response=await fetch('/api/project-settings',{method:'PUT',headers:{'x-devflow-token':TOKEN,'Content-Type':'application/json'},body:JSON.stringify({agentsRevision:info.autopilot.agentsRevision,configRevision:info.autopilot.configRevision,projectSettingsRevision:info.projectSettingsRevision,worktreeEnabled:$('worktreeEnabled').checked,autopilotEnabled,executionEnabled,adapter:$('adapter').value,integrationBranch:$('integrationBranch').value,commandFile:$('commandFile').value,commandArgs:args,modelAssociation:modelAssociation?{workspace_mode:workspaceMode,preset:modelAssociation}:null,modelAssociationFile:info.file})});const result=await response.json();if(!response.ok)throw Error(result.error);await load();$('settingsStatus').textContent='项目开发配置已保存；未创建任务或启动调度。';}
-function renderAutopilot(a){const rows=[['技能已安装','本页由 autopilot 技能提供'],['项目已声明',a.declared?'AGENTS.md 声明 extensions: autopilot':'未声明 extensions: autopilot'],['配置有效',a.configValid?(a.configPath||'配置已通过校验'):(a.configPath?'无效或缺失：'+a.configPath:'尚未登记 autopilot_config')],['执行开关',a.executionEnabled?'execution.enabled = true':'关闭或不可用'],['平台入口',a.adapter?'适配器：'+a.adapter+'；账号/连通性未验证':'尚未配置']];const host=$('autopilotStates');host.replaceChildren(...rows.map(([label,value])=>{const n=node('div');n.style.cssText='min-width:180px;padding:8px 10px;border-left:3px solid var(--blue);background:#f5f8fb';n.append(node('strong',label),node('div',value));return n;}));$('autopilotDetail').textContent=a.error?'配置校验错误：'+a.error:'配置路径：'+(a.configPath||'AGENTS.md 尚未提供 autopilot_config');$('worktreeEnabled').checked=a.worktreeEnabled;$('worktreeEnabled').disabled=!a.worktreeAvailable;$('autopilotEnabled').checked=a.declared;$('executionEnabled').checked=a.executionEnabled;$('integrationBranch').value=a.integrationBranch||'';$('adapter').value=a.adapter||'session';$('commandFile').value=a.commandFile||'';$('commandArgs').value=JSON.stringify(a.commandArgs||[]);}
-async function load() {info=await api('GET');doc=info.doc;revision=info.revision;dirty=info.added.length>0;rawDirty=false;$('project').textContent=info.project;$('file').textContent=info.file;$('scope').textContent='配置来源：'+info.source+' · '+(info.shared?'共享模型表':'项目模型表');$('sharedWarning').textContent=info.shared?'这份文件位于项目外，保存会影响其他引用它的项目。要独立定制，请先创建项目自己的模型表并更新 model_config_file 引用。':'';$('dirty').textContent=dirty?'待保存必备场景':'已加载';renderAutopilot(info.autopilot);$('modelAssociation').replaceChildren(new Option('无关联',''),...Object.entries(doc.presets).map(([id,p])=>new Option(p.label,id)));const association=info.projectSettings.model_association;$('modelAssociation').value=association?.preset||'';$('associationMode').value=association?.workspace_mode||'';render();status(info.added.length?'已在草稿补齐必备场景：'+info.added.join('、')+'。保存后生效。':'已读取配置。可以编辑模型参数或切换应用方式。');}
+function projectSettingsPayload(){
+  const executionEnabled=$('executionEnabled').checked,autopilotEnabled=$('autopilotEnabled').checked,worktreeEnabled=$('worktreeEnabled').checked;
+  const integrationBranch=$('integrationBranch').value,adapter=radioValue('adapter'),workspaceMode=radioValue('associationMode');
+  if(worktreeEnabled&&(!integrationBranch||$('integrationBranch').selectedOptions[0]?.disabled))throw Error('请选择项目中已存在的本地集成分支');
+  let commandArgs=[];
+  if(adapter==='command'){try{commandArgs=JSON.parse($('commandArgs').value||'[]');if(!Array.isArray(commandArgs)||commandArgs.some(v=>typeof v!=='string'))throw Error();}catch{throw Error('命令桥参数必须是 JSON 字符串数组');}}
+  return {agentsRevision:info.autopilot.agentsRevision,configRevision:info.autopilot.configRevision,projectSettingsRevision:info.projectSettingsRevision,
+    worktreeEnabled,autopilotEnabled,executionEnabled,adapter,integrationBranch,commandFile:$('commandFile').value,commandArgs,
+    modelAssociation:workspaceMode?{workspace_mode:workspaceMode,preset:doc.active_preset}:null,modelAssociationFile:info.file};
+}
+async function saveWorkspace(){
+  guardRaw();
+  const settings=projectSettingsPayload();
+  if((settings.executionEnabled&&!info.autopilot.executionEnabled||settings.autopilotEnabled&&!info.autopilot.declared)&&!confirm('确认启用项目自动执行配置？后续平台唤醒后可按配置运行。'))return;
+  await api('PUT',{doc,revision,settings});
+  info=await api('GET');doc=info.doc;revision=info.revision;dirty=false;settingsDirty=false;
+  for(const n of document.querySelectorAll('[data-dirty]'))n.removeAttribute('data-dirty');
+  $('dirty').textContent='已保存';renderAutopilot(info.autopilot);renderProjectAssociation();render();
+  $('settingsStatus').textContent='项目与模型配置已保存。';status('项目设置与模型配置已一并保存。后续新会话使用此配置。','ok');
+}
+function renderProjectAssociation() {
+  const association = info.projectSettings.model_association;
+  setRadio('associationMode', association?.workspace_mode ?? '');
+  renderAssociation();
+  updateProjectFields();
+}
+function renderAutopilot(a){const rows=[['技能已安装','本页由 autopilot 技能提供'],['项目已声明',a.declared?'AGENTS.md 声明 extensions: autopilot':'未声明 extensions: autopilot'],['配置有效',a.configValid?(a.configPath||'配置已通过校验'):(a.configPath?'无效或缺失：'+a.configPath:'尚未登记 autopilot_config')],['执行开关',a.executionEnabled?'execution.enabled = true':'关闭或不可用'],['平台入口',a.adapter?'适配器：'+a.adapter+'；账号/连通性未验证':'尚未配置']];const host=$('autopilotStates');host.replaceChildren(...rows.map(([label,value])=>{const n=node('div');n.style.cssText='min-width:0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--soft);overflow-wrap:anywhere';n.append(node('strong',label),node('div',value));return n;}));$('autopilotDetail').textContent=a.error?'配置校验错误：'+a.error:'配置路径：'+(a.configPath||'AGENTS.md 尚未提供 autopilot_config');$('worktreeEnabled').checked=a.worktreeEnabled;$('worktreeEnabled').disabled=!a.worktreeAvailable;$('autopilotEnabled').checked=a.declared;$('executionEnabled').checked=a.executionEnabled;renderBranches(a);setRadio('adapter',a.adapter||'session');$('commandFile').value=a.commandFile||'';$('commandArgs').value=JSON.stringify(a.commandArgs||[]);}
+async function load() {settingsDirty=false;for(const n of document.querySelectorAll("[data-dirty]"))n.removeAttribute("data-dirty");$("settingsStatus").textContent="设置将在显式保存后写入项目。";info=await api('GET');doc=info.doc;revision=info.revision;dirty=info.added.length>0;rawDirty=false;$('project').textContent=info.project;$('file').textContent=info.file;$('scope').textContent='配置来源：'+info.source+' · '+(info.shared?'共享模型表':'项目模型表');$('sharedWarning').textContent=info.shared?'这份文件位于项目外，保存会影响其他引用它的项目。要独立定制，请先创建项目自己的模型表并更新 model_config_file 引用。':'';$('dirty').textContent=dirty?'待保存必备场景':'已加载';renderAutopilot(info.autopilot);renderProjectAssociation();showView(currentView);status(info.added.length?'已在草稿补齐必备场景：'+info.added.join('、')+'。保存后生效。':'');}
 function guardRaw(){if(rawDirty)throw Error('JSON草稿有修改，请先点击“应用 JSON 到表格”');}
 function act(fn){return async event=>{try{await fn(event);}catch(error){status(error.message,'error');}};}
-$('preset').addEventListener('change',act(()=>{guardRaw();doc.active_preset=$('preset').value;changed();render();status('已切换草稿应用方式；保存后用于新会话。');}));
-$('saveProjectSettings').addEventListener('click',act(saveSettings));
-$('save').addEventListener('click',act(async()=>{guardRaw();const result=await api('PUT',{doc,revision});revision=result.revision;dirty=false;$('dirty').textContent='已保存';status('已保存到 '+info.file+'\n后续新会话使用此配置。当前运行会话保持原有参数。','ok');}));
-$('reload').addEventListener('click',act(async()=>{if((dirty||rawDirty)&&!confirm('重新加载会丢弃未保存草稿。继续？'))return;await load();}));
+$('preset').addEventListener('change',act(()=>{
+  const selected = $('preset').value;
+  if (rawDirty) $('preset').value = doc.active_preset;
+  choosePreset(selected);
+}));
+$('comparePresets').addEventListener('click',act(()=>{
+  guardRaw();
+  renderPresetComparison();
+  $('presetDialog').showModal();
+}));
+$('closePresetDialog').addEventListener('click',()=> $('presetDialog').close());
+$('projectPanel').addEventListener('change',event=>{
+  if (['associationMode','adapter'].includes(event.target.name)) updateProjectFields();
+});
+$('saveProjectSettings').addEventListener('click',act(saveWorkspace));
+for(const button of document.querySelectorAll('[data-view]'))button.addEventListener('click',()=>showView(button.dataset.view));
+document.addEventListener('input',event=>{if(event.target.tagName==='TEXTAREA'&&event.target.id!=='json')resizeAreas(event.target.parentElement);});
+$('viewSelect').addEventListener('change',()=>showView($('viewSelect').value));
+$('modelSearch').addEventListener('input',()=>filterRows('models'));
+$('sceneSearch').addEventListener('input',()=>filterRows('scenarios'));
+
+$('save').addEventListener('click',act(saveWorkspace));
+$('reload').addEventListener('click',act(async()=>{if((dirty||rawDirty||settingsDirty)&&!confirm('重新加载会丢弃未保存草稿。继续？'))return;await load();}));
 $('export').addEventListener('click',()=>{const blob=new Blob([rawDirty?$('json').value:JSON.stringify(doc,null,2)+'\n'],{type:'application/json'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='model-routing.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-function add(form,event,collection,make){event.preventDefault();guardRaw();const fields=Object.fromEntries(new FormData(form));if(Object.hasOwn(collection,fields.id))throw Error('ID已存在：'+fields.id);collection[fields.id]=make(fields);form.reset();changed();render();}
+function add(form,event,collection,make){event.preventDefault();guardRaw();const fields=Object.fromEntries(new FormData(form));if(Object.hasOwn(collection,fields.id))throw Error('ID已存在：'+fields.id);collection[fields.id]=make(fields);form.reset();changed();const kind=collection===doc.models?'models':collection===doc.scenarios?'scenarios':null;if(kind){$(kind==='models'?'modelSearch':'sceneSearch').value='';openRows[kind].add(fields.id);}render();if(kind){const label=fields.id+(kind==='models'?' 显示名称':' 场景名称'),control=[...document.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===label);control?.focus();control?.scrollIntoView({block:'center'});}}
 $('addScene').addEventListener('submit',act(e=>add($('addScene'),e,doc.scenarios,f=>({label:f.label,description:f.description}))));
 $('addModel').addEventListener('submit',act(e=>add($('addModel'),e,doc.models,f=>({label:f.label,enabled:false,executor:'codex',provider:'Codex',model:''}))));
-$('addPreset').addEventListener('submit',act(e=>{const form=$('addPreset'),id=new FormData(form).get('id'),copy=structuredClone(doc.presets[doc.active_preset]);add(form,e,doc.presets,f=>({...copy,label:f.label,description:'项目定制的应用方式'}));doc.active_preset=id;changed();render();}));
-const templates={database_migration:['数据库迁移','结构或数据迁移方案、回滚设计及验证；执行前遵循项目审批要求。','plan_astra'],security_review:['安全复核','认证、权限、输入边界与敏感信息处理复核。','plan_astra'],frontend_implementation:['前端实现','页面、组件、交互及状态集成。','execute_sol'],api_integration:['接口联调','前后端契约、错误处理与外部接口联调。','execute_sol'],deployment:['部署准备','构建产物、环境配置、发布及回滚检查；不自动授予发布权限。','execute_sol']};
-$('addTemplate').addEventListener('click',act(()=>{guardRaw();const id=$('sceneTemplate').value;if(Object.hasOwn(doc.scenarios,id))throw Error('项目已包含此场景');const [label,description,tier]=templates[id];doc.scenarios[id]={label,description};if(doc.models[tier]?.enabled)(doc.presets[doc.active_preset].scenarios??={})[id]={tier};changed();render();}));
-$('json').addEventListener('input',()=>{rawDirty=true;dirty=true;$('dirty').textContent='JSON待应用';});
+$('addPreset').addEventListener('submit',act(e=>{const form=$('addPreset'),id=new FormData(form).get('id'),copy=structuredClone(doc.presets[doc.active_preset]),useCase=presetUseCase(doc.active_preset,copy);add(form,e,doc.presets,f=>({...copy,label:f.label,...(useCase?{use_case:useCase}:{})}));doc.active_preset=id;changed();render();}));
+const templates={database_migration:['数据库迁移','结构或数据迁移方案、回滚设计及验证；执行前遵循项目审批要求。','codex_main'],security_review:['安全复核','认证、权限、输入边界与敏感信息处理复核。','codex_main'],frontend_implementation:['前端实现','页面、组件、交互及状态集成。','codex_main'],api_integration:['接口联调','前后端契约、错误处理与外部接口联调。','codex_main'],deployment:['部署准备','构建产物、环境配置、发布及回滚检查；不自动授予发布权限。','codex_main']};
+$('addTemplate').addEventListener('click',act(()=>{guardRaw();const id=$('sceneTemplate').value;if(Object.hasOwn(doc.scenarios,id))throw Error('项目已包含此场景');const [label,description,tier]=templates[id];doc.scenarios[id]={label,description};if(doc.models[tier]?.enabled)(doc.presets[doc.active_preset].scenarios??={})[id]={tier};$('sceneSearch').value='';openRows.scenarios.add(id);changed();render();}));
+$('json').addEventListener('input',()=>{rawDirty=true;changed();$('dirty').textContent='JSON待应用';});
 function applyRaw(text){const value=JSON.parse(text);if(value.version!==1||!value.models||!value.scenarios||!value.presets?.[value.active_preset]||!value.stage_scenarios)throw Error('JSON结构不完整');for(const id of REQUIRED)if(!value.scenarios[id])throw Error('缺少必备场景：'+id);doc=value;rawDirty=false;changed();render();status('JSON已应用到页面草稿；点击保存写入文件。');}
 $('applyJson').addEventListener('click',act(()=>applyRaw($('json').value)));
 $('import').addEventListener('change',act(async e=>{const file=e.target.files[0];if(file){if(file.size>128*1024)throw Error('配置超过128 KiB');applyRaw(await file.text());}}));
-window.addEventListener('beforeunload',e=>{if(dirty||rawDirty){e.preventDefault();e.returnValue='';}});
+$('projectPanel').addEventListener('input',()=>{settingsDirty=true;document.querySelector('[data-view="project"]').setAttribute('data-dirty','true');$('settingsStatus').textContent='项目开发配置待保存';});
+window.addEventListener('beforeunload',e=>{if(dirty||rawDirty||settingsDirty){e.preventDefault();e.returnValue='';}});
 load().catch(error=>status('无法读取配置：'+error.message+'。请通过 model-page.cjs 启动本地配置页面。','error'));
 </script></body></html>

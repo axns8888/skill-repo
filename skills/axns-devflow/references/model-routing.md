@@ -16,12 +16,12 @@ node <axns-devflow-ext-autopilot>/scripts/model-page.cjs
 
 | 场景 | 默认模型 | 推理强度 | 渠道 / 执行端 |
 | --- | --- | --- | --- |
-| 制定计划（planning） | GPT-6.2-Astra | high | Codex / codex |
-| 一般执行（implementation） | GPT-6.2-sol | high | Codex / codex |
-| 简单执行（simple_execution） | DeepSeek-V4.1-flash | 留空，原生设置 | deepseek-official / dsh |
-| 代码复核、验收、协调、需求梳理 | GPT-6.2-Astra | high | Codex / codex |
-| 调试、重构、界面实现、测试、快速修复 | GPT-6.2-sol | high | Codex / codex |
-| 文档、资料归纳、交接材料 | DeepSeek-V4.1-flash | 留空，原生设置 | deepseek-official / dsh |
+| 制定计划（planning） | gpt-6.2-astra | high | Codex / codex |
+| 一般执行（implementation） | gpt-6.2-sol | high | Codex / codex |
+| 简单执行（simple_execution） | deepseek-v4.1-flash | 留空，原生设置 | deepseek-official / dsh |
+| 代码复核、验收、协调、需求梳理 | gpt-6.2-astra | high | Codex / codex |
+| 调试、重构、界面实现、测试、快速修复 | gpt-6.2-sol | high | Codex / codex |
+| 文档、资料归纳、交接材料 | deepseek-v4.1-flash | 留空，原生设置 | deepseek-official / dsh |
 
 模型名称为用户提供的可编辑默认值，不是官方模型目录或账号联通证明。简单模型生成的交接材料仍由主执行者核对；文档和资料中的关键业务判断需要复核。高风险小改动应选择复核或一般执行场景，而非按改动行数选择简单模型。
 

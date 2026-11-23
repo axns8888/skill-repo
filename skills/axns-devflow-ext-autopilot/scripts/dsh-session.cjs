@@ -17,6 +17,12 @@ const TEAM_ROWS = [
   { id: 'agent-team', name: '@deepseek-ai/dsh-experimental-agent-team' },
   { id: 'tool-agent-team', name: '@deepseek-ai/dsh-experimental-tool-agent-team' },
 ];
+const WORKTREE_ROWS = [
+  { id: 'worktree', name: '@deepseek-ai/dsh-experimental-worktree' },
+  { id: 'tool-worktree', name: '@deepseek-ai/dsh-experimental-tool-worktree' },
+];
+function worktreeRows(rows, spec) { return rows.filter(row => row.name === spec.name || row.id === spec.id); }
+function modernTeam(rows) { return rows.some(row => row.id === 'agent-team' && row.name === '@deepseek-ai/dsh-agent-team'); }
 function options(argv) {
   const opts = { profile: 'headless', run: false };
   const names = ['project', 'id', 'stage', 'unit', 'dsh-bin', 'profile', 'prompt-file'];
@@ -45,14 +51,27 @@ function overlay(rows, route, team, extra = {}) {
   if (session !== undefined && session !== 'ctx.headlessStartup.sessionId' || byId.get('headless-startup').config?.sessionId !== undefined)
     throw Error('新短工单禁止 profile 预设 sessionId；必须创建全新上下文');
   const patches = [];
+  if (team?.worktree !== undefined) {
+    const insert = [];
+    for (const spec of WORKTREE_ROWS) {
+      const existing = worktreeRows(rows, spec);
+      if (existing.some(row => row.name !== spec.name)) throw Error('DSH worktree 插件 ID 与实际包不匹配：' + spec.id);
+      if (!team.worktree && spec.id === 'worktree') continue; // Keep archive/restoration services available.
+      if (!existing.length && team.worktree) insert.push(spec);
+      for (const row of existing) patches.push({ id: row.id, disabled: !team.worktree });
+    }
+    if (insert.length) patches.push({ insert });
+  }
   if (route) patches.push({ id: 'agent-default-model', config: { provider: route.provider, model: route.model,
     ...(route.reasoning ? { reasoningEffort: route.reasoning } : {}) } });
   if (team) {
     const native = team.enabled && team.mode === 'subagent';
+    const modern = team.enabled && !native && modernTeam(rows);
+    if (modern && team.max_members !== undefined) throw Error('当前 DSH Team 不支持 max_members；请重新选择 Team，使用 DSH 原生子智能体限制');
     if (!team.enabled) for (const row of rows) if (row.name === '@deepseek-ai/dsh-tool-subagent' && !DELEGATION.includes(row.id)) patches.push({ id: row.id, disabled: true });
-    for (const id of native ? ['ui-agent-team'] : [...DELEGATION, 'ui-agent-team'])
+    for (const id of native || modern ? ['ui-agent-team'] : [...DELEGATION, 'ui-agent-team'])
       if (byId.has(id)) patches.push({ id, disabled: true });
-    if (native) {
+    if (native || modern) {
       for (const id of ['subagent', 'subagent-spawn-in-process'])
         if (!byId.has(id) || byId.get(id).disabled) throw Error('原生subagent需要已启用的DSH服务：' + id);
       const insert = [];
@@ -64,20 +83,21 @@ function overlay(rows, route, team, extra = {}) {
         else insert.push(row);
       }
       if (insert.length) patches.push({ insert });
-      for (const row of TEAM_ROWS) if (byId.has(row.id)) patches.push({ id: row.id, disabled: true });
-    } else if (team.enabled) {
+      if (native) for (const row of TEAM_ROWS) if (byId.has(row.id)) patches.push({ id: row.id, disabled: true });
+    }
+    if (!native && team.enabled) {
       for (const id of ['subagent', 'subagent-spawn-in-process', 'subagent-fork-in-process'])
         if (!byId.has(id) || byId.get(id).disabled) throw Error('团队需要已启用的 DSH 服务：' + id);
       const insert = [];
       for (const row of TEAM_ROWS) {
-        const config = row.id === 'agent-team'
+        const config = modern ? (row.id === 'agent-team' ? { maxTasks: 256, defaultEnabled: true } : {}) : row.id === 'agent-team'
           ? { maxMembers: team.max_members ?? 8, maxTasks: 256, maxMessageBytes: 65536, disposalTimeoutMs: 5000 }
           : { freshProvider: 'spawn', forkProvider: 'fork' };
         if (byId.has(row.id)) patches.push({ id: row.id, disabled: false, config });
         else insert.push({ ...row, config });
       }
       if (insert.length) patches.push({ insert });
-    } else for (const row of TEAM_ROWS) if (byId.has(row.id)) patches.push({ id: row.id, disabled: true });
+    } else if (!team.enabled) for (const row of TEAM_ROWS) if (byId.has(row.id)) patches.push({ id: row.id, disabled: true });
   }
   if (extra.children) {
     if (!team?.enabled || team.mode !== 'subagent') throw Error('场景子级路由要求team.mode=subagent');
@@ -112,7 +132,20 @@ function verify(rows, route, team, extra = {}) {
     if (!actual || actual.disabled || ![path.resolve(__dirname, 'dsh-context-plugin.mjs'), pathToFileURL(path.resolve(__dirname, 'dsh-context-plugin.mjs')).href].includes(actual.name) ||
         Object.entries(extra.telemetry).some(([key, value]) => actual.config?.[key] !== value)) throw Error('DSH上下文观测插件未生效');
   }
+  if (team?.worktree !== undefined) {
+    const tools = worktreeRows(rows, WORKTREE_ROWS[1]);
+    if (team.worktree) {
+      for (const spec of WORKTREE_ROWS) if (!worktreeRows(rows, spec).some(row => !row.disabled && row.name === spec.name)) throw Error('DSH 原生 worktree 服务/工具未启用：' + spec.id);
+    } else if (tools.some(row => !row.disabled)) throw Error('DSH 原生 worktree 工具未关闭');
+  }
   if (team) {
+    if (team.enabled && team.mode !== 'subagent' && modernTeam(rows)) {
+      if (team.max_members !== undefined) throw Error('当前 DSH Team 不支持 max_members');
+      for (const id of ['subagent', 'subagent-spawn-in-process', 'subagent-fork-in-process', 'agent-team', 'tool-agent-team', 'tool-subagent', 'tool-subagent-control'])
+        if (!byId.has(id) || byId.get(id).disabled) throw Error('DSH Team 服务未启用：' + id);
+      if (byId.get('agent-team').config?.defaultEnabled !== true) throw Error('DSH Team 默认开关未生效');
+      return;
+    }
     if (team.enabled && team.mode === 'subagent') {
       for (const id of ['subagent', 'subagent-spawn-in-process', 'tool-subagent', 'tool-subagent-control'])
         if (!byId.has(id) || byId.get(id).disabled) throw Error('原生subagent服务/工具未启用：' + id);

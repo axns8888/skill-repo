@@ -4,6 +4,7 @@ const path = require('node:path');
 const MAX_BYTES = 128 * 1024;
 const REQUIRED = ['planning', 'implementation', 'simple_execution'];
 const TEMPLATE = path.resolve(__dirname, '../../assets/model-routing.json');
+const PERSONAL_TEMPLATE = path.resolve(__dirname, '../../assets/model-routing.personal.json');
 function read(file) {
   if (fs.statSync(file).size > MAX_BYTES) throw Error('模型配置超过128 KiB');
   const doc = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
@@ -67,4 +68,4 @@ function initialize(root, from, dryRun = false) {
   const { content, ...info } = result;
   return { ...info, dry_run: dryRun, execution_enabled_by_this_action: false };
 }
-module.exports = { discover, prepare, initialize, baseline, REQUIRED, TEMPLATE, read, safeParents };
+module.exports = { discover, prepare, initialize, baseline, REQUIRED, TEMPLATE, PERSONAL_TEMPLATE, read, safeParents };

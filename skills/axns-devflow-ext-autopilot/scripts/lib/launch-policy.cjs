@@ -31,7 +31,8 @@ function selection(value, models, label = 'launch', scenarios = {}) {
   if (value.tier !== undefined && (typeof value.tier !== 'string' || !Object.hasOwn(models, value.tier)))
     throw Error(label + '.tier 必须引用已配置模型档位');
   if (value.team !== undefined) {
-    keys(value.team, ['enabled', 'max_members', 'mode'], label + '.team');
+    keys(value.team, ['enabled', 'max_members', 'mode', 'worktree'], label + '.team');
+    if (value.team.worktree !== undefined && typeof value.team.worktree !== 'boolean') throw Error(label + '.team.worktree 必须为布尔值');
     if (typeof value.team.enabled !== 'boolean') throw Error(label + '.team.enabled 必须为布尔值');
     if (value.team.mode !== undefined && (!value.team.enabled || !['subagent', 'team'].includes(value.team.mode)))
       throw Error(label + '.team.mode 仅在启用时允许 subagent/team');
@@ -74,6 +75,7 @@ function resolve(cfg, id, stage, unit) {
 function teamMatches(team, actual) {
   return !team || !!actual && team.enabled === actual.enabled &&
     (team.max_members === undefined || team.max_members === actual.max_members) &&
-    (team.mode === undefined || team.mode === actual.mode);
+    (team.mode === undefined || team.mode === actual.mode) &&
+    (team.worktree === undefined || team.worktree === actual.worktree);
 }
 module.exports = { selection, config, resolve, executor, routeMatches, teamMatches, model };

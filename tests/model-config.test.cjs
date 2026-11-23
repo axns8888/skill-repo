@@ -118,7 +118,7 @@ test('CLI switches presets and assigns scenarios with explicitly controlled DSH 
   const f = fixture(t);
   const used = cli.execute(cli.options(['use', '--file', f.file, '--preset', 'deepseek_only']));
   assert.equal(used.active_preset, 'deepseek_only'); assert.equal(used.applies_to, 'new_sessions_only');
-  cli.execute(cli.options(['use', '--file', f.file, '--preset', 'codex_only']));
+  cli.execute(cli.options(['use', '--file', f.file, '--preset', 'deepseek_only']));
   const result = cli.execute(cli.options(['assign', '--file', f.file, '--scenario', 'testing', '--model', 'deepseek_main', '--team', 'on', '--max-members', '2']));
   assert.equal(result.selection.route.executor, 'dsh'); assert.equal(result.selection.team.max_members, 2);
   const before = fs.readFileSync(f.file, 'utf8');

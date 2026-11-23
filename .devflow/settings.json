@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "model_association": {
+    "workspace_mode": "worktree",
+    "preset": "mixed"
+  }
+}

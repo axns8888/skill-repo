@@ -3,17 +3,21 @@
 const models = require('./lib/model-project.cjs');
 function options(argv) {
   const command = argv.shift();
-  if (!['show', 'init'].includes(command)) throw Error('用法：project-models.cjs show|init --project-root <项目> [--from <已有默认表>] [--dry-run]');
+  if (!['show', 'init'].includes(command)) throw Error('用法：project-models.cjs show|init --project-root <项目> [--from <已有默认表> | --personal] [--dry-run]');
   const result = { command };
   while (argv.length) {
     const flag = argv.shift();
     if (flag === '--dry-run') result.dryRun = true;
+    else if (flag === '--personal') { if (result.personal) throw Error('重复参数：--personal'); result.personal = true; }
     else if (['--project-root', '--from'].includes(flag)) {
       const value = argv.shift(); if (!value || value.startsWith('--')) throw Error(flag + '需要值');
       const key = flag === '--from' ? 'from' : 'root'; if (result[key]) throw Error('重复参数：' + flag); result[key] = value;
     } else throw Error('未知参数：' + flag);
   }
   if (!result.root) throw Error('需要--project-root');
+  if (result.personal && result.from) throw Error('--personal与--from不可同时使用');
+  if (command === 'show' && result.personal) throw Error('show不支持--personal');
+  if (result.personal) result.from = models.PERSONAL_TEMPLATE;
   if (command === 'show' && (result.from || result.dryRun)) throw Error('show不支持--from/--dry-run');
   return result;
 }

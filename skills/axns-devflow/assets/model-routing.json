@@ -5,105 +5,183 @@
     "模型名称为用户提供的配置示例，渠道是否接受以及账号权限需要单独验证；enabled只表示允许路由。",
     "Orca执行层由项目autopilot execution.command配置，不由本文件自动启用。",
     "配置仅用于后续派发的新会话；不修改已运行会话。",
-    "必备场景为planning、implementation、simple_execution；项目可增加自定义场景。"
+    "必备场景为planning、implementation、simple_execution；项目可增加自定义场景。",
+    "擅长能力与范围是常用模板的角色分工；搜索取决于开发工具与权限，图像识别沿用已声明值，不代表本机真实调用或效果已验证。"
   ],
   "active_preset": "project_balanced",
   "models": {
-    "plan_astra": {
-      "label": "计划 · Astra",
-      "description": "用户提供的默认名称，请核对本机渠道实际接受的模型ID。",
+    "codex_main": {
+      "label": "Codex 主模型",
       "enabled": true,
       "executor": "codex",
       "provider": "Codex",
-      "model": "GPT-6.2-Astra",
-      "reasoning": "high"
-    },
-    "execute_sol": {
-      "label": "执行 · Sol",
-      "enabled": true,
-      "executor": "codex",
-      "provider": "Codex",
-      "model": "GPT-6.2-sol",
-      "reasoning": "high"
-    },
-    "simple_flash": {
-      "label": "简单任务 · Flash",
-      "description": "用户提供的默认名称；通过Orca承载DSH进程，推理强度未指定时遵循渠道原生设置。",
-      "enabled": true,
-      "executor": "dsh",
-      "provider": "deepseek-official",
-      "model": "DeepSeek-V4.1-flash"
+      "model": "gpt-6.2-sol",
+      "reasoning": "high",
+      "strengths": [
+        "coding",
+        "reasoning",
+        "writing",
+        "review"
+      ],
+      "strengths_description": "模板主力：日常编码、局部重构、故障分析、测试和代码复核；搜索依赖执行工具开放，视觉输入按本配置声明。",
+      "description": "沿用已保存的执行工具、渠道与模型 ID；擅长范围表示模板分工，能力声明不等于账号可用性或实际效果验证。",
+      "supports_vision": true
     },
     "claude_main": {
       "label": "Claude 主模型（待填写）",
-      "description": "用户指定渠道为 Claude Code；填写自己已配置的准确模型名，再将 enabled 改为 true。",
+      "description": "沿用已保存的执行工具、渠道与模型 ID；擅长范围表示模板分工，能力声明不等于账号可用性或实际效果验证。",
       "enabled": false,
       "executor": "claude",
       "provider": "Claude Code",
       "model": "",
-      "reasoning": "high"
+      "reasoning": "high",
+      "strengths": [
+        "coding",
+        "reasoning",
+        "writing",
+        "review"
+      ],
+      "strengths_description": "模板分析与复核角色：需求理解、编码、技术写作和代码复核；填写实际模型并启用后使用，图像输入需按渠道声明。",
+      "supports_vision": false
+    },
+    "deepseek_main": {
+      "label": "DSH / DeepSeek 主模型",
+      "description": "沿用已保存的执行工具、渠道与模型 ID；擅长范围表示模板分工，能力声明不等于账号可用性或实际效果验证。",
+      "enabled": true,
+      "executor": "dsh",
+      "provider": "deepseek-official",
+      "model": "deepseek-v4.1-flash",
+      "strengths": [
+        "coding",
+        "reasoning",
+        "search",
+        "writing"
+      ],
+      "strengths_description": "模板资料与轻量执行角色：联网资料调查、内容归纳、文档整理、常规编码与接口分析；搜索和图像输入依赖实际渠道及工具。",
+      "supports_vision": false
     }
   },
   "scenarios": {
     "intake": {
       "label": "需求澄清与任务登记",
-      "description": "明确目标、范围、约束、验收标准和已有授权，避免重复登记任务。"
+      "description": "明确目标、范围、约束、验收标准和已有授权，避免重复登记任务。",
+      "required_capabilities": [
+        "reasoning",
+        "writing"
+      ]
     },
     "planning": {
       "label": "制定计划",
-      "description": "分析方案和依赖，拆成有输入、写入范围、完成条件与预算的短工单。"
+      "description": "分析方案和依赖，拆成有输入、写入范围、完成条件与预算的短工单。",
+      "required_capabilities": [
+        "reasoning",
+        "writing"
+      ]
     },
     "implementation": {
       "label": "一般执行",
-      "description": "在明确范围内实现一份短工单，完成后交接或提交阶段完成证据。"
+      "description": "在明确范围内实现一份短工单，完成后交接或提交阶段完成证据。",
+      "required_capabilities": [
+        "coding"
+      ]
     },
     "quick_fix": {
       "label": "小改动与快速修复",
-      "description": "处理局部、可快速验证的调整；仍遵守短工单范围与停止条件。"
+      "description": "处理局部、可快速验证的调整；仍遵守短工单范围与停止条件。",
+      "required_capabilities": [
+        "coding"
+      ]
     },
     "debugging": {
       "label": "故障排查与根因分析",
-      "description": "定位报错、复现问题、核对日志和状态，形成有证据的修复结论。"
+      "description": "定位报错、复现问题、核对日志和状态，形成有证据的修复结论。",
+      "required_capabilities": [
+        "coding",
+        "reasoning"
+      ]
     },
     "refactoring": {
       "label": "代码重构",
-      "description": "在保留所需行为的前提下调整结构，并验证本次涉及的行为边界。"
+      "description": "在保留所需行为的前提下调整结构，并验证本次涉及的行为边界。",
+      "required_capabilities": [
+        "coding",
+        "reasoning"
+      ]
     },
     "ui": {
       "label": "界面实现与视觉调整",
-      "description": "实现页面和组件、处理交互与布局，并用界面证据检查结果。"
+      "description": "实现页面和组件、处理交互与布局，并用界面证据检查结果。",
+      "required_capabilities": [
+        "coding",
+        "vision"
+      ]
     },
     "testing": {
       "label": "测试编写与执行",
-      "description": "补充有意义的回归、执行相关检查，并保存可复核的测试证据。"
+      "description": "补充有意义的回归、执行相关检查，并保存可复核的测试证据。",
+      "required_capabilities": [
+        "coding",
+        "review"
+      ]
     },
     "review": {
       "label": "代码与证据复核",
-      "description": "检查实现、异常路径、范围和验证证据；复核入口不会自行授予派生代理权限。"
+      "description": "检查实现、异常路径、范围和验证证据；复核入口不会自行授予派生代理权限。",
+      "required_capabilities": [
+        "coding",
+        "review"
+      ]
     },
     "acceptance": {
       "label": "技术验收与交付检查",
-      "description": "对照验收标准核对实际结果，明确已通过项、限制与未完成项。"
+      "description": "对照验收标准核对实际结果，明确已通过项、限制与未完成项。",
+      "required_capabilities": [
+        "review"
+      ]
     },
     "documentation": {
       "label": "文档与操作说明",
-      "description": "更新使用说明、配置示例和任务记录，使文档与已实现行为一致。"
+      "description": "更新使用说明、配置示例和任务记录，使文档与已实现行为一致。",
+      "required_capabilities": [
+        "writing"
+      ]
     },
     "research": {
       "label": "资料调查与技术核实",
-      "description": "按本工单范围查询原始资料、核实接口与版本，保留必要来源和结论。"
+      "description": "按本工单范围查询原始资料、核实接口与版本，保留必要来源和结论。",
+      "required_capabilities": [
+        "search",
+        "reasoning"
+      ]
     },
     "handoff": {
       "label": "上下文整理与会话交接",
-      "description": "落盘当前进展、证据、剩余问题和下一短工单；选择此场景本身不会触发自动换窗。"
+      "description": "落盘当前进展、证据、剩余问题和下一短工单；选择此场景本身不会触发自动换窗。",
+      "required_capabilities": [
+        "writing"
+      ]
     },
     "coordination": {
       "label": "任务协调与调度建议",
-      "description": "读取任务落盘状态并组织后续动作；conductor 只是模型建议，不会切换当前协调会话。"
+      "description": "读取任务落盘状态并组织后续动作；conductor 只是模型建议，不会切换当前协调会话。",
+      "required_capabilities": [
+        "reasoning"
+      ]
     },
     "simple_execution": {
       "label": "简单执行",
-      "description": "边界明确、低风险的小改动、格式整理、资料归纳；不承担权限、数据迁移或架构决策。"
+      "description": "边界明确、低风险的小改动、格式整理、资料归纳；不承担权限、数据迁移或架构决策。",
+      "required_capabilities": [
+        "coding"
+      ]
+    },
+    "escalation": {
+      "label": "升级处理与人工裁决",
+      "description": "整理超出授权或无法解决的阻塞、已采取措施和相关证据，列出需要人工裁决的事项；P5 等待人工裁决，不自动派发。",
+      "required_capabilities": [
+        "reasoning",
+        "review"
+      ]
     }
   },
   "stage_scenarios": {
@@ -112,19 +190,20 @@
     "P2": "implementation",
     "P3": "review",
     "P4": "acceptance",
-    "conductor": "coordination"
+    "conductor": "coordination",
+    "P5": "escalation"
   },
   "presets": {
     "codex_only": {
-      "label": "全部使用 Codex",
+      "label": "Codex",
       "description": "所有场景默认使用 codex_main；适合先保持统一执行端。",
       "default": {
-        "tier": "execute_sol"
+        "tier": "codex_main"
       },
       "scenarios": {}
     },
     "claude_only": {
-      "label": "全部使用 Claude",
+      "label": "Claude",
       "description": "所有场景默认使用 claude_main；需要先补齐并启用 Claude 配置。",
       "default": {
         "tier": "claude_main"
@@ -132,10 +211,10 @@
       "scenarios": {}
     },
     "deepseek_only": {
-      "label": "全部通过 DSH 使用 DeepSeek",
+      "label": "DeepSeek",
       "description": "通过 DSH 执行，默认关闭团队。独立入口与 Orca 自动桥均可使用，需先确认所选渠道的本机凭据可用。",
       "default": {
-        "tier": "simple_flash",
+        "tier": "deepseek_main",
         "team": {
           "enabled": false
         }
@@ -143,38 +222,38 @@
       "scenarios": {}
     },
     "mixed": {
-      "label": "按场景混用模型",
-      "description": "Orca承载执行，按任务复杂度分配用户提供的三个模型；DSH仅在分配到它时作为具体执行端。",
+      "label": "混合智能体团队",
+      "description": "默认使用 Codex，简单任务使用 DSH / DeepSeek；可增加模型并按场景调整分配。",
       "default": {
-        "tier": "execute_sol"
+        "tier": "codex_main"
       },
       "scenarios": {
         "intake": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "planning": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "review": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "acceptance": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "coordination": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "simple_execution": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "documentation": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "handoff": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "research": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         }
       }
     },
@@ -182,7 +261,7 @@
       "label": "DSH 原生子智能体",
       "description": "使用DSH原生subagent、send_message、list_agents、interrupt_agent调配独立短任务；无需Orca。是否换新会话由上下文总量和执行状态决定。",
       "default": {
-        "tier": "simple_flash",
+        "tier": "deepseek_main",
         "team": {
           "enabled": true,
           "mode": "subagent"
@@ -194,7 +273,7 @@
       "label": "DSH 团队执行",
       "description": "DSH 开启原生团队，最多3人（含leader）。可用于独立入口或自动桥；不新增委派授权。",
       "default": {
-        "tier": "simple_flash",
+        "tier": "deepseek_main",
         "team": {
           "enabled": true,
           "max_members": 3
@@ -203,38 +282,38 @@
       "scenarios": {}
     },
     "project_balanced": {
-      "label": "项目默认 · Astra / Sol / Flash",
-      "description": "Orca承载执行，按任务复杂度分配用户提供的三个模型；DSH仅在分配到它时作为具体执行端。",
+      "label": "dsh&Orca",
+      "description": "默认使用 Codex，简单任务使用 DSH / DeepSeek；可增加模型并按场景调整分配。",
       "default": {
-        "tier": "execute_sol"
+        "tier": "codex_main"
       },
       "scenarios": {
         "intake": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "planning": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "review": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "acceptance": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "coordination": {
-          "tier": "plan_astra"
+          "tier": "codex_main"
         },
         "simple_execution": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "documentation": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "handoff": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         },
         "research": {
-          "tier": "simple_flash"
+          "tier": "deepseek_main"
         }
       }
     }

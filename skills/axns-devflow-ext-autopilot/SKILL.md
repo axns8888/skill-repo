@@ -2,7 +2,7 @@
 name: axns-devflow-ext-autopilot
 description: axns-devflow 的可选自驱调度扩展。在项目 AGENTS.md 的 extensions 包含 autopilot 时，读取已登记任务、阶段完成证据和窗口占用，生成阶段推进、模型路由及已验收任务结案建议；显式开启执行后支持阶段领取、互斥派发、证据回调与中断恢复。用于任务排队、巡检及 DSH/Orca 自动化接入，定时唤醒由平台负责。
 metadata:
-  version: "1.0.0-rc.5"
+  version: "1.0.0-rc.8"
 ---
 
 # 自驱调度扩展
