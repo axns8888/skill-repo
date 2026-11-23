@@ -60,7 +60,7 @@ for (const name of skills) {
       assert.ok(fs.statSync(path.join(root, dir, 'README.md')).size > 0, dir);
     }
     for (const file of ['_plan/flow.md', '_plan/prompts/project.md', '_plan/prompts/stages.md',
-      '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md',
+      '_plan/guides/workflow.md', '_plan/guides/quality-gates.md', '_plan/guides/task-records.md', '_plan/prompts/project-upgrade.md',
       '_doc/使用说明文档/里程碑验收与反馈.md',
       '_plan/prompts/acceptance.json', '_plan/guides/acceptance.md', '_plan/guides/tool-integration.md',
       '_plan/prompts/architecture.md', '_plan/prompts/coding.md', '_plan/prompts/ui.md',

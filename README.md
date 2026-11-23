@@ -8,9 +8,9 @@
 | --- | --- | --- | --- |
 | [axns-skill-evolution](skills/axns-skill-evolution/README.md) | `1.0.0-rc.1` | 收集任意技能的实际问题、用户评审与改进移交 | `_doc/skill进化树/<技能名称>/YYMMDD-标题.md`，批准范围及分层验证证据；可独立使用 |
 | [axns-ops-bt](skills/axns-ops-bt/README.md) | `1.0.0-rc.1` | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
-| [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.6` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
+| [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.7` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
 | [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | `1.0.0-rc.4` | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、修改权校验、项目模型表维护及独立快照 |
-| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | `1.0.0-rc.8` | 项目显式启用后的任务巡检与调度建议 | 只读判定、配置中心、可选执行层、互斥领取与证据回调 |
+| [axns-devflow-ext-autopilot](skills/axns-devflow-ext-autopilot/README.md) | `1.0.0-rc.9` | 项目显式启用后的任务巡检与调度建议 | 只读判定、配置中心、可选执行层、互斥领取与证据回调 |
 | [axns-ui-img2vue](skills/axns-ui-img2vue/README.md) | `1.0.0-rc.1` | 单图、批量设计图转 Vue 3，或按图修改已有页面 | 页面与组件、多状态整合、素材复用及验证结果；由当前会话模型直接完成 |
 | [axns-copyright-gen](skills/axns-copyright-gen/README.md) | `1.0.0-rc.1` | 初始化配置、编排整套材料 | 三类独立配置、源码 Word、Agent 待办 |
 | [axns-copyright-gen-doc](skills/axns-copyright-gen-doc/README.md) | `1.0.0-rc.1` | 用户操作手册、截图与 Word 嵌图 | Markdown / Word 手册及截图 |
@@ -154,3 +154,7 @@ npx skills add . --list
 ## 许可证
 
 [MIT](LICENSE)
+
+### 已有项目跟进更新
+
+使用端更新技能后，在新版项目配置中心点击“检查模板更新”，对比常用/通用模板，补齐缺失项或选择同步，再显式保存。项目自定义默认保留，更新不启用自动执行。工具栏“升级提示词”支持复制和下载；固定文本见 [项目增量升级提示词](skills/axns-devflow/prompts/project-upgrade.md)。旧配置页服务需保全草稿后重启。

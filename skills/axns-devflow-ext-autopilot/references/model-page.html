@@ -52,16 +52,35 @@
 .capability-options{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}.capability-options label{display:inline-flex;align-items:center;gap:7px;color:#243448}.capability-options input{flex:none}.capability-note{color:var(--muted);font-size:12px}.capability-note.pending{color:#946019}
 .editor-fields{border:0;margin:0;padding:0;min-width:0}.editor-fields:disabled{opacity:.7}.routing-notice{margin:0;padding:16px 22px;background:#fff8e9;color:#78531a;border-bottom:1px solid var(--line)}
 .project-settings-stack{display:grid;gap:22px}@media(max-width:800px){.project-settings-stack .settings-layout{grid-template-columns:1fr}}
+
+#templateDialog,#upgradeDialog{border:1px solid var(--line);border-radius:10px;padding:0;width:min(1050px,calc(100% - 24px));max-height:calc(100% - 32px);color:inherit}
+#templateDialog::backdrop,#upgradeDialog::backdrop{background:#152b4a75}.template-body{padding:20px;display:grid;gap:16px}.template-controls,.template-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.template-controls label{display:flex;gap:8px;align-items:center}.template-meta{white-space:pre-line;padding:12px 14px;background:var(--soft);border:1px solid var(--line);border-radius:6px;overflow-wrap:anywhere}.template-list{display:grid;gap:12px}.template-entry{border:1px solid var(--line);border-radius:7px;padding:14px;min-width:0}.template-entry>label{display:flex;align-items:flex-start;gap:10px;color:#243448;cursor:pointer}.template-entry>label input{flex:none;margin-top:4px}.template-entry strong{overflow-wrap:anywhere}.template-kind{display:block;color:var(--muted);font-size:12px}.template-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.template-values pre,.template-entry details pre{margin:6px 0 0;padding:10px;background:var(--soft);white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto;font:13px/1.6 Consolas,"Microsoft YaHei",monospace}.template-values small{color:var(--muted)}.template-actions{position:sticky;bottom:0;background:white;border-top:1px solid var(--line);padding:16px 20px}.template-actions .primary{margin-left:auto}#upgradeText{width:100%;min-height:300px;max-height:52vh;resize:vertical;font:14px/1.8 "Microsoft YaHei UI",sans-serif}#templateMessage,#upgradeMessage{min-height:1.5em}button:disabled{cursor:default;opacity:.6}@media(max-width:600px){.template-values{grid-template-columns:1fr}.template-actions .primary{margin-left:0}.template-controls label{width:100%;justify-content:space-between}.template-body{padding:14px}.template-actions{padding:14px}}
 </style></head><body>
 <header><div><h1>项目配置中心</h1><p>分别管理开发模式、自动执行与模型路由</p></div><div class="tag">Devflow · Orca 执行优先</div></header>
-<main><div class="workspace-context"><span>当前项目</span><strong id="project">正在读取项目…</strong><details class="project-info"><summary>配置说明</summary><p>项目设置与模型路由分别保存。保存后用于后续新会话。</p><p id="sharedWarning"></p></details></div>
+<main><div class="workspace-context"><span>当前项目</span><strong id="project">正在读取项目…</strong><details class="project-info"><summary>配置说明</summary><p>项目与模型配置统一保存。保存后用于后续新会话。</p><p id="sharedWarning"></p></details></div>
 <nav class="workspace-nav" aria-label="配置区域"><button data-view="model" aria-current="page">模型配置</button><button data-view="project">项目开发配置</button><button data-view="scene">场景&模型</button><button data-view="stage">阶段与应用方式</button><button data-view="advanced">导入 / JSON</button></nav>
 <label class="mobile-nav field"><span>配置区域</span><select id="viewSelect" aria-label="切换配置区域"><option value="model">模型配置</option><option value="project">项目开发配置</option><option value="scene">场景&模型</option><option value="stage">阶段与应用方式</option><option value="advanced">导入 / JSON</option></select></label>
-<div class="workspace-toolbar"><div class="model-tools" hidden><label for="preset">应用方式</label><select id="preset" aria-label="应用预设"></select><button type="button" id="comparePresets" aria-haspopup="dialog">对比应用方式</button><span id="dirty" class="badge">已加载</span></div><span id="settingsStatus" class="status" role="status" hidden>设置将在显式保存后写入项目。</span><span class="spacer"></span><button id="reload">重新加载</button><button id="export">导出草稿</button><button id="saveProjectSettings" class="primary" hidden>保存项目开发配置</button><button id="save" class="primary">保存模型配置</button></div>
+<div class="workspace-toolbar"><div class="model-tools" hidden><label for="preset">应用方式</label><select id="preset" aria-label="应用预设"></select><button type="button" id="comparePresets" aria-haspopup="dialog">对比应用方式</button><span id="dirty" class="badge">已加载</span></div><span id="settingsStatus" class="status" role="status" hidden>设置将在显式保存后写入项目。</span><span class="spacer"></span><button type="button" id="templateUpdates" aria-haspopup="dialog">检查模板更新</button><button type="button" id="upgradePrompt" aria-haspopup="dialog">升级提示词</button><button id="reload">重新加载</button><button id="export">导出草稿</button><button id="saveProjectSettings" class="primary" hidden>保存项目开发配置</button><button id="save" class="primary">保存模型配置</button></div>
 <div id="status" class="status" role="status" aria-live="polite"></div>
 <dialog id="presetDialog" aria-labelledby="presetDialogTitle">
   <div class="dialog-title"><div><h2 id="presetDialogTitle">对比应用方式</h2><p class="note">应用方式是一组模型分配规则。选用后进入草稿，保存模型配置后用于新会话。</p></div><button type="button" id="closePresetDialog" autofocus>关闭</button></div>
   <div class="preset-compare" id="presetComparison"></div>
+</dialog>
+<dialog id="templateDialog" aria-labelledby="templateTitle">
+  <div class="dialog-title"><div><h2 id="templateTitle">检查模板更新</h2><p class="note">与当前草稿比较。补齐缺失项或选择同步，应用后点击页面保存按钮写入项目。</p></div><button type="button" id="closeTemplateDialog" autofocus>关闭</button></div>
+  <div class="template-body">
+    <div class="template-controls"><label>对照模板<select id="templateSource" aria-label="对照模板"><option value="personal">常用模板</option><option value="generic">通用模板</option></select></label><button type="button" id="refreshTemplate">重新检查</button><label>查看差异<select id="templateFilter" aria-label="筛选模板差异"><option value="all">全部差异</option><option value="added">新增项</option><option value="updated">可更新项</option><option value="conflict">冲突项</option><option value="customized">项目自定义项</option><option value="removed">模板移除项</option></select></label></div>
+    <div id="templateMeta" class="template-meta"></div>
+    <p class="note">首次检查没有历史基线，已有值不同会标为冲突；默认保留项目值。记录检查结果后，下次可区分模板变化与项目自定义。模板移除项和当前活动预设始终保留。</p>
+    <div class="template-controls"><button type="button" id="selectTemplateRecommended">选择新增及可更新项</button><button type="button" id="clearTemplateSelection">清空选择</button><span id="templateSelection" class="note"></span></div>
+    <div id="templateMessage" class="status" role="status" aria-live="polite"></div><div id="templateEntries" class="template-list"></div>
+  </div>
+  <div class="template-actions"><button type="button" id="fillTemplateMissing">补齐全部缺失项</button><button type="button" id="applyTemplate" class="primary">应用所选到草稿</button></div>
+</dialog>
+<dialog id="upgradeDialog" aria-labelledby="upgradeTitle">
+  <div class="dialog-title"><div><h2 id="upgradeTitle">项目升级提示词</h2><p class="note">更新技能后，将这段提示词交给使用端 Agent，可重复使用。</p></div><button type="button" id="closeUpgradeDialog" autofocus>关闭</button></div>
+  <div class="template-body"><textarea id="upgradeText" readonly aria-label="项目升级提示词正文"></textarea><div id="upgradeMessage" class="status" role="status" aria-live="polite"></div></div>
+  <div class="template-actions"><button type="button" id="downloadUpgradePrompt">下载提示词</button><button type="button" id="copyUpgradePrompt" class="primary">复制提示词</button></div>
 </dialog>
 <section class="panel workspace-panel" id="projectPanel" hidden aria-labelledby="projectSettingsTitle"><div class="panel-title"><h2 id="projectSettingsTitle">项目开发配置</h2><span>开发模式、执行入口与模型关联分别设置</span></div><div class="panel-body">
 <div class="toggle-grid"><label class="toggle" for="worktreeEnabled"><span><strong>项目 worktree 隔离</strong><small>各任务使用独立 Git 工作区，验收后合入集成分支</small></span><input id="worktreeEnabled" type="checkbox"></label><label class="toggle" for="autopilotEnabled"><span><strong>启用 autopilot</strong><small>允许项目使用任务巡检和阶段推进建议</small></span><input id="autopilotEnabled" type="checkbox"></label><label class="toggle" for="executionEnabled"><span><strong>允许自动派发</strong><small>平台唤醒后可派发已登记的任务，需启用 autopilot</small></span><input id="executionEnabled" type="checkbox"></label></div>
@@ -120,6 +139,7 @@
 'use strict';
 const TOKEN = __EDITOR_TOKEN__;
 let doc, revision, info, dirty = false, rawDirty = false, settingsDirty = false;
+let templateUpdate = null, templatePreview = null, templateSelection = new Set(), templateBusy = false, templatePreviewDraft = null;
 const $ = id => document.getElementById(id), REQUIRED = ['planning','implementation','simple_execution'], BUILTIN_MODELS = ['codex_main','claude_main','deepseek_main'];
 function status(message, kind = '') { $('status').textContent = message; $('status').className = 'status ' + kind; }
 function changed() { dirty = true; $('dirty').textContent = '未保存'; document.querySelector('[data-view="model"]')?.setAttribute('data-dirty','true'); syncJson(); }
@@ -423,7 +443,7 @@ function render(renamed) {
   syncRoutingControls();filterRows('models');filterRows('scenarios');syncJson();resizeAreas();
   if(active&&!active.isConnected){const target=focusId?$(focusId):[...document.querySelectorAll('[aria-label]')].find(n=>n.getAttribute('aria-label')===focusLabel);if(target&&!target.closest('[hidden]')){target.focus({preventScroll:true});if(typeof selectionStart==='number'&&target.setSelectionRange)target.setSelectionRange(selectionStart,selectionEnd);}}
 }
-async function api(method, body) { const response=await fetch('/api/config',{method,headers:{'x-devflow-token':TOKEN,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const result=await response.json();if(!response.ok)throw Error(result.error);return result; }
+async function api(method, body, endpoint='/api/config') { const response=await fetch(endpoint,{method,headers:{'x-devflow-token':TOKEN,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const result=await response.json();if(!response.ok)throw Error(result.error);return result; }
 function projectSettingsPayload(){
   const executionEnabled=$('executionEnabled').checked,autopilotEnabled=$('autopilotEnabled').checked,worktreeEnabled=$('worktreeEnabled').checked;
   const integrationBranch=$('integrationBranch').value,adapter=radioValue('adapter'),workspaceMode=radioValue('associationMode');
@@ -438,8 +458,8 @@ async function saveWorkspace(){
   guardRaw();
   const settings=projectSettingsPayload();
   if((settings.executionEnabled&&!info.autopilot.executionEnabled||settings.autopilotEnabled&&!info.autopilot.declared)&&!confirm('确认启用项目自动执行配置？后续平台唤醒后可按配置运行。'))return;
-  await api('PUT',{doc,revision,settings});
-  info=await api('GET');doc=info.doc;revision=info.revision;dirty=false;settingsDirty=false;
+  await api('PUT',{doc,revision,settings,...(templateUpdate?{templateUpdate}:{})});
+  info=await api('GET');doc=info.doc;revision=info.revision;dirty=false;settingsDirty=false;templateUpdate=null;renderTemplateStatus();
   for(const n of document.querySelectorAll('[data-dirty]'))n.removeAttribute('data-dirty');
   $('dirty').textContent='已保存';renderAutopilot(info.autopilot);renderProjectAssociation();render();
   $('settingsStatus').textContent='项目与模型配置已保存。';status('项目设置与模型配置已一并保存。后续新会话使用此配置。','ok');
@@ -451,8 +471,33 @@ function renderProjectAssociation() {
   updateProjectFields();
 }
 function renderAutopilot(a){const rows=[['技能已安装','本页由 autopilot 技能提供'],['项目已声明',a.declared?'AGENTS.md 声明 extensions: autopilot':'未声明 extensions: autopilot'],['配置有效',a.configValid?(a.configPath||'配置已通过校验'):(a.configPath?'无效或缺失：'+a.configPath:'尚未登记 autopilot_config')],['执行开关',a.executionEnabled?'execution.enabled = true':'关闭或不可用'],['平台入口',a.adapter?'适配器：'+a.adapter+'；账号/连通性未验证':'尚未配置']];const host=$('autopilotStates');host.replaceChildren(...rows.map(([label,value])=>{const n=node('div');n.style.cssText='min-width:0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--soft);overflow-wrap:anywhere';n.append(node('strong',label),node('div',value));return n;}));$('autopilotDetail').textContent=a.error?'配置校验错误：'+a.error:'配置路径：'+(a.configPath||'AGENTS.md 尚未提供 autopilot_config');$('worktreeEnabled').checked=a.worktreeEnabled;$('worktreeEnabled').disabled=!a.worktreeAvailable;$('autopilotEnabled').checked=a.declared;$('executionEnabled').checked=a.executionEnabled;renderBranches(a);setRadio('adapter',a.adapter||'session');$('commandFile').value=a.commandFile||'';$('commandArgs').value=JSON.stringify(a.commandArgs||[]);}
-async function load() {settingsDirty=false;for(const n of document.querySelectorAll("[data-dirty]"))n.removeAttribute("data-dirty");$("settingsStatus").textContent="设置将在显式保存后写入项目。";info=await api('GET');doc=info.doc;revision=info.revision;dirty=info.added.length>0;rawDirty=false;$('project').textContent=info.project;$('file').textContent=info.file;$('scope').textContent='配置来源：'+info.source+' · '+(info.shared?'共享模型表':'项目模型表');$('sharedWarning').textContent=info.shared?'这份文件位于项目外，保存会影响其他引用它的项目。要独立定制，请先创建项目自己的模型表并更新 model_config_file 引用。':'';$('dirty').textContent=dirty?'待保存必备场景':'已加载';renderAutopilot(info.autopilot);renderProjectAssociation();showView(currentView);status(info.added.length?'已在草稿补齐必备场景：'+info.added.join('、')+'。保存后生效。':'');}
+async function load() {settingsDirty=false;for(const n of document.querySelectorAll("[data-dirty]"))n.removeAttribute("data-dirty");$("settingsStatus").textContent="设置将在显式保存后写入项目。";info=await api('GET');doc=info.doc;revision=info.revision;templateUpdate=null;renderTemplateStatus();dirty=info.added.length>0;rawDirty=false;$('project').textContent=info.project;$('file').textContent=info.file;$('scope').textContent='配置来源：'+info.source+' · '+(info.shared?'共享模型表':'项目模型表');$('sharedWarning').textContent=info.shared?'这份文件位于项目外，保存会影响其他引用它的项目。要独立定制，请先创建项目自己的模型表并更新 model_config_file 引用。':'';$('dirty').textContent=dirty?'待保存必备场景':'已加载';renderAutopilot(info.autopilot);renderProjectAssociation();showView(currentView);status(info.added.length?'已在草稿补齐必备场景：'+info.added.join('、')+'。保存后生效。':'');}
 function guardRaw(){if(rawDirty)throw Error('JSON草稿有修改，请先点击“应用 JSON 到表格”');}
+const templateKinds={added:'新增项',updated:'可更新项',conflict:'冲突项',customized:'项目自定义项',removed:'模板移除项'};
+const templateFields={models:'模型',scenarios:'场景',presets:'预设',stage_scenarios:'阶段',label:'名称',description:'说明',strengths_description:'擅长范围',strengths:'擅长能力',required_capabilities:'能力要求',supports_vision:'图像识别',enabled:'启用',executor:'执行工具',provider:'渠道',model:'模型ID',reasoning:'推理强度',default:'默认分配',tier:'模型配置',active_preset:'当前活动预设',notes:'备注',version:'配置版本'};
+function renderTemplateStatus(){const sync=info.templateSync;$('templateUpdates').textContent='检查模板更新'+(sync?.update_available?' · 有更新':'');$('templateUpdates').title=sync?.adopted_revision?'上次采用：'+sync.adopted_revision.slice(0,12):'尚未记录模板同步基线';$('upgradeText').value=info.upgradePrompt??'';}
+function templateMessage(text,kind=''){const n=$('templateMessage');n.textContent=text;n.className='status '+kind;}
+function templateAction(fn){return async()=>{if(templateBusy)return;try{templateBusy=true;$('templateSource').disabled=true;$('refreshTemplate').disabled=true;await fn();}catch(error){templateMessage(error.message,'error');}finally{templateBusy=false;$('templateSource').disabled=false;$('refreshTemplate').disabled=false;}};}
+function templatePath(entry){return entry.path.map((key,i)=>{if(i===1&&['models','scenarios','presets'].includes(entry.path[0])){const item=doc[entry.path[0]]?.[key]??entry.incoming;return (item?.label??key)+' ('+key+')';}return templateFields[key]??key;}).join(' / ');}
+function templateValue(value){if(value===undefined)return '未配置';if(typeof value==='boolean')return value?'是':'否';if(Array.isArray(value)&&value.every(v=>typeof v==='string'))return value.map(v=>capabilityLabels[v]??v).join('、');return typeof value==='object'?JSON.stringify(value,null,2):String(value);}
+function renderTemplateSelection(){const count=templateSelection.size;$('templateSelection').textContent='已选 '+count+' 项';$('applyTemplate').textContent=count?'应用所选到草稿':'记录检查结果到草稿';$('fillTemplateMissing').disabled=!templatePreview?.entries.some(e=>e.kind==='added'&&e.selectable);}
+function renderTemplateEntries(){
+  const host=$('templateEntries');host.replaceChildren();const filter=$('templateFilter').value;
+  const entries=templatePreview?.entries.filter(e=>filter==='all'||e.kind===filter)??[];
+  for(const entry of entries){const card=node('div');card.className='template-entry';const label=node('label'),box=node('input'),copy=node('span');box.type='checkbox';box.checked=templateSelection.has(entry.key);box.disabled=!entry.selectable;box.setAttribute('aria-label','同步 '+templatePath(entry));box.addEventListener('change',()=>{if(box.checked)templateSelection.add(entry.key);else templateSelection.delete(entry.key);renderTemplateSelection();});copy.append(node('strong',templatePath(entry)));const kind=node('span',templateKinds[entry.kind]+(entry.note?' · '+entry.note:''));kind.className='template-kind';copy.append(kind);label.append(box,copy);card.append(label);const values=node('div');values.className='template-values';for(const [name,value] of [['项目当前值',entry.current],['模板值',entry.incoming]]){const column=node('div');column.append(node('small',name),node('pre',templateValue(value)));values.append(column);}card.append(values);if(Object.hasOwn(entry,'previous')&&entry.kind==='conflict'){const details=node('details');details.append(node('summary','上次模板值'),node('pre',templateValue(entry.previous)));card.append(details);}host.append(card);}
+  if(!entries.length){const n=node('p',templatePreview?.entries.length?'此分类没有差异。':'当前草稿与模板一致。可以记录检查结果，作为下次比较的基线。');n.className='note';host.append(n);}renderTemplateSelection();
+}
+async function checkTemplate(){guardRaw();templateMessage('正在检查…');templatePreview=null;templateSelection.clear();$('applyTemplate').disabled=true;$('fillTemplateMissing').disabled=true;$('templateEntries').replaceChildren();
+  const checkedDraft=JSON.stringify(doc);const result=await api('POST',{action:'preview',doc,source:$('templateSource').value},'/api/template-update');templatePreview=result;templatePreviewDraft=checkedDraft;
+  const t=result.template,counts=Object.entries(result.counts).map(([key,count])=>templateKinds[key]+' '+count).join(' · ');
+  $('templateMeta').textContent=t.label+' · 技能 '+t.version+' · 内容 '+t.revision.slice(0,12)+' · '+(result.last_sync?'上次检查 '+new Date(result.last_sync.updated_at).toLocaleString():'尚未建立同步基线')+(counts?'\n'+counts:'');
+  $('applyTemplate').disabled=false;renderTemplateEntries();templateMessage('检查完成。未修改项目文件。');
+}
+async function applyTemplateSelection(missingOnly=false){guardRaw();if(!templatePreview)throw Error('请先重新检查模板更新');if(JSON.stringify(doc)!==templatePreviewDraft)throw Error('草稿已变化，请重新检查模板更新');const originalDraft=JSON.stringify(doc);
+  const keys=missingOnly?templatePreview.entries.filter(e=>e.kind==='added'&&e.selectable).map(e=>e.key):[...templateSelection];
+  const result=await api('POST',{action:'apply',doc,source:templatePreview.template.source,revision:templatePreview.template.revision,state_revision:templatePreview.state_revision,keys,associated:routingAssociated()},'/api/template-update');
+  if(JSON.stringify(doc)!==originalDraft)throw Error('应用期间草稿已变化，保留当前草稿，请重新检查');doc=result.doc;templateUpdate=result.templateUpdate;changed();render();$('templateDialog').close();status((keys.length?'已将 '+keys.length+' 项模板变化应用到草稿。':'已将模板检查结果加入草稿。')+'请点击保存按钮，将配置与同步基线一并保存。','ok');
+}
 function act(fn){return async event=>{try{await fn(event);}catch(error){status(error.message,'error');}};}
 $('preset').addEventListener('change',act(()=>{
   const selected = $('preset').value;
@@ -465,6 +510,19 @@ $('comparePresets').addEventListener('click',act(()=>{
   $('presetDialog').showModal();
 }));
 $('closePresetDialog').addEventListener('click',()=> $('presetDialog').close());
+$('templateUpdates').addEventListener('click',act(async()=>{guardRaw();$('templateSource').value=templateUpdate?.source??info.templateSync?.source??'personal';$('templateFilter').value='all';$('templateDialog').showModal();await templateAction(checkTemplate)();}));
+$('closeTemplateDialog').addEventListener('click',()=>{$('templateDialog').close();});
+$('refreshTemplate').addEventListener('click',templateAction(checkTemplate));$('templateSource').addEventListener('change',templateAction(checkTemplate));
+$('templateFilter').addEventListener('change',renderTemplateEntries);
+$('selectTemplateRecommended').addEventListener('click',()=>{templateSelection=new Set(templatePreview?.entries.filter(e=>e.selectable&&['added','updated'].includes(e.kind)).map(e=>e.key)??[]);renderTemplateEntries();});
+$('clearTemplateSelection').addEventListener('click',()=>{templateSelection.clear();renderTemplateEntries();});
+$('fillTemplateMissing').addEventListener('click',templateAction(()=>applyTemplateSelection(true)));
+$('applyTemplate').addEventListener('click',templateAction(()=>applyTemplateSelection()));
+$('upgradePrompt').addEventListener('click',()=>{$('upgradeMessage').textContent='';$('upgradeDialog').showModal();});
+$('closeUpgradeDialog').addEventListener('click',()=>{$('upgradeDialog').close();});
+$('copyUpgradePrompt').addEventListener('click',async()=>{try{try{await navigator.clipboard.writeText($('upgradeText').value);}catch(error){$('upgradeText').focus();$('upgradeText').select();if(!document.execCommand('copy'))throw error;}$('upgradeMessage').textContent='已复制，可粘贴到使用端 Agent。';}catch(error){$('upgradeText').focus();$('upgradeText').select();$('upgradeMessage').textContent='自动复制未成功，正文已选中，请按 Ctrl+C 复制。';}});
+$('downloadUpgradePrompt').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([$('upgradeText').value+'\n'],{type:'text/plain;charset=utf-8'})),a=node('a');a.href=url;a.download='项目增量升级提示词.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+
 $('projectPanel').addEventListener('change',event=>{
   if (['associationMode','adapter'].includes(event.target.name)) updateProjectFields();
 });

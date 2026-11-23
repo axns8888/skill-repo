@@ -54,6 +54,7 @@ function initialize(opts) {
     [path.join(skill, 'references', 'engineering-standards.md'), '_plan/guides/engineering-standards.md'],
     [path.join(skill, 'assets', 'task-records.md'), '_plan/guides/task-records.md'],
     [path.join(skill, 'references', 'prompt-kit.md'), '_plan/prompts/stages.md'],
+    [path.join(skill, 'prompts', 'project-upgrade.md'), '_plan/prompts/project-upgrade.md'],
     [path.join(skill, 'references', 'workflow.md'), '_plan/guides/workflow.md'],
     [path.join(skill, 'references', 'project-layout.md'), '_plan/guides/project-layout.md'],
     [path.join(skill, 'references', 'quality-gates.md'), '_plan/guides/quality-gates.md'],
@@ -128,6 +129,7 @@ function initialize(opts) {
   }
   console.log(`${opts.dryRun ? '预览' : '完成'}：${created} 个新文件，保留 ${skipped} 个已有文件。项目：${root}`);
   console.log('下一步：核实 _plan/prompts/project.md，选择 _plan/prompts/stages.md 中的阶段指令。');
+  console.log('更新技能后：使用 _plan/prompts/project-upgrade.md 执行项目增量升级，或在配置中心检查模板更新。');
   const autopilotPage = path.resolve(__dirname, '../../axns-devflow-ext-autopilot/scripts/model-page.cjs');
   console.log(fs.existsSync(autopilotPage)
     ? `项目配置中心：先进入项目目录 "${root}"，再运行 node "${autopilotPage}"`

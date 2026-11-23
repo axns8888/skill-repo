@@ -60,10 +60,10 @@
       }
     },
     "axns-devflow": {
-      "sha256": "3ff9a8bf52edfee3ee7b9c4ce1806eda6e5337d3133e96202039d46d46093151",
+      "sha256": "56522562168fc14077b901d2da965b1e8a13b62d30ad57503f5945696052b26e",
       "files": {
-        "README.md": "f05da60782a77f29873a5e89481a6244bc451da6d651a17cf888510bbaf312c5",
-        "SKILL.md": "159c3c764109e83338a9d201a8f70d5009b70e81a8bf556f53ee2e8569f2a41e",
+        "README.md": "2e2a49fb707b05a1104a5654f368ec232e39fe7160845c881cdadfb838cda01d",
+        "SKILL.md": "6327c42cf0dc877c18e7932e3d3bb040ee88963057674fdd577b965e8d1b18f2",
         "agents/openai.yaml": "d7bece94f1a35dc19af7503eeb5f377ee05021e5d15662135896157f716bcf30",
         "assets/architecture-baseline.md": "179ffd20c12a1d23a01608826d138cdf9ce6631d096ffdce5310fbc9d7cfdfac",
         "assets/coding-baseline.md": "3e381b04a9a3499b6c522f8bc8d05d862ddf0642c6a132658ec3d83be1d9cdf2",
@@ -90,6 +90,7 @@
         "assets/workflow/_plan/prompts/README.md": "00511a99e05491474ca5599446da5a9e19b841cbf9813e37809181d39de478d1",
         "assets/workflow/_plan/prompts/acceptance.json": "afafdb92efaba76e28796f240b7d9acd660ab23dc39ee4c2f67c2c2ed68e25fe",
         "assets/workflow/_plan/prompts/task-types.json": "dbd6364afb724dfb6248c771c2ccf04577f812e4d2bac5b01e6fe113f47dd0d9",
+        "prompts/project-upgrade.md": "c96511efa22b62e1756d897ff958fb97215426586f3a0e33c7d964bc7dcf446c",
         "prompts/window/P0-open.md": "58a8a9a19f65db764720811b57243386f6aae2a8281d761f9808371c4d4e5b55",
         "prompts/window/P1-register.md": "a897bb6f294479aaa2e993bffdc03d836bbc0fbb9524ef391b22689d691bcf64",
         "prompts/window/P2-execute.md": "35f5ead8396bd6e0f938a8335b19a156d3e8c4d4f7b063084f708a0cbc7eb191",
@@ -99,23 +100,24 @@
         "references/acceptance.md": "77a6a898615d078332f82cb42366c6eb50634224b06cf78c2e4142a3849cfd76",
         "references/context-handoff.md": "18bba6356bc4b57b92843be4eae4bbfe4a5282c86cfd090d37256cb3cec63849",
         "references/engineering-standards.md": "15f9c729c69a279c3ecb673ab61849ffa11b803e83ea008dfc8d8627ef1bf2df",
-        "references/model-routing.md": "cbfb79784726445ec92910fd0b562b18eb999f1615d1e84ac06c4462a9861efc",
+        "references/model-routing.md": "8bbd130043588bd196e90f3069899a65162080d0daf19bb0df8ed823d03707ab",
         "references/project-layout.md": "08723c18d49df77c95c1e9b7cb1ceb7a02c707cfafc693445985c4549082618a",
         "references/prompt-kit.md": "2086ab25f0f18a771a46e87e24ac625c994177a55297d01174793d4dbc65bd71",
         "references/quality-gates.md": "61954ef727b02ea1796e357a61d6d0522275dca2c815504ca4036a990d32259a",
         "references/tool-integration.md": "a789b109abac1d73ec1b1c2b407f0db7124f1f79808e4b6853f57a2fc003db05",
         "references/workflow.md": "f8f3add8dda954bf7c1f4f88280ea777608a43f4a70cc7ff20bb97fdaab07363",
-        "scripts/init-workflow.cjs": "7561bf31420b63fbd48c3866966b29da251e2da550003e3d77a2c9020f89a8ae",
+        "scripts/init-workflow.cjs": "2b8824a33010abb5b9c66260c2ba32d84c9eb2da5ec0120d2e7dd4772289b2fb",
         "scripts/lib/model-project.cjs": "a3abeda756ddd218d7b08b3dfff502aca684d359952ec3ffdee3b1f5c3d00837",
+        "scripts/lib/model-template.cjs": "45c3b5fee325f3a737b3bf05d46b390c5838a0f0f08ce58f4ea2f70c02433476",
         "scripts/project-models.cjs": "10c6fc1aeb9faeaeee64ff992d32e0ddbf1af64df8582d8c8eee8f16468ba3b9",
         "scripts/resume-brief.cjs": "e3e5f369010b6655e5384f65c41913cae90d4dd299ea87ca92183c2b83bafa91"
       }
     },
     "axns-devflow-ext-autopilot": {
-      "sha256": "1f65c533b6d532af9d803dfb6b696a3847d4b3addb4c6734b01e20f786252bff",
+      "sha256": "f060d16ea3cfafbe7f9234171b3a4b0743501ad7b5cb566e5f88437506ef0b91",
       "files": {
-        "README.md": "dff7052cbb913f5559552052f7c4e0666bad8da1fd3634a4b513386e3c7dc9aa",
-        "SKILL.md": "873ab250f800f8fdeebf724b57fba63ae7ad8ccf406402275d0bffe4649798ea",
+        "README.md": "aff990193913ee20f3fa9be5e82766e09f5fe4c4049e52a5c925d7795fb88ac4",
+        "SKILL.md": "46b06f12473ba3414fc6dbd225f10f821170f1446dcd069f625077e99d7edd89",
         "evals/execution-modes.json": "ca822d6881406f82c0ddb9a8e902589566a108bde715df39c69f353961d2bc9f",
         "evals/model-page.json": "0660e32ea16f41918662e342b85fe93260b120fb422ca2e324fb16ae9da90b21",
         "references/config.md": "0d2c092a974b3d66203f4b76f8328c80236082b77c140b5d1efdd6fcf7fb55d1",
@@ -124,7 +126,7 @@
         "references/execution-modes.md": "3d1c0546cf4171f51f8f6b6fa26fc900a9da912e496952613122d133a8ab1723",
         "references/execution.md": "22317a81847e419f661da7770c5ea195ee8adfae763ad4eedbecc65d8b18722b",
         "references/launch-controls.md": "8488ca3a8e29bb22fb0b1dde37eb383bb21b952fc111d98a7e1de85681e64935",
-        "references/model-page.html": "7b2a2918bd8ced21481ce9e3f2b5b03fdfe7e9741dc98b1cc90be5fb7e3f7862",
+        "references/model-page.html": "fec4277528eedcf7c9af8059d1b36351715c79c590a60c71238fd3be10f7e126",
         "references/platforms.md": "7b86aec2de9682428baead19279588010675a8a32232fd7342b5c511f57b4d69",
         "references/protocol.md": "1e0e82f145352d31e3434a25b8223e1f4ccbd124db8d0b152993151935c576ad",
         "scripts/adapters/command.cjs": "33b19d1cde3811bb9881f23b436214f6f534953c6e60b8b21c6d594e13b41798",
@@ -151,7 +153,7 @@
         "scripts/lib/runtime.cjs": "7f53f319894c260cb51d4b9b203c9be77146ae8f00eeae52db4fa13d1934a2e7",
         "scripts/lib/units.cjs": "4669e52ef1664469b335cb1ab6708d7e859792757e6234cd0848fd2bb19c361c",
         "scripts/model-config.cjs": "d005e6c7e40b802742674e3f5d308a2bfb2c5a6e3e0b41bbdb712c75e93f3a41",
-        "scripts/model-page.cjs": "1628c0aee69b3a16a2f294467d0a5dd87b4f5c6b12e78576a05d8659ec01f2e7",
+        "scripts/model-page.cjs": "033fb6f742f3099527a046115a4cbbdbbf5f07d4c99f2cbfc5c52a25d2b7242c",
         "scripts/orca-controller.cjs": "093e7bbfa8157e67256ce9fcf6bba2a56163077603f647821baa1531217cd4e8",
         "scripts/runner.cjs": "26432858e4fca976a72b73e1911b1d93be11fc1a53afdb62775516b4402031b8"
       }

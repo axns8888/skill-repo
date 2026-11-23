@@ -7,6 +7,7 @@ const { spawnSync } = require('node:child_process');
 const catalog = require('./lib/model-config.cjs');
 const { acquire } = require('./lib/process-lock.cjs');
 const projects = require('../../axns-devflow/scripts/lib/model-project.cjs');
+const templates = require('../../axns-devflow/scripts/lib/model-template.cjs');
 const core = require('./lib/core.cjs');
 function options(argv) {
   const opts = { projectRoot: process.cwd(), port: 19321 }, seen = new Set();
@@ -210,6 +211,7 @@ function saveWorkspace(project,file,body){
     projects.safeParents(file);fs.mkdirSync(path.dirname(file),{recursive:true});releaseModel=acquire(file+'.lock');
     if(body.settings!==undefined&&(!body.settings||typeof body.settings!=='object'||Array.isArray(body.settings)))throw Error('项目设置无效');
     const plan=body.settings?saveProjectSettings(project,{...body.settings,modelAssociationFile:file},{collect:true,doc:body.doc}):{writes:[]};
+    if(body.templateUpdate!==undefined)plan.writes.push(templates.savePlan(project,file,body.templateUpdate));
     const targets=[file,...plan.writes.map(([name])=>name)],before=new Map();
     for(const name of targets){if(fs.existsSync(name)&&fs.lstatSync(name).isSymbolicLink())throw Error('拒绝覆盖符号链接：'+name);before.set(name,fs.existsSync(name)?fs.readFileSync(name):null);}
     const changed=[];
@@ -253,7 +255,20 @@ async function start(opts) {
           projectSettings = JSON.parse(fs.readFileSync(prefsFile, 'utf8'));
         }
         if(projectSettings.model_association)projectSettings.model_association={...projectSettings.model_association,preset:doc.active_preset};
-        return json(200, { file, project, source: found.source, shared: found.shared, doc, revision: current.revision, added, required: projects.REQUIRED, inspection: catalog.inspect(doc), autopilot: autopilotStatus(project), projectSettings, projectSettingsRevision: fs.existsSync(prefsFile) ? hash(fs.readFileSync(prefsFile)) : 'missing' });
+        return json(200, { file, project, source: found.source, shared: found.shared, doc, revision: current.revision, added, required: projects.REQUIRED, inspection: catalog.inspect(doc), autopilot: autopilotStatus(project), projectSettings, projectSettingsRevision: fs.existsSync(prefsFile) ? hash(fs.readFileSync(prefsFile)) : 'missing', templateSync: templates.summary(project,file), upgradePrompt: fs.readFileSync(path.resolve(__dirname,'../../axns-devflow/prompts/project-upgrade.md'),'utf8').replace(/^\uFEFF/,'').trim() });
+      }
+      if (req.method === 'POST' && req.url === '/api/template-update') {
+        let size=0;const chunks=[];
+        for await(const chunk of req){size+=chunk.length;if(size>catalog.MAX_BYTES+32768)return json(413,{error:'模板请求超过大小上限'});chunks.push(chunk);}
+        const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        catalog.validate(body.doc);
+        if(body.action==='preview')return json(200,templates.preview(project,file,body.doc,body.source));
+        if(body.action!=='apply')throw Error('模板更新操作无效');
+        const result=templates.apply(project,file,body.doc,body);
+        catalog.validate(result.doc);
+        for(const id of projects.REQUIRED)if(!Object.hasOwn(result.doc.scenarios,id))throw Error('必备场景不可缺少：'+id);
+        if(body.associated!==false)catalog.compile(result.doc);
+        return json(200,result);
       }
       if (req.method === 'PUT' && req.url === '/api/project-settings') {
         let size = 0; const chunks = [];

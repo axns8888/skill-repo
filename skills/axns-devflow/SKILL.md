@@ -5,7 +5,7 @@ description: >-
   缺陷修复，以及开发计划、实施自检、证据复核、人工验收和任务交接的组织与执行。
   也适用于提炼项目开发规范和生成分阶段提示词；普通语法答疑无需启用完整流程。
 metadata:
-  version: "1.0.0-rc.6"
+  version: "1.0.0-rc.7"
 ---
 
 # 通用开发工作流
@@ -41,6 +41,7 @@ metadata:
 
 | 当前需要 | 资料 |
 | --- | --- |
+| 使用端更新技能后同步已有项目 | [项目增量升级提示词](prompts/project-upgrade.md)，配置中心“检查模板更新” |
 | DSH / Orca 原生自动化、任务清单及 PyCharm 协作 | [工具协作](references/tool-integration.md) |
 | 人工验收开关、阻塞范围及独立状态 | [人工验收配置](references/acceptance.md) |
 | 阶段划分、计划变更、角色交接与结案 | [工作流](references/workflow.md) |

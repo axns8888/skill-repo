@@ -2,7 +2,7 @@
 name: axns-devflow-ext-autopilot
 description: axns-devflow 的可选自驱调度扩展。在项目 AGENTS.md 的 extensions 包含 autopilot 时，读取已登记任务、阶段完成证据和窗口占用，生成阶段推进、模型路由及已验收任务结案建议；显式开启执行后支持阶段领取、互斥派发、证据回调与中断恢复。用于任务排队、巡检及 DSH/Orca 自动化接入，定时唤醒由平台负责。
 metadata:
-  version: "1.0.0-rc.8"
+  version: "1.0.0-rc.9"
 ---
 
 # 自驱调度扩展
@@ -63,3 +63,5 @@ DSH 已具备原生子智能体时，优先按 [DSH 原生调度与上下文交�
 需要由 Orca 承载连续自动换窗时，使用随附 `scripts/adapters/orca-bridge.cjs` 与 `scripts/orca-controller.cjs --watch`：本地有限控制器从落盘状态驱动每工单新会话，不积累模型协调上下文。须显式启用 command/require_units 并预先登记原工作区、任务和短工单。支持本机 Codex/Claude structured 会话，以及配置 --dsh-bin 后由 Orca 命令终端承载的 DSH 一次性 headless 进程。DSH 监督器核实真实身份并 takeover，前进程退出后才接续；未知启动只查询。模型、团队、异常恢复及实际账号验证边界见 [模型与交接](references/launch-controls.md#dsh-自动短工单交接) 和 [平台接入](references/platforms.md#本机-orca-连续短工单随附桥与控制器)。
 
 需要按项目、任务或短工单选择已知模型，以及控制 DSH 团队时，读 [新会话模型与团队控制](references/launch-controls.md)。个人与项目模型表可单独维护，必备场景为 planning、implementation、simple_execution；优先保留用户选择的 Orca 执行层。进入目标项目目录后运行 `node <axns-devflow-ext-autopilot>/scripts/model-page.cjs` 打开可保存的独立配置页，支持模型参数、场景、预设和团队设置；页面以当前目录识别项目，不使用 `--project-root`。项目发现/创建规则见宿主的 [项目模型配置](../axns-devflow/references/model-routing.md)。仓库根目录 model-routing.json 保留个人设置；项目通过 model_config_file 引用，使用 model-config.cjs 的 show/preview/use/assign 检查和切换，不在安装目录维护个人配置。DSH 的 `dsh-session.cjs` 在独立 headless 进程中应用临时 overlay；默认只生成并验证启动清单，显式 --run 才启动。它不充当 runner command 桥，也不自动恢复原业务；配置合成、启动选择与实际模型调用证据分别记录。团队开关不授予未授权的委派；已授权团队仍保留一个任务主执行者，分开写范围、短工单预算与结果整合责任。
+
+配置中心工具栏提供“检查模板更新”和“升级提示词”。模板更新先比较草稿，默认保留项目自定义，显式保存后记录内容指纹与同步基线；使用端操作见 [README](README.md#使用端跟进技能与模板更新)。
