@@ -3,13 +3,15 @@
   "node": "v24.21.0",
   "skills": {
     "axns-config-dsh-multica-runtime": {
-      "sha256": "7ecf08183200a0d3ba3b467e469a025c8b2edeed412e9bebb71fb31e6f41467d",
+      "sha256": "7c388762e51a8a16628a96ac2a1bd64d2b560ac9f4a70d9d0e008de33da3d48a",
       "files": {
         "README.md": "182eb1e0bd33cffb3973c1596f733c193df7e8c4ef00986aa457e76bec668aef",
-        "SKILL.md": "ab9441149e901447bfa3be016ae578c6ce73c23852b244d1b7520b4b8a4165b3",
+        "SKILL.md": "5d460dc0db6a1e95bcda2ae35389cbdf098f7203649b4eec9f19334dea8ee68a",
         "manifest.json": "a7e3af48c159d24a9de4d7614af1426aaf8283d102e4e4d928cacd3b18cc3baf",
-        "references/operations.md": "7736ba8b6caa79f8135b08a99af81e0a22c8aa5fc0bf681bef9d3bde2b80b8d7",
-        "scripts/runtime.ps1": "605cc792df15b95902f529a3cc75085b86610f8aff7b1e9523d827712107eb72"
+        "references/model-sync.md": "17255ecaab012b7d220b61ed3fcc700548a97f6326dc6a1d8952aa02f7b2483c",
+        "references/operations.md": "1596ff1f1a904c32ab41142f61b4f93e3bcb90ab871a9c59e75b39e2f45ea065",
+        "scripts/model-sync.ps1": "2342c12a9685ebd409b3fa1f7f0ca892532c18044f8f797226f06d2675d803f1",
+        "scripts/runtime.ps1": "867f7524600bd78bfacbdfa97b6911c2116953db7270960ac3b6a6cc18f3b4d9"
       }
     },
     "axns-copyright-gen": {
