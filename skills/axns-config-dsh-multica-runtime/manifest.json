@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/axns8888/dsh-multica-runtime.git",
+  "commit": "7e90bdb574bf0da459892413f69454327da7f775",
+  "sourceTreeOid": "9ff225aad8380425dc02644fd6724d5828f4606a",
+  "package": "@multica-ai/dsh-runtime",
+  "version": "0.2.0-axns.1",
+  "node": "24.21.0",
+  "pnpm": "12.5.1",
+  "dshTest": "0.2.2-rc.5",
+  "multica": "0.13.0"
+}

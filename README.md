@@ -1,12 +1,13 @@
 # skill-repo
 
-本仓库提供宝塔面板运维、项目开发流程、设计图转 Vue 3 与中国软件著作权材料准备的 Agent Skills。开发流程由不绑定语言与框架的 axns-devflow 统一提供，技术约定保存在各项目中；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
+本仓库提供多机 DSH runtime 配置、宝塔面板运维、项目开发流程、设计图转 Vue 3 与中国软件著作权材料准备的 Agent Skills。开发流程由不绑定语言与框架的 axns-devflow 统一提供，技术约定保存在各项目中；软著技能包含操作手册、源码文档、登记信息及聚合编排，以当前项目已实现功能为依据生成材料。
 
 ## 技能列表
 
 | Skill | 当前版本 | 适用场景 | 产出 |
 | --- | --- | --- | --- |
 | [axns-skill-evolution](skills/axns-skill-evolution/README.md) | `1.0.0-rc.1` | 收集任意技能的实际问题、用户评审与改进移交 | `_doc/skill进化树/<技能名称>/YYMMDD-标题.md`，批准范围及分层验证证据；可独立使用 |
+| [axns-config-dsh-multica-runtime](skills/axns-config-dsh-multica-runtime/README.md) | `0.1.0` | 多台 Windows 电脑配置、检查、安装、验证或回退 Multica 原生 DSH runtime | 固定来源的可审查构建包、本机备份与逐机验收；不代替凭据配置或 Agent 绑定 |
 | [axns-ops-bt](skills/axns-ops-bt/README.md) | `1.0.0-rc.1` | 宝塔面板运维、网站部署与接口兼容性修复 | 只读 API 诊断、三级执行流程及脱敏修复记录 |
 | [axns-devflow](skills/axns-devflow/README.md) | `1.0.0-rc.7` | 不限语言、框架和应用形态的项目开发、修复与任务交接 | 通用开发工作流、目录初始化脚本、阶段提示词、项目与任务模板 |
 | [axns-devflow-ext-worktree](skills/axns-devflow-ext-worktree/README.md) | `1.0.0-rc.4` | 项目显式启用后的多任务窗口隔离与协调 | worktree 生命周期、共享登记、修改权校验、项目模型表维护及独立快照 |
@@ -19,7 +20,7 @@
 
 ## 版本管理
 
-全部 10 个技能从 `1.0.0-rc.1` 建立统一版本基线，后续按技能独立升级。每个技能以 `SKILL.md` 的 `metadata.version` 为版本来源，自己的 README 展示当前版本并按时间倒序保存版本记录。升级时同步更新本页列表、对应技能的版本字段及 README，记录改动、验证结果和必要的迁移说明。
+各技能按自身版本线独立维护。每个技能以 `SKILL.md` 的 `metadata.version` 为版本来源，自己的 README 展示当前版本并按时间倒序保存版本记录。升级时同步更新本页列表、对应技能的版本字段及 README，记录改动、验证结果和必要的迁移说明。
 
 预发布使用 `目标版本-rc.序号`；正式版本遵循 MAJOR.MINOR.PATCH。详细升级规则、记录要求和本地验证步骤见 [技能版本管理](docs/versioning.md)。技能版本、仓库发布 tag 与内容校验快照分别记录，版本号本身不表示已发布或已安装。
 
