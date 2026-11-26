@@ -1,13 +1,15 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
-    [ValidateSet('Check','Prepare','Build','Install','Verify','Rollback','Platform')]
+    [ValidateSet('Check','Prepare','Build','Install','Verify','Rollback','Platform','SyncStatus','SyncConfigure','SyncEnable','SyncDisable','SyncReconcile','SyncRollback')]
     [string]$Action = 'Check',
     [string]$Workspace,
     [string]$DshHome,
     [string]$DshCommand = 'dsh',
     [string]$MulticaCliPath,
-    [string]$BackupId
+    [string]$BackupId,
+    [string]$SyncPolicyFile,
+    [string]$SyncRevision
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -68,9 +70,31 @@ function Assert-DshCommand {
     return $cmd.Source
 }
 function Invoke-JsonCommand([string]$Exe, [string[]]$CommandArgs) {
-    $output = & $Exe @CommandArgs 2>&1
-    if ($LASTEXITCODE -ne 0) { Fail "$([IO.Path]::GetFileName($Exe)) $($CommandArgs -join ' ') 失败（退出码 $LASTEXITCODE）；敏感输出已省略" }
-    return ,@($output | ForEach-Object { "$_" })
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    if ([IO.Path]::GetExtension($Exe) -eq '.ps1') {
+        $start.FileName = (Get-Command pwsh -ErrorAction Stop).Source
+        foreach ($arg in @('-NoProfile','-File',$Exe)) { $start.ArgumentList.Add($arg) }
+    } else { $start.FileName = $Exe }
+    foreach ($arg in $CommandArgs) { $start.ArgumentList.Add($arg) }
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $start.Environment['DSH_HOME'] = Get-DshHomePath
+    $process = [Diagnostics.Process]::Start($start)
+    try {
+        $stdout = $process.StandardOutput.ReadToEndAsync()
+        $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(90000)) {
+            $process.Kill($true); $process.WaitForExit()
+            $null = $stdout.GetAwaiter().GetResult(); $null = $stderr.GetAwaiter().GetResult()
+            Fail 'DSH 命令超时；敏感输出已省略。'
+        }
+        $raw = $stdout.GetAwaiter().GetResult()
+        $null = $stderr.GetAwaiter().GetResult()
+        if ($process.ExitCode -ne 0) { Fail 'DSH 命令失败；敏感输出已省略。' }
+        return ,@($raw -split '\r?\n' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    } finally { $process.Dispose() }
 }
 function Test-Models([string]$Exe) {
     $frames = Invoke-JsonCommand $Exe @('--profile','multica','--list-models')
@@ -122,6 +146,14 @@ function Assert-ProfileBoundary([string]$HomePath) {
 
 if ($Workspace.StartsWith((Join-Path (Get-Location).Path '.planning') + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -or $Workspace -match '[\\/]\.planning(?:[\\/]|$)') { Fail 'Workspace 不得放入项目规划资料目录。' }
 if ($Action -in @('Prepare','Build','Install','Rollback')) { Assert-PathNotReparse $Workspace; New-Item -ItemType Directory -Path $Workspace -Force | Out-Null }
+
+if ($Action.StartsWith('Sync')) {
+    $arguments = @{ Action = $Action.Substring(4); DshHome = (Get-DshHomePath); DshCommand = (Assert-DshCommand) }
+    if ($SyncPolicyFile) { $arguments.PolicyFile = $SyncPolicyFile }
+    if ($SyncRevision) { $arguments.Revision = $SyncRevision }
+    & (Join-Path $PSScriptRoot 'model-sync.ps1') @arguments
+    return
+}
 
 switch ($Action) {
     'Check' {

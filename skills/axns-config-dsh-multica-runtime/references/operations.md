@@ -34,3 +34,7 @@
 仅由设备用户依据当前 Multica CLI 帮助，在确认无活动任务且接受影响后手动启停 daemon。runtime 注册/在线不是 Agent 绑定预览；改变 Agent 时先人工确认 workspace、Agent、runtime ID、当前绑定及切换影响，再单独操作。此技能不执行这些副作用。
 
 首次安装如模型目录为空或私有 Git 不可读，准确报告具体缺项和由设备用户完成的本地步骤；不要扩大权限或猜路径。可安全重试 Check/Prepare/Build。每台电脑分别完成以上验收并记录版本、设备名和 runtime ID，不共享身份目录。
+
+## 当前有效模型与恢复入口
+
+持续同步属于本机可选维护补丁，使用 [model-sync.md](model-sync.md) 中的来源选择、Enable/Status/Reconcile/Disable/Rollback 入口。区分配置存在与当前有效来源；未选择或缺凭据的历史节点不自动导入。删除只应用于已接管且三方基线未漂移的目标项；其他项预览，不从备份复活。原 manifest 来源和安装 helper 的 hash/receipt 校验保持有效。目录事件与兜底仅在 native runtime 进程存活时运行；本地失效标记不代表 daemon/UI 刷新已接入，必须分层验收。
